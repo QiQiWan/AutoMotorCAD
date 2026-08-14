@@ -1,0 +1,182 @@
+version: 1
+category_order: [topology, geometry, magnet, winding]
+category_labels:
+  topology: 拓扑
+  geometry: 几何
+  magnet: 永磁体
+  winding: 绕组
+regions:
+  stator:
+    label: 定子
+    parameter_ids: [stator_outer_diameter, stator_inner_diameter, stator_lamination_length]
+  stator-slot:
+    label: 定子槽
+    parameter_ids: [slot_count, tooth_width, slot_depth, slot_opening]
+  airgap:
+    label: 气隙
+    parameter_ids: [air_gap, stator_inner_diameter, magnet_thickness]
+  rotor:
+    label: 转子
+    parameter_ids: [pole_count, magnet_thickness, magnet_arc_deg]
+  magnet:
+    label: 永磁体
+    parameter_ids: [pole_count, magnet_thickness, magnet_arc_deg]
+  winding:
+    label: 绕组
+    parameter_ids: [slot_count, pole_count, turns_per_coil, parallel_paths, slot_fill_factor]
+parameter_dependencies:
+  pole_count:
+    component: 转子磁极 / 绕组周期
+    region_ids: [rotor, magnet, winding]
+    affects: [磁极节距, 永磁体排布, 绕组周期, 基波绕组因数]
+    related: [slot_count, magnet_arc_deg, turns_per_coil]
+  slot_count:
+    component: 定子槽 / 绕组
+    region_ids: [stator-slot, winding]
+    affects: [槽距, 齿宽与槽宽关系, 绕组分配, 每相每支路槽数, 槽满率, 绕组因数]
+    related: [pole_count, tooth_width, slot_depth, slot_opening, parallel_paths, turns_per_coil, slot_fill_factor]
+  stator_outer_diameter:
+    component: 定子外圆
+    region_ids: [stator]
+    affects: [定子径向厚度, 槽可用空间, 热路径]
+    related: [stator_inner_diameter, slot_depth, tooth_width]
+  stator_inner_diameter:
+    component: 定子孔径 / 气隙侧
+    region_ids: [stator, airgap, stator-slot]
+    affects: [槽距, 定子径向厚度, 气隙侧圆周长度]
+    related: [stator_outer_diameter, slot_count, tooth_width, slot_opening, air_gap]
+  air_gap:
+    component: 定转子气隙
+    region_ids: [airgap]
+    affects: [磁路磁阻, 反电势, 转矩, FEA 网格敏感性]
+    related: [stator_inner_diameter, magnet_thickness]
+  stator_lamination_length:
+    component: 定子叠长
+    region_ids: [stator]
+    affects: [有效电磁长度, 转矩能力, 铜耗与铁耗尺度]
+    related: [stator_outer_diameter, tooth_width]
+  tooth_width:
+    component: 定子齿
+    region_ids: [stator-slot, stator]
+    affects: [槽宽, 齿磁密, 槽面积, 槽满率]
+    related: [slot_count, stator_inner_diameter, slot_opening, slot_depth, slot_fill_factor]
+  slot_depth:
+    component: 定子槽
+    region_ids: [stator-slot]
+    affects: [槽面积, 定子轭厚, 槽满率]
+    related: [stator_outer_diameter, stator_inner_diameter, tooth_width, slot_fill_factor]
+  slot_opening:
+    component: 槽口
+    region_ids: [stator-slot]
+    affects: [齿顶几何, 槽口漏磁, 区域相交风险]
+    related: [slot_count, tooth_width, stator_inner_diameter]
+  magnet_thickness:
+    component: 永磁体
+    region_ids: [magnet, rotor, airgap]
+    affects: [气隙磁密, 转子外形, 磁钢体积]
+    related: [air_gap, magnet_arc_deg, pole_count]
+  magnet_arc_deg:
+    component: 永磁体极弧
+    region_ids: [magnet, rotor]
+    affects: [极弧系数, 气隙磁密波形, 转矩脉动]
+    related: [pole_count, magnet_thickness]
+  turns_per_coil:
+    component: 绕组匝数
+    region_ids: [winding, stator-slot]
+    affects: [反电势, 电流密度, 导体占用, 槽满率]
+    related: [slot_count, parallel_paths, slot_fill_factor]
+  parallel_paths:
+    component: 并联支路
+    region_ids: [winding]
+    affects: [每相每支路槽数, 支路电流, 绕组可行性]
+    related: [slot_count, turns_per_coil]
+  slot_fill_factor:
+    component: 槽内导体占用
+    region_ids: [winding, stator-slot]
+    affects: [可制造性, 铜耗, 绕组温升]
+    related: [slot_count, tooth_width, slot_depth, turns_per_coil]
+issue_bindings:
+  GEOM_OD_LE_ID:
+    parameter_ids: [stator_outer_diameter, stator_inner_diameter]
+    region_ids: [stator]
+  GEOM_RADIAL_BUILD_NONPOSITIVE:
+    parameter_ids: [stator_outer_diameter, stator_inner_diameter]
+    region_ids: [stator]
+  GEOM_AIRGAP_NONPOSITIVE:
+    parameter_ids: [air_gap]
+    region_ids: [airgap]
+  GEOM_SLOT_COUNT_INVALID:
+    parameter_ids: [slot_count]
+    region_ids: [stator-slot]
+  GEOM_POLE_COUNT_INVALID:
+    parameter_ids: [pole_count]
+    region_ids: [rotor, magnet]
+  GEOM_SLOT_OPENING_NONPOSITIVE:
+    parameter_ids: [slot_opening]
+    region_ids: [stator-slot]
+  GEOM_SLOT_OPENING_EXCEEDS_PITCH:
+    parameter_ids: [slot_opening, slot_count, stator_inner_diameter]
+    region_ids: [stator-slot]
+  GEOM_SLOT_OPENING_HIGH_RATIO:
+    parameter_ids: [slot_opening, slot_count, stator_inner_diameter]
+    region_ids: [stator-slot]
+  GEOM_TOOTH_WIDTH_NONPOSITIVE:
+    parameter_ids: [tooth_width]
+    region_ids: [stator-slot]
+  GEOM_TOOTH_WIDTH_EXCEEDS_PITCH:
+    parameter_ids: [tooth_width, slot_count, stator_inner_diameter]
+    region_ids: [stator-slot]
+  GEOM_SLOT_TOOTH_OCCUPANCY_HIGH:
+    parameter_ids: [slot_opening, tooth_width, slot_count]
+    region_ids: [stator-slot]
+  GEOM_SLOT_DEPTH_EXCEEDS_BUILD:
+    parameter_ids: [slot_depth, stator_outer_diameter, stator_inner_diameter]
+    region_ids: [stator-slot, stator]
+  WINDING_PARALLEL_PATHS_INVALID:
+    parameter_ids: [parallel_paths]
+    region_ids: [winding]
+  WINDING_PHASE_COUNT_INVALID:
+    parameter_ids: []
+    region_ids: [winding]
+  WINDING_SLOT_COUNT_INTEGER_REQUIRED:
+    parameter_ids: [slot_count]
+    region_ids: [stator-slot, winding]
+  WINDING_SLOT_PHASE_PATH_NONINTEGER:
+    parameter_ids: [slot_count, parallel_paths, pole_count]
+    region_ids: [stator-slot, winding]
+  WINDING_SLOT_FILL_OVER_ONE:
+    parameter_ids: [slot_fill_factor, turns_per_coil, slot_depth, tooth_width]
+    region_ids: [stator-slot, winding]
+  WINDING_REGEN_REQUIRED:
+    parameter_ids: [slot_count, pole_count, turns_per_coil, parallel_paths]
+    region_ids: [winding]
+  MOTORCAD_SLOT_OPENING_CONSTRAINT:
+    parameter_ids: [slot_opening, slot_count, tooth_width, stator_inner_diameter]
+    region_ids: [stator-slot]
+  MOTORCAD_STATOR_AIR_INTERSECTION:
+    parameter_ids: [stator_inner_diameter, air_gap, slot_opening, tooth_width, slot_depth]
+    region_ids: [stator, airgap, stator-slot]
+  MOTORCAD_REGION_INTERSECTION:
+    parameter_ids: [slot_opening, tooth_width, slot_depth, stator_inner_diameter, air_gap, turns_per_coil, slot_fill_factor, magnet_thickness]
+    region_ids: [stator, stator-slot, airgap, winding, magnet, rotor]
+  MOTORCAD_GEOMETRY_CHECK_FAILED:
+    parameter_ids: [stator_outer_diameter, stator_inner_diameter, air_gap, tooth_width, slot_depth, slot_opening]
+    region_ids: [stator, stator-slot, airgap]
+  MOTORCAD_WINDING_SLOT_PHASE_PATH_NONINTEGER:
+    parameter_ids: [slot_count, parallel_paths]
+    region_ids: [winding, stator-slot]
+  MOTORCAD_WINDING_SLOT_FILL_OVER_ONE:
+    parameter_ids: [turns_per_coil, slot_fill_factor, slot_depth, tooth_width, slot_opening]
+    region_ids: [winding, stator-slot]
+  MOTORCAD_WINDING_FACTOR_ZERO:
+    parameter_ids: [slot_count, pole_count, parallel_paths]
+    region_ids: [winding]
+  MOTORCAD_WINDING_NOT_FEASIBLE:
+    parameter_ids: [slot_count, pole_count, parallel_paths, turns_per_coil, slot_fill_factor]
+    region_ids: [winding, stator-slot]
+  MOTORCAD_WINDING_DEFINITION_INVALID:
+    parameter_ids: [slot_count, pole_count, parallel_paths, turns_per_coil]
+    region_ids: [winding]
+  MOTORCAD_FEA_ABORTED_BY_WINDING:
+    parameter_ids: [slot_count, pole_count, parallel_paths, turns_per_coil, slot_fill_factor, slot_depth, tooth_width]
+    region_ids: [winding, stator-slot]

@@ -1,0 +1,42 @@
+version: 1
+recipes:
+  emag:
+    label: 电磁单工作点
+    contexts: [EMag]
+    methods: [do_magnetic_calculation]
+    production_ready: true
+  thermal_steady:
+    label: 稳态热
+    contexts: [Therm]
+    methods: [do_steady_state_analysis]
+    production_ready: true
+  thermal_transient:
+    label: 瞬态热
+    contexts: [Therm]
+    methods: [do_transient_analysis]
+    production_ready: false
+  emag_thermal:
+    label: 电磁 + 稳态热（顺序）
+    contexts: [EMag, Therm]
+    methods: [do_magnetic_calculation, do_steady_state_analysis]
+    production_ready: true
+  emag_thermal_coupled:
+    label: Motor-CAD原生电磁-热耦合
+    contexts: [EMag, Therm]
+    methods: [do_magnetic_thermal_calculation]
+    production_ready: false
+  mechanical:
+    label: 机械计算
+    contexts: [Mechanical]
+    methods: [do_mechanical_calculation]
+    production_ready: false
+  lab_magnetic:
+    label: Lab电磁性能图
+    contexts: [Lab]
+    methods: [build_model_lab, calculate_magnetic_lab]
+    production_ready: false
+  lab_operating_point:
+    label: Lab工作点
+    contexts: [Lab]
+    methods: [build_model_lab, calculate_operating_point_lab]
+    production_ready: false

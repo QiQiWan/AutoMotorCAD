@@ -1,0 +1,174 @@
+version: stable-docs-2026-08
+source: https://motorcad.docs.pyansys.com/version/stable/examples/
+contexts:
+  EMag:
+    - id: current_definition
+      automation_name: CurrentDefinition
+      label: 电流定义
+      type: enum
+      default: 0
+      options:
+        - {value: 0, label: Peak}
+      group: operating_point
+      description: 官方 EMag 基础示例使用 0 表示 Peak 电流定义。
+    - id: torque_points_per_cycle
+      automation_name: TorquePointsPerCycle
+      label: 每电周期转矩计算点数
+      type: integer
+      default: 30
+      minimum: 1
+      group: torque
+    - id: torque_number_cycles
+      automation_name: TorqueNumberCycles
+      label: 转矩计算电周期数
+      type: integer
+      default: 1
+      minimum: 1
+      group: torque
+    - id: torque_calculation
+      automation_name: TorqueCalculation
+      label: 瞬态转矩计算
+      type: boolean
+      default: true
+      group: calculations
+    - id: back_emf_calculation
+      automation_name: BackEMFCalculation
+      label: 反电动势计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: cogging_torque_calculation
+      automation_name: CoggingTorqueCalculation
+      label: 齿槽转矩计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: torque_speed_calculation
+      automation_name: TorqueSpeedCalculation
+      label: 转矩-转速计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: demagnetization_calculation
+      automation_name: DemagnetizationCalc
+      label: 退磁计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: inductance_calculation
+      automation_name: InductanceCalc
+      label: 电感计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: short_circuit_calculation
+      automation_name: BPMShortCircuitCalc
+      label: BPM短路计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: electromagnetic_forces_open_circuit
+      automation_name: ElectromagneticForcesCalc_OC
+      label: 开路电磁力计算
+      type: boolean
+      default: false
+      group: calculations
+    - id: electromagnetic_forces_load
+      automation_name: ElectromagneticForcesCalc_Load
+      label: 负载电磁力计算
+      type: boolean
+      default: false
+      group: calculations
+  Therm:
+    - id: transient_calculation_type
+      automation_name: Transient_Calculation_Type
+      label: 瞬态计算类型
+      type: integer
+      default: 0
+      group: transient
+    - id: transient_time_period
+      automation_name: Transient_Time_Period
+      label: 瞬态计算时长
+      type: number
+      unit: s
+      default: 60
+      minimum: 0
+      group: transient
+  Lab:
+    - id: model_type_motorlab
+      automation_name: ModelType_MotorLAB
+      label: Lab模型类型
+      type: integer
+      default: 1
+      group: model_build
+    - id: saturation_model_points
+      automation_name: SatModelPoints_MotorLAB
+      label: 饱和模型点设置
+      type: integer
+      default: 0
+      group: model_build
+    - id: loss_model_lab
+      automation_name: LossModel_Lab
+      label: Lab损耗模型
+      type: integer
+      default: 0
+      group: model_build
+    - id: model_build_speed
+      automation_name: ModelBuildSpeed_MotorLAB
+      label: Lab模型构建最高转速
+      type: number
+      unit: rpm
+      default: 10000
+      group: model_build
+    - id: max_model_current
+      automation_name: MaxModelCurrent_MotorLAB
+      label: Lab模型最大电流
+      type: number
+      unit: A
+      default: 480
+      group: model_build
+    - id: build_saturation_model
+      automation_name: BuildSatModel_MotorLAB
+      label: 构建饱和模型
+      type: boolean
+      default: true
+      group: model_build
+    - id: operating_mode_lab
+      automation_name: OperatingMode_Lab
+      label: Lab运行模式
+      type: integer
+      default: 0
+      group: calculation
+    - id: operating_point_spec
+      automation_name: OpPointSpec_MotorLAB
+      label: Lab工作点定义
+      type: integer
+      default: 1
+      group: operating_point
+    - id: stator_current_demand_lab
+      automation_name: StatorCurrentDemand_Lab
+      label: Lab定子电流需求
+      type: number
+      unit: A
+      default: 480
+      group: operating_point
+    - id: speed_demand_motorlab
+      automation_name: SpeedDemand_MotorLAB
+      label: Lab转速需求
+      type: number
+      unit: rpm
+      default: 4000
+      group: operating_point
+    - id: lab_thermal_coupling
+      automation_name: LabThermalCoupling
+      label: Lab热耦合开关
+      type: boolean
+      default: false
+      group: coupling
+    - id: lab_magnetic_coupling
+      automation_name: LabMagneticCoupling
+      label: Lab磁耦合开关
+      type: boolean
+      default: false
+      group: coupling
+  Mechanical: []

@@ -1,0 +1,67 @@
+version: 1
+families:
+  rfpm_spm:
+    label: 径向表贴式永磁电机
+    motor_types: [BPM]
+    representative_templates: [i5_Industrial_SPM_Servo_Tooth_Wound, i2_Industrial_SPM_sine, e7_eMobility_SPM_20kW]
+    status: covered
+  rfpm_ipm:
+    label: 径向内置式永磁电机
+    motor_types: [BPM]
+    representative_templates: [e9_eMobility_IPM, e1_eMobility_IPM_150kW, e2_eMobility_IPM_hairpin_150kW, i8_IEEJ_IPM_D-Model]
+    status: covered
+  rfpm_spoke:
+    label: 辐条式永磁电机
+    motor_types: [BPM]
+    representative_templates: [e12_eMobility_Spoke_65kW]
+    status: covered
+  afpm:
+    label: 轴向磁通永磁电机
+    motor_types: [BPM]
+    representative_templates: [e14_eMobility_AFM, a4, r2]
+    status: covered
+  outer_rotor_pm:
+    label: 外转子永磁电机
+    motor_types: [BPMOR]
+    representative_templates: [a3, e4_eMobility_BPMOR_hairpin]
+    status: covered
+  induction:
+    label: 三相感应电机
+    motor_types: [IM]
+    representative_templates: [i4_Industrial_IM, e5_eMobility_IM_150kW, i7_IM_1MW_Generator]
+    status: covered
+  induction_1ph:
+    label: 单相感应电机
+    motor_types: [IM1PH]
+    representative_templates: [i11_Industrial_IM1PH_Compressor]
+    status: covered
+  synchronous_wound:
+    label: 绕线同步电机
+    motor_types: [SYNC]
+    representative_templates: [i9_SYNC_HV_325kW_Generator, e3_eMobility_WFSM_150kW]
+    status: covered
+  synchronous_reluctance:
+    label: 同步磁阻电机
+    motor_types: [SYNCREL]
+    representative_templates: [i3_Industrial_SyncRel, i10_Syncrel_Adaptive_Rotor_barriers]
+    status: covered
+  switched_reluctance:
+    label: 开关磁阻电机
+    motor_types: [SRM]
+    representative_templates: [e6_emobility_SRM_100kW]
+    status: covered
+  pmdc:
+    label: 永磁直流电机
+    motor_types: [PMDC]
+    representative_templates: []
+    status: missing_template
+  claw_thermal:
+    label: CLAW热模型
+    motor_types: [CLAW-Therm]
+    representative_templates: []
+    status: missing_template
+  coreless_cup:
+    label: 空心杯/无铁心电机
+    motor_types: [BPM]
+    representative_templates: []
+    status: requires_adaptive_or_high_fidelity

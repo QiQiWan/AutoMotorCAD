@@ -1,0 +1,23 @@
+scenario:
+  cooling_types:
+    - id: template_default
+      label: 沿用模板
+    - id: natural_convection
+      label: 自然对流
+    - id: forced_air
+      label: 强迫风冷
+    - id: water_jacket
+      label: 机壳水套
+    - id: oil_spray
+      label: 喷油冷却
+    - id: wet_rotor
+      label: 湿转子
+    - id: immersion
+      label: 浸没冷却
+  initial_condition_modes:
+    - id: uniform_temperature
+      label: 均匀初始温度
+    - id: ambient_equilibrium
+      label: 环境平衡
+    - id: template_default
+      label: 模板默认

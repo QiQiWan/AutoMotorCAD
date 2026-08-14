@@ -1,0 +1,20 @@
+{
+  "product": "MotorCAD Studio",
+  "version": "0.35.0",
+  "release_track": "integrated_engineering_analysis",
+  "completed_increments": [
+    "V0.32 structured native winding evidence",
+    "V0.33 thermal evidence contract",
+    "V0.34 native FEA playback and probe",
+    "V0.35 engineering decision comparison"
+  ],
+  "verification": {
+    "python_tests": 241,
+    "python_tests_status": "passed",
+    "python_compileall": "passed",
+    "javascript_syntax": "passed"
+  },
+  "engineering_completion_percent": 87,
+  "native_acceptance_boundary": "Windows and Motor-CAD 2026R1 real-workstation acceptance remains required",
+  "completion_report": "docs/V0.35_INTEGRATED_ENGINEERING_ANALYSIS.md"
+}

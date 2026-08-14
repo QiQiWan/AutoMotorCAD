@@ -1,0 +1,104 @@
+2026-08-14T03:56:32.933171+00:00 [ERROR] [runtime_gate] [MOTORCAD_SUBMISSION_READINESS] Motor-CAD static submission readiness failed
+2026-08-14T08:09:43.664411+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.31.0 starting
+2026-08-14T08:09:48.666906+00:00 [INFO] [installation] [NATIVE_EXE_BROWSER_REQUESTED] native Motor-CAD executable browser requested
+2026-08-14T08:09:48.668407+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/e14_eMobility_AFM/geometry-precheck -> 200
+2026-08-14T08:09:48.723906+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-0551A0F539/ui-guidance -> 404
+2026-08-14T08:09:51.592404+00:00 [INFO] [installation] [NATIVE_EXE_BROWSER_RESULT] native Motor-CAD executable browser completed
+2026-08-14T08:09:52.828904+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/browse -> 200
+2026-08-14T08:09:53.769903+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-14T08:09:53.770903+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-14T08:09:56.985399+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-14T08:09:56.986399+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-14T08:13:19.984319+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2523 ms
+2026-08-14T08:13:19.985318+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-14T08:13:23.962316+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-14T08:13:45.859796+00:00 [INFO] [workspace] [DESIGN_CREATED_FROM_TEMPLATE] design created from template: DSN-A1596FAFE6
+2026-08-14T08:13:45.860796+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-EA674074BD/designs/from-template -> 201
+2026-08-14T08:14:09.179775+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 3196 ms
+2026-08-14T08:14:09.181275+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-14T08:14:19.134766+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4571 ms
+2026-08-14T08:14:19.136265+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-14T08:14:22.975262+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solver-profiles/SLV-3FF9BF63B1/revisions -> 201
+2026-08-14T08:14:30.676754+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:14:30.677255+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:14:30.678255+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:14:34.484751+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:14:38.331248+00:00 [INFO] [validation] [DESIGN_VALIDATION_WARNING] pre-solve validation passed with 4 warning(s)
+2026-08-14T08:14:38.332247+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/validate -> 200
+2026-08-14T08:14:38.338750+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:15:03.450225+00:00 [INFO] [validation] [DESIGN_VALIDATION_WARNING] pre-solve validation passed with 4 warning(s)
+2026-08-14T08:15:03.451726+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/validate -> 200
+2026-08-14T08:15:03.455725+00:00 [INFO] [validation] [DESIGN_VALIDATION_WARNING] pre-solve validation passed with 4 warning(s)
+2026-08-14T08:15:03.456725+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/validate -> 200
+2026-08-14T08:15:12.495716+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-14T08:15:12.497717+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-check -> 200
+2026-08-14T08:15:31.345200+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:15:31.513200+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:16:01.786173+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:16:01.795673+00:00 [INFO] [validation] [DESIGN_VALIDATION_WARNING] pre-solve validation passed with 4 warning(s)
+2026-08-14T08:16:01.796673+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/validate -> 200
+2026-08-14T08:16:01.804173+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:16:01.943673+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-39F6D23CD8 task created with 1 cases
+2026-08-14T08:16:01.948672+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/tasks -> 201
+2026-08-14T08:16:01.953173+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-39F6D23CD8 task started, parallelism=1
+2026-08-14T08:16:01.981672+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=VALIDATING Case开始执行
+2026-08-14T08:16:02.017232+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-14T08:16:02.035172+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 16 ms
+2026-08-14T08:16:02.047172+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/cases/TASK-39F6D23CD8-C0001/execution-lease -> 404
+2026-08-14T08:16:02.051672+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-14T08:16:03.477671+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 求解Worker PID=30368
+2026-08-14T08:16:03.809671+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-14T08:16:06.219168+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4253 ms
+2026-08-14T08:16:06.219668+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-14T08:16:07.741167+00:00 [ERROR] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_EXCEPTION] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=FAILED Motor-CAD为恢复有效几何而修改了用户明确指定的参数，已停止求解以避免静默改变设计。请查看 model_validation.json。
+2026-08-14T08:16:11.050665+00:00 [ERROR] [task_engine] [CASE_GEOMETRY_INVALID] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=GEOMETRY_INVALID SolverProcessError: GeometryValidationError: Motor-CAD为恢复有效几何而修改了用户明确指定的参数，已停止求解以避免静默改变设计。请查看 model_validation.json。
+2026-08-14T08:16:11.065165+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-39F6D23CD8 data factory task ingestion started
+2026-08-14T08:16:11.078165+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-39F6D23CD8 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-14T08:16:11.078165+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-39F6D23CD8 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-14T08:16:11.082165+00:00 [ERROR] [task_engine] [TASK_FINISHED] task=TASK-39F6D23CD8 任务结束: FAILED
+2026-08-14T08:16:34.954826+00:00 [WARNING] [task_engine] [TASK_RETRY] task=TASK-39F6D23CD8 任务已重新排队
+2026-08-14T08:16:34.959325+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/tasks/TASK-39F6D23CD8/retry -> 200
+2026-08-14T08:16:34.965825+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-39F6D23CD8 task started, parallelism=1
+2026-08-14T08:16:34.995825+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=VALIDATING Case开始执行
+2026-08-14T08:16:35.009325+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-14T08:16:35.023325+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 0 ms
+2026-08-14T08:16:35.030825+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-14T08:16:35.037326+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER 求解Worker PID=20928
+2026-08-14T08:16:35.041825+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-14T08:16:39.639321+00:00 [ERROR] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_EXCEPTION] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=FAILED Motor-CAD为恢复有效几何而修改了用户明确指定的参数，已停止求解以避免静默改变设计。请查看 model_validation.json。
+2026-08-14T08:16:42.831318+00:00 [ERROR] [task_engine] [CASE_GEOMETRY_INVALID] task=TASK-39F6D23CD8 case=TASK-39F6D23CD8-C0001 stage=GEOMETRY_INVALID SolverProcessError: GeometryValidationError: Motor-CAD为恢复有效几何而修改了用户明确指定的参数，已停止求解以避免静默改变设计。请查看 model_validation.json。
+2026-08-14T08:16:42.939318+00:00 [ERROR] [monitoring] [SYSTEM_ALERT] TASK-39F6D23CD8-C0001 Worker进程状态=missing
+2026-08-14T08:16:42.945318+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-39F6D23CD8 data factory task ingestion started
+2026-08-14T08:16:42.957818+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-39F6D23CD8 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-14T08:16:42.958318+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-39F6D23CD8 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-14T08:16:42.961818+00:00 [ERROR] [task_engine] [TASK_FINISHED] task=TASK-39F6D23CD8 任务结束: FAILED
+2026-08-14T08:16:47.163815+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_PROCESS_LOST 已恢复：TASK-39F6D23CD8-C0001 Worker进程状态=missing
+2026-08-14T08:25:24.020847+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-14T08:31:20.569525+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.35.0 starting
+2026-08-14T08:31:25.821019+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/e14_eMobility_AFM/geometry-precheck -> 200
+2026-08-14T08:31:40.176507+00:00 [INFO] [workspace] [DESIGN_CREATED_FROM_TEMPLATE] design created from template: DSN-07486AA201
+2026-08-14T08:31:40.177507+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-EA674074BD/designs/from-template -> 201
+2026-08-14T08:31:59.538500+00:00 [INFO] [validation] [DESIGN_VALIDATION_WARNING] pre-solve validation passed with 2 warning(s)
+2026-08-14T08:31:59.539500+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/validate -> 200
+2026-08-14T08:31:59.546999+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-precheck -> 200
+2026-08-14T08:32:01.916998+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-028A0A0E95 task created with 1 cases
+2026-08-14T08:32:01.920498+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/tasks -> 201
+2026-08-14T08:32:01.924997+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-028A0A0E95 task started, parallelism=1
+2026-08-14T08:32:01.954497+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=VALIDATING Case开始执行
+2026-08-14T08:32:01.976498+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-14T08:32:01.986997+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 16 ms
+2026-08-14T08:32:01.998498+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/cases/TASK-028A0A0E95-C0001/execution-lease -> 404
+2026-08-14T08:32:01.996497+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-14T08:32:03.673497+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=STARTING_SOLVER 求解Worker PID=19672
+2026-08-14T08:32:04.123496+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-14T08:32:04.488495+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2562 ms
+2026-08-14T08:32:04.489495+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-14T08:32:28.556973+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-14T08:32:28.688473+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-14T08:32:28.706973+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=COMPLETED Case计算完成，质量状态=WARNING
+2026-08-14T08:32:28.713473+00:00 [INFO] [task_engine] [QUALIFICATION_PROMOTED] task=TASK-028A0A0E95 case=TASK-028A0A0E95-C0001 stage=COMPLETED 真实成功 Case 已登记为 i5_Industrial_SPM_Servo_Tooth_Wound/emag Level 4 运行资格证据
+2026-08-14T08:32:28.724474+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-028A0A0E95 data factory task ingestion started
+2026-08-14T08:32:28.732973+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-028A0A0E95 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-14T08:32:28.733474+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-028A0A0E95 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-14T08:32:28.736473+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-028A0A0E95 任务结束: COMPLETED
+2026-08-14T09:29:25.842700+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping

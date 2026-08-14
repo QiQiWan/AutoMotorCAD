@@ -1,0 +1,63 @@
+version: 1
+modules:
+  overview:
+    label_zh: 结果总览
+    label_en: Overview
+    description_zh: 关键KPI、执行质量、约束状态与工程派生指标。
+    description_en: Key KPIs, execution quality, constraints and derived engineering metrics.
+  performance:
+    label_zh: 性能指标
+    label_en: Performance
+    description_zh: 转矩、效率、功率、电压等核心性能指标及后续转矩-转速包络。
+    description_en: Torque, efficiency, power, voltage and future torque-speed envelope views.
+  losses:
+    label_zh: 损耗分析
+    label_en: Loss analysis
+    description_zh: 铜耗、铁耗、永磁体损耗和总损耗的组成与占比。
+    description_en: Copper, iron, magnet and total-loss composition and shares.
+  inputs:
+    label_zh: 输入与模型快照
+    label_en: Inputs & model snapshot
+    description_zh: 参数、工况、材料、求解配置、版本与指纹。
+    description_en: Parameters, scenario, materials, solver settings, versions and fingerprints.
+  waveforms:
+    label_zh: 电磁波形
+    label_en: Electromagnetic waveforms
+    description_zh: 转矩、反电动势、气隙磁密、磁链等角度/时间曲线。
+    description_en: Torque, back-EMF, air-gap flux density and flux-linkage curves.
+    official_apis: [get_magnetic_graph, get_magnetic_graph_harmonics]
+  harmonics:
+    label_zh: 谐波频谱
+    label_en: Harmonics
+    description_zh: 转矩、反电动势、气隙磁密及力谐波频谱。
+    description_en: Torque, back-EMF, air-gap flux-density and force harmonics.
+    official_apis: [get_magnetic_graph_harmonics, calculate_force_harmonics_spatial, calculate_force_harmonics_temporal]
+  fea:
+    label_zh: FEA场结果
+    label_en: FEA fields
+    description_zh: 路径图、二维/三维图数据与可形成云图/热图的数据。
+    description_en: FEA path graphs and 2D/3D graph data suitable for contour/heat-map visualization.
+    official_apis: [get_fea_graph, get_magnetic_3d_graph, load_fea_result]
+  thermal:
+    label_zh: 热结果
+    label_en: Thermal results
+    description_zh: 温度、热流、瞬态温升和热网络相关结果。
+    description_en: Temperature, heat-flow, transient temperature-rise and thermal-network results.
+    official_apis: [get_temperature_graph, get_heatflow_graph, get_power_graph]
+  lab:
+    label_zh: Lab性能图谱
+    label_en: Lab performance maps
+    description_zh: 转矩-转速包络、效率图、损耗图、工作点和Duty Cycle。
+    description_en: Torque-speed envelope, efficiency/loss maps, operating points and duty cycles.
+    official_apis: [build_model_lab, calculate_magnetic_lab, calculate_operating_point_lab, calculate_duty_cycle_lab, export_figure_lab]
+  mechanical:
+    label_zh: 机械与NVH
+    label_en: Mechanical & NVH
+    description_zh: 应力、力谐波、多力工况与NVH结果。
+    description_en: Stress, force harmonics, multiforce operating points and NVH outputs.
+    official_apis: [do_mechanical_calculation, export_multi_force_data, export_nvh_results_data, export_force_animation]
+  artifacts:
+    label_zh: 原生结果与审计
+    label_en: Native results & audit
+    description_zh: Motor-CAD原生CSV、MOT、日志、参数回读、输出审计与诊断文件。
+    description_en: Native Motor-CAD CSV/MOT, logs, readback, output audit and diagnostics.

@@ -229,5 +229,3 @@ start_windows_motorcad.bat
 - `docs/V0.16_AFPM_RUNTIME.md`
 - `docs/PRODUCTION_CALIBRATION_V0.13.md`
 - `docs/OBSERVABILITY_V0.10.md`
-#   A u t o M o t o r C A D  
- 

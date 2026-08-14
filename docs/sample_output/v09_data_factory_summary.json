@@ -1,0 +1,27 @@
+{
+  "ingested_tasks": 1,
+  "curated_case_rows": 15,
+  "datasets": 1,
+  "dataset_versions": 1,
+  "dataset_rows": 15,
+  "recent_versions": [
+    {
+      "id": "DST-8687F23041-V0001",
+      "dataset_id": "DST-8687F23041",
+      "version": 1,
+      "status": "READY",
+      "definition_json": "{\"dataset_id\":null,\"name\":\"AFPM V0.9 demo dataset\",\"description\":\"\",\"task_ids\":[\"TASK-E8F902DAAD\"],\"quality_statuses\":[\"UNVERIFIED\"],\"include_mock\":true,\"deduplicate\":true,\"constraints\":[],\"partitions\":{\"development\":0.7,\"validation\":0.2,\"holdout\":0.1},\"seed\":42}",
+      "manifest_path": "/mnt/data/v09_sample_runtime/data/factory/datasets/DST-8687F23041/v0001/manifest.json",
+      "row_count": 15,
+      "schema_hash": "ccdf7ae058597546267033ed36011151acb614ca1a4e84ecf533f7a40a007b4c",
+      "content_hash": "4d098f638bf47dce13228e1825a1d7cb9fb16dbc1106848361101e77f3bead04",
+      "created_at": "2026-08-12T02:07:07.400050+00:00"
+    }
+  ],
+  "zones": {
+    "raw_index": "/mnt/data/v09_sample_runtime/data/factory/raw_index",
+    "curated": "/mnt/data/v09_sample_runtime/data/factory/curated",
+    "features": "/mnt/data/v09_sample_runtime/data/factory/features",
+    "datasets": "/mnt/data/v09_sample_runtime/data/factory/datasets"
+  }
+}

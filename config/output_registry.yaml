@@ -1,0 +1,290 @@
+outputs:
+  shaft_torque_nm:
+    label: 轴转矩
+    default_selected: true
+    unit: Nm
+    type: scalar
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    candidates:
+    - ShaftTorque
+    - Shaft_Torque
+    required: true
+    minimum: -10000000
+    maximum: 10000000
+  torque_ripple_percent:
+    label: 转矩脉动
+    default_selected: true
+    prefer_derived: true
+    derived_strategy: torque_ripple_from_torque_curve
+    unit: '%'
+    type: scalar
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    candidates:
+    - Torque_Ripple
+    - TorqueRipple
+    minimum: 0
+    maximum: 1000
+  efficiency_percent:
+    label: 效率
+    default_selected: true
+    unit: '%'
+    type: scalar
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    candidates:
+    - SystemEfficiency
+    - Efficiency
+    - LabOpPoint_Efficiency
+    minimum: 0
+    maximum: 100
+  peak_line_voltage_v:
+    label: 峰值线电压
+    default_selected: true
+    unit: V
+    type: scalar
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    candidates:
+    - PeakLineLineVoltage
+    - PeakLineVoltage
+    minimum: 0
+  output_power_w:
+    label: 输出功率
+    default_selected: true
+    prefer_derived: true
+    derived_strategy: shaft_power_from_torque_speed
+    unit: W
+    type: scalar
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    candidates:
+    - Shaft_Power
+    - Output_Power
+    - Mechanical_Power
+  total_loss_w:
+    label: 总损耗
+    default_selected: true
+    unit: W
+    type: scalar
+    analyses:
+    - emag
+    - thermal_steady
+    - emag_thermal
+    - emag_thermal_coupled
+    - thermal_transient
+    candidates:
+    - loss_total
+    - Total_Loss
+    - TotalLoss
+    minimum: 0
+  copper_loss_w:
+    label: 铜耗
+    default_selected: false
+    selection_note: 当前 2026R1 i5 实机映射待校准，默认不勾选，避免产生重复缺失警告
+    unit: W
+    type: scalar
+    analyses:
+    - emag
+    - thermal_steady
+    - emag_thermal
+    - emag_thermal_coupled
+    - thermal_transient
+    candidates:
+    - Stator_Copper_Loss
+    - Copper_Loss
+    - loss_copper
+    minimum: 0
+  stator_iron_loss_w:
+    label: 定子铁耗
+    default_selected: false
+    selection_note: 当前 2026R1 i5 实机映射待校准，默认不勾选，避免产生重复缺失警告
+    unit: W
+    type: scalar
+    analyses:
+    - emag
+    - thermal_steady
+    - emag_thermal
+    - emag_thermal_coupled
+    - thermal_transient
+    candidates:
+    - Stator_Iron_Loss
+    - StatorIronLoss
+    - loss_stator
+    minimum: 0
+  magnet_loss_w:
+    label: 永磁体损耗
+    default_selected: true
+    unit: W
+    type: scalar
+    analyses:
+    - emag
+    - thermal_steady
+    - emag_thermal
+    - emag_thermal_coupled
+    - thermal_transient
+    candidates:
+    - Magnet_Loss
+    - MagnetLoss
+    - loss_magnet
+    minimum: 0
+  winding_max_temperature_c:
+    label: 绕组最高温度
+    default_selected: true
+    unit: degC
+    type: scalar
+    analyses:
+    - thermal_steady
+    - emag_thermal
+    - thermal_transient
+    - emag_thermal_coupled
+    candidates:
+    - T_[Winding_Max]
+    - T_[WINDING_MAX]
+    - T_[Winding_Average]
+    required: true
+    minimum: -80
+    maximum: 400
+  winding_average_temperature_c:
+    label: 绕组平均温度
+    default_selected: true
+    unit: degC
+    type: scalar
+    analyses:
+    - thermal_steady
+    - emag_thermal
+    - thermal_transient
+    - emag_thermal_coupled
+    candidates:
+    - T_[Winding_Average]
+    - T_[WINDING_AVERAGE]
+    minimum: -80
+    maximum: 400
+  magnet_temperature_c:
+    label: 永磁体温度
+    unit: degC
+    type: scalar
+    analyses:
+    - thermal_steady
+    - emag_thermal
+    - thermal_transient
+    - emag_thermal_coupled
+    candidates:
+    - T_[MAGNET]
+    - Magnet_Temperature
+    - MagnetTemperature
+    minimum: -80
+    maximum: 400
+  housing_temperature_c:
+    label: 机壳温度
+    unit: degC
+    type: scalar
+    analyses:
+    - thermal_steady
+    - emag_thermal
+    - thermal_transient
+    - emag_thermal_coupled
+    candidates:
+    - T_[HOUSING]
+    - Housing_Temperature
+    minimum: -80
+    maximum: 400
+  torque_angle_curve:
+    label: 转矩-角度曲线
+    default_selected: true
+    unit: Nm
+    type: series
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    motorcad_context: EMag
+    extractor: magnetic_graph
+    graph_candidates:
+    - TorqueVW
+    - Torque
+    x_label: 角度
+    x_unit: deg
+  winding_temperature_time:
+    label: 绕组平均温度-时间曲线
+    unit: degC
+    type: series
+    analyses:
+    - thermal_steady
+    - emag_thermal
+    - thermal_transient
+    - emag_thermal_coupled
+    motorcad_context: Therm
+    extractor: temperature_graph
+    graph_candidates:
+    - Winding (Avg)
+    x_label: 时间
+    x_unit: s
+  lab_shaft_torque_nm:
+    label: Lab轴转矩
+    unit: Nm
+    type: scalar
+    analyses:
+    - lab_magnetic
+    - lab_operating_point
+    candidates:
+    - LabOpPoint_ShaftTorque
+    - LabOpPoint_Torque
+    - Shaft_Torque
+    motorcad_context: Lab
+    required: false
+  lab_efficiency_percent:
+    label: Lab效率
+    unit: '%'
+    type: scalar
+    analyses:
+    - lab_operating_point
+    candidates:
+    - LabOpPoint_Efficiency
+    - SystemEfficiency
+    - Efficiency
+    motorcad_context: Lab
+    minimum: 0
+    maximum: 100
+  airgap_flux_density_curve:
+    label: 气隙磁密-机械角曲线
+    default_selected: true
+    unit: T
+    type: series
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    motorcad_context: EMag
+    extractor: fea_graph
+    graph_candidates:
+    - B Gap (on load)
+    section_number: 1
+    point_number: 0
+    x_label: 机械角
+    x_unit: deg
+  torque_harmonics:
+    label: 转矩谐波幅值
+    unit: Nm
+    type: series
+    analyses:
+    - emag
+    - emag_thermal
+    - emag_thermal_coupled
+    motorcad_context: EMag
+    extractor: magnetic_harmonics
+    graph_candidates:
+    - TorqueVW
+    x_label: 谐波阶次
+    x_unit: order
