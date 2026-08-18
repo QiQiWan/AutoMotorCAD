@@ -141,7 +141,7 @@ def test_task_manager_runtime_executable_authority_updates_persistent_worker_pay
 def test_schema_17_and_runtime_scheduler_contract_endpoints_are_exposed(tmp_path: Path):
     db = Database(tmp_path / "v027.sqlite3")
     schema_row = db.query_one("SELECT value FROM schema_meta WHERE key='schema_version'")
-    assert int(schema_row["value"]) == 17
+    assert int(schema_row["value"]) >= 20
     columns = {row["name"] for row in db.query_all("PRAGMA table_info(cases)")}
     assert {"runtime_resource_lease_id", "resource_wait_ms"} <= columns
 
@@ -162,13 +162,13 @@ def test_schema_17_and_runtime_scheduler_contract_endpoints_are_exposed(tmp_path
 
 def test_v027_frontend_and_contract_runner_are_shipped():
     html = (ROOT / "motorcad_studio" / "static" / "index.html").read_text(encoding="utf-8")
-    js = (ROOT / "motorcad_studio" / "static" / "v027.js").read_text(encoding="utf-8")
+    js = (ROOT / "motorcad_studio" / "static" / "runtime/resource-scheduler.js").read_text(encoding="utf-8")
     runner = (ROOT / "scripts" / "run_motorcad_runtime_contract.py").read_text(encoding="utf-8")
-    assert 'data-studio-version="0.35.0"' in html
+    assert 'data-studio-version="0.70.0"' in html
     assert 'id="runtimeSchedulerSummaryV027"' in html
     assert 'id="probeWorkerCapabilitiesV027"' in html
     assert "RUNTIME_RESOURCE_QUEUE" not in js  # UI consumes blocking reasons, monitoring owns alert codes.
-    assert "active_leases" in js and "运行时资源租约" in js
+    assert "active_leases" in js and "计算资源" in js
     assert "reuse_parallel_instances=True" in runner
     assert "mc.get_licence()" in runner
     assert "mc.set_free()" in runner

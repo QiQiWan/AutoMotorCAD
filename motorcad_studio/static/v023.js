@@ -20,6 +20,10 @@
     lastSessionFetch: 0,
   };
 
+  function fieldLabel(field) {
+    return ({b:'磁密 B', bx:'磁密 Bx', by:'磁密 By', pt:'矢量势 Pt', current_density:'电流密度 J', eddy_current_density:'涡流密度 Jeddy', stress:'等效应力', displacement:'位移'})[field] || field;
+  }
+
   function modeButton(mode) {
     return document.querySelector(`[data-fea-mode-v022="${mode}"]`);
   }
@@ -98,6 +102,14 @@
     }
     hideEmpty();
     const frames = normalized.frames || [];
+    const fields = normalized.available_fields || ['b'];
+    const fieldSelect = q('#nativeFEAFieldV023');
+    if (fieldSelect) {
+      const selected = fields.includes(native.field) ? native.field : fields[0];
+      fieldSelect.innerHTML = fields.map(field => `<option value="${escapeHtml(field)}">${escapeHtml(fieldLabel(field))}</option>`).join('');
+      fieldSelect.value = selected;
+      native.field = selected;
+    }
     const slider = q('#nativeFEASliderV023');
     if (slider) {
       slider.max = String(Math.max(0, frames.length - 1));
@@ -168,8 +180,8 @@
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
     const values = points.map(fieldValue).filter(Number.isFinite);
     const evidenceRanges = native.evidence?.normalization?.global_ranges || {};
-    const rangeMin = native.field === 'b' ? Number(evidenceRanges.b_min) : Number(evidenceRanges.pt_min);
-    const rangeMax = native.field === 'b' ? Number(evidenceRanges.b_max) : Number(evidenceRanges.pt_max);
+    const rangeMin = Number(evidenceRanges[`${native.field}_min`]);
+    const rangeMax = Number(evidenceRanges[`${native.field}_max`]);
     const minV = Number.isFinite(rangeMin) ? rangeMin : (values.length ? Math.min(...values) : 0);
     const maxV = Number.isFinite(rangeMax) ? rangeMax : (values.length ? Math.max(...values) : 1);
 
@@ -202,13 +214,13 @@
     ctx.fillRect(w - 220, h - 50, 168, 12);
     ctx.fillStyle = '#e5e7eb';
     ctx.font = '13px system-ui, sans-serif';
-    ctx.fillText(`${native.field === 'b' ? 'B' : 'Pt'} ${Number(minV).toPrecision(3)}`, w - 220, h - 56);
+    ctx.fillText(`${fieldLabel(native.field)} ${Number(minV).toPrecision(3)}`, w - 220, h - 56);
     ctx.textAlign = 'right';
     ctx.fillText(Number(maxV).toPrecision(3), w - 52, h - 56);
     ctx.textAlign = 'left';
 
     const meta = q('#nativeFEAStatusV023');
-    if (meta) meta.innerHTML = `<span class="badge ok">Motor-CAD 原生 FEA</span><span>Step ${escapeHtml(frame.step ?? native.frameIndex)} · ${Number(frame.point_count || points.length).toLocaleString()} 显示点 / ${Number(frame.source_point_count || points.length).toLocaleString()} 原始点 · ${native.field === 'b' ? '磁密 B' : '矢量势 Pt'}</span>`;
+    if (meta) meta.innerHTML = `<span class="badge ok">Motor-CAD 原生 FEA</span><span>Step ${escapeHtml(frame.step ?? native.frameIndex)} · ${Number(frame.point_count || points.length).toLocaleString()} 显示点 / ${Number(frame.source_point_count || points.length).toLocaleString()} 原始点 · ${escapeHtml(fieldLabel(native.field))}</span>`;
   }
 
   function stopPlayback() {
@@ -293,7 +305,7 @@
 
   document.addEventListener('change', (event) => {
     if (event.target.id === 'nativeFEAFieldV023') {
-      native.field = event.target.value === 'pt' ? 'pt' : 'b';
+      native.field = event.target.value || 'b';
       drawFrame();
     }
   });

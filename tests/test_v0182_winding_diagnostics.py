@@ -200,6 +200,12 @@ def test_diagnostic_bundle_includes_native_case_evidence(tmp_path: Path):
     native = work_dir / "pre_solve_model" / "MessageLogs" / "messageLog_test.txt"
     native.parent.mkdir(parents=True, exist_ok=True)
     native.write_text("Geometry check successful.\n", encoding="utf-8")
+    fea_root = work_dir / "native_fea"
+    (fea_root / "frames").mkdir(parents=True, exist_ok=True)
+    (fea_root / "native_fea_manifest.json").write_text(json.dumps({"status": "PASS", "normalization": {"frame_count": 1}}), encoding="utf-8")
+    (fea_root / "frames" / "frame_0000.json").write_text(json.dumps({"points": [{"x": 0, "y": 0, "b": 1.0}]}), encoding="utf-8")
+    (fea_root / "native_fea_raw.csv").write_text("X,Y,B\n0,0,1\n", encoding="utf-8")
+    (work_dir / "result_extraction_manifest.json").write_text(json.dumps({"status": "COMPLETE"}), encoding="utf-8")
 
     bundle = client.get(f"/api/logs/export.zip?task_id={task_id}&minutes=1440")
     assert bundle.status_code == 200
@@ -209,4 +215,9 @@ def test_diagnostic_bundle_includes_native_case_evidence(tmp_path: Path):
         names = zf.namelist()
         assert "root_cause.json" in names
         assert f"case_diagnostics/{case['id']}/model_validation.json" in names
+        assert f"case_diagnostics/{case['id']}/result_extraction_manifest.json" in names
+        assert f"case_diagnostics/{case['id']}/native_fea/native_fea_manifest.json" in names
+        assert f"case_diagnostics/{case['id']}/native_fea/frames/frame_0000.json" in names
+        assert f"case_diagnostics/{case['id']}/native_fea/native_fea_raw.sample.csv" in names
+        assert f"case_diagnostics/{case['id']}/case_contract_summary.json" in names
         assert any(name.startswith(f"case_diagnostics/{case['id']}/native/") and "messageLog_test.txt" in name for name in names)

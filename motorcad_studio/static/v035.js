@@ -15,7 +15,7 @@
     state035.frame=await api(`/api/cases/${encodeURIComponent(caseId)}/fea-frames/${index}`);
     drawNativeFEA();
   }
-  function fieldLabel(field){return({b:'磁密 B',bx:'磁密 Bx',by:'磁密 By',pt:'矢量势 Pt'})[field]||field}
+  function fieldLabel(field){return({b:'磁密 B',bx:'磁密 Bx',by:'磁密 By',pt:'矢量势 Pt',current_density:'电流密度 J',eddy_current_density:'涡流密度 Jeddy'})[field]||field}
   function drawNativeFEA(){
     const stage=q('#nativeFEAStageV035'),frame=state035.frame;if(!stage||!frame)return;
     const source=(frame.points||[]).filter(point=>point[state035.field]!==undefined&&(!state035.region||String(point.region)===state035.region));

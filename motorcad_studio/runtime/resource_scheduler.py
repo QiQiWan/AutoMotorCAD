@@ -80,6 +80,15 @@ class RuntimeResourceScheduler:
         "mechanical": ("MECHANICAL",),
         "lab_magnetic": ("LAB",),
         "lab_operating_point": ("LAB",),
+        "emag_saturation_map": ("EMAG",),
+        "emag_torque_envelope": ("EMAG",),
+        "emag_multi_force": ("EMAG",),
+        "emag_force_harmonics": ("EMAG",),
+        "weight": ("MECHANICAL",),
+        "lab_thermal": ("LAB",),
+        "lab_duty_cycle": ("LAB",),
+        "lab_generator": ("LAB",),
+        "lab_test_performance": ("LAB",),
     }
 
     def __init__(

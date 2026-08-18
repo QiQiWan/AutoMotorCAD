@@ -5,6 +5,7 @@
     workspace: 'design',
     templates: 'design',
     simulationAssets: 'simulation',
+    analysisWorkbench: 'simulation',
     newTask: 'simulation',
     tasks: 'simulation',
     monitor: 'simulation',
@@ -18,7 +19,8 @@
       ['templates', '模板库'],
     ],
     simulation: [
-      ['newTask', '配置仿真'],
+      ['analysisWorkbench', '分析工作台'],
+      ['newTask', '高级任务配置'],
       ['tasks', '计算记录'],
       ['monitor', '实时求解'],
     ],
@@ -144,7 +146,7 @@
         api(`/api/projects/${id}`,routeCtx?.signal?{signal:routeCtx.signal}:{}),
         api(`/api/workflow/readiness?project_id=${id}&analysis=${encodeURIComponent($('#analysis')?.value || 'emag')}`,routeCtx?.signal?{signal:routeCtx.signal}:{}),
       ]);
-      if(routeCtx&&!routeCtx.active())return;
+      if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;
       state.workspaceProject = p;
       state.workflowReadiness = readiness;
       const completedTasks = Number(d.tasks?.completed || 0);
@@ -183,7 +185,7 @@
         if(window.MCSRouter?.navigate)MCSRouter.navigate(`/app/projects/${encodeURIComponent(state.activeProjectId)}/designs/${encodeURIComponent(designId)}`);
         else{showTab('workspace');openWorkspaceDesign(designId)}
       }));
-      $('#recentTasks').innerHTML = (d.recent_tasks || []).length ? d.recent_tasks.map(renderCompactTask).join('') : '<div class="workspace-empty compact"><b>尚无仿真任务</b><span>完成设计后，从“仿真 → 配置计算”运行第一条基准任务。</span></div>';
+      $('#recentTasks').innerHTML = (d.recent_tasks || []).length ? d.recent_tasks.map(renderCompactTask).join('') : '<div class="workspace-empty compact"><b>尚无仿真任务</b><span>完成设计后，从“分析与计算”创建案例并运行第一条基准任务。</span></div>';
       await refreshWorkflowReadiness(readiness);
       syncProjectStageStateV019();
       syncProjectShellV019('dashboard');
@@ -207,7 +209,7 @@
     if (running > 0) return {tab:'monitor', title:`有 ${running} 个任务正在运行`, detail:'优先查看当前计算进度、Worker状态和 Motor-CAD 原生错误；运行期间不需要重新提交。', button:'查看实时监控', short:'当前有任务运行', tone:'running'};
     if (!motor?.ready) return {tab:'setup', title:'确认 Motor-CAD 可运行', detail:motor?.detail || '需要完成安装路径绑定和一次深度启动/RPC检查。', button:'检查运行环境', short:'Motor-CAD 尚未就绪', tone:'warning'};
     if (requiredLevel > 0 && !qualification?.ready) return {tab:'system', title:'完成当前模板资格检查', detail:qualification?.detail || '当前模型策略要求模板达到对应运行资格等级。', button:'打开资格检查', short:'模板资格不足', tone:'warning'};
-    if (!completed) return {tab:'newTask', title:'先完成一次单次基准计算', detail:'第一条任务建议保持 Design Revision 不变，只设置工况与分析类型。基准成功后再做扫描、DOE 或优化。', button:'配置基准计算', short:'尚无成功基准任务'};
+    if (!completed) return {tab:'analysisWorkbench', title:'先完成一次单次基准计算', detail:'第一条任务建议保持 Design Revision 不变，只设置工况与分析类型。基准成功后再做扫描、DOE 或优化。', button:'配置基准计算', short:'尚无成功基准任务'};
     return {tab:'resultViewer', title:'审查最新有效结果', detail:`当前项目已有 ${completed} 个完成任务。先确认结果质量和关键性能，再决定是否创建新 Revision 或开展 DOE。`, button:'查看结果', short:'已有可审查结果', tone:'success'};
   }
 
@@ -217,7 +219,7 @@
     const p = state.workspaceProject;
     const designs = p.designs || [];
     root.innerHTML = `<div class="tree-project selected"><div class="tree-project-head"><div class="tree-row passive"><span class="tree-icon">▾</span><b>${esc(p.name)}</b><small>${esc(p.id)}</small></div></div><div class="tree-children"><div class="tree-group-label">DESIGN · ${designs.length}</div>${designs.map(d => `<button type="button" class="tree-row child ${state.workspaceDesign?.id === d.id ? 'selected' : ''}" data-workspace-design="${esc(d.id)}"><span class="tree-icon">◇</span><span>${esc(d.name)}</span><small>${esc(d.template_id || '')}</small></button>`).join('') || '<span class="muted tree-empty">暂无设计</span>'}<button type="button" class="tree-add-design" data-v019-new-design>＋ 从模板新建设计</button></div></div>`;
-    $$('[data-workspace-design]').forEach(b => b.addEventListener('click', e => {e.stopPropagation(); openWorkspaceDesign(b.dataset.workspaceDesign);}));
+    $$('[data-workspace-design]').forEach(b => b.addEventListener('click', e => {e.stopPropagation(); window.MCSWorkspaceNavigationV065?.openDesign?.(b.dataset.workspaceDesign) || openWorkspaceDesign(b.dataset.workspaceDesign);}));
     $('[data-v019-new-design]')?.addEventListener('click', () => showTab('templates'));
   }
   const previousRenderWorkspaceTree = renderWorkspaceTree;
@@ -233,7 +235,7 @@
 
   const previousOpenWorkspaceDesign = openWorkspaceDesign;
   openWorkspaceDesign = async function(designId,routeCtx=null) {
-    const loaded=await previousOpenWorkspaceDesign(designId,routeCtx);if(routeCtx&&!routeCtx.active())return null;
+    const loaded=await previousOpenWorkspaceDesign(designId,routeCtx);if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
     enhanceWorkspaceTreeV019();
     const actions = $('#workspaceCanvas .workspace-object-header .actions');
     if (!actions || !state.workspaceRevision) return;

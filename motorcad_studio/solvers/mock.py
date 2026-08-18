@@ -110,7 +110,7 @@ class MockSolverAdapter(SolverAdapter):
             "stator_iron_loss_w": round(iron_loss, 4),
             "magnet_loss_w": round(magnet_loss, 4),
         }
-        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED}:
+        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED, AnalysisType.LAB_THERMAL, AnalysisType.LAB_DUTY_CYCLE}:
             all_scalars.update(
                 {
                     "winding_max_temperature_c": round(winding_temp, 4),
@@ -133,7 +133,7 @@ class MockSolverAdapter(SolverAdapter):
                 "y_unit": "Nm",
             }
         }
-        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED}:
+        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED, AnalysisType.LAB_THERMAL, AnalysisType.LAB_DUTY_CYCLE}:
             times = list(range(0, 1801, 60))
             tau = max(180.0, 600.0 * cooling_factor)
             temperatures = [round(ambient + (winding_temp - ambient) * (1 - math.exp(-t / tau)), 4) for t in times]
@@ -186,7 +186,7 @@ class MockSolverAdapter(SolverAdapter):
                 "note": "Mock合成场，仅用于验证云图交互，不代表Motor-CAD FEA结果。",
             }
         }
-        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED}:
+        if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED, AnalysisType.LAB_THERMAL, AnalysisType.LAB_DUTY_CYCLE}:
             maps["mock_temperature_field"] = {
                 "kind": "map2d", "x": x_axis, "y": y_axis, "z": temp_values,
                 "x_label": "归一化横向位置", "y_label": "归一化纵向位置", "z_label": "温度",

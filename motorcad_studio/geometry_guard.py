@@ -165,9 +165,33 @@ def validate_geometry_relations(parameters: dict[str, Any], template: dict[str, 
                 ))
         if slot_opening is not None and tooth_width is not None and slot_opening > 0 and tooth_width > 0:
             occupancy = (slot_opening + tooth_width) / pitch
-            # Because tooth width and opening can be defined at different radial positions,
-            # this is intentionally only a warning, never a blocker.
-            if occupancy > 1.12:
+            explicit = {str(x) for x in (explicit_parameter_ids or []) if str(x)}
+            coupled_change = bool(explicit.intersection({"slot_opening", "tooth_width", "slot_count", "stator_inner_diameter"}))
+            # When the user explicitly changes a coupled bore/slot dimension, an
+            # opening-plus-tooth envelope above the bore pitch has no remaining
+            # circumferential clearance.  This exact combination was previously
+            # allowed to reach Motor-CAD, where Slot_Opening was silently reduced
+            # and Stator/StatorAir intersected.  Template-only candidate defaults
+            # stay advisory because some templates define tooth width at another
+            # radius; an explicit coupled change is blocked before a solver launch.
+            if occupancy >= 1.0 and coupled_change:
+                safe_opening = max(0.0, pitch - tooth_width)
+                issues.append(_issue(
+                    "GEOM_SLOT_TOOTH_PITCH_OVERLAP", "BLOCKING",
+                    (
+                        f"槽口宽度+齿宽为 {slot_opening + tooth_width:.3g} mm，"
+                        f"已达到/超过定子内径处估算槽距 {pitch:.3g} mm。"
+                    ),
+                    "slot_opening",
+                    suggestion=f"将槽口宽度减小到 {safe_opening:.3g} mm 以下，或调整槽数、齿宽和定子内径后重新检查。",
+                    details={
+                        "slot_pitch_mm": pitch,
+                        "occupancy": occupancy,
+                        "maximum_slot_opening_mm": safe_opening,
+                        "topology": derived.topology,
+                    },
+                ))
+            elif occupancy > 0.92:
                 issues.append(_issue(
                     "GEOM_SLOT_TOOTH_OCCUPANCY_HIGH", "WARNING",
                     f"槽口宽度+齿宽约为估算槽距的 {occupancy:.0%}。不同模板定义位置可能不同，但该组合值得在Motor-CAD中提前校验。",
@@ -196,6 +220,7 @@ def validate_geometry_relations(parameters: dict[str, Any], template: dict[str, 
             "GEOM_SLOT_OPENING_EXCEEDS_PITCH": {"slot_opening", "slot_count", "stator_inner_diameter", "stator_outer_diameter"},
             "GEOM_TOOTH_WIDTH_NONPOSITIVE": {"tooth_width"},
             "GEOM_TOOTH_WIDTH_EXCEEDS_PITCH": {"tooth_width", "slot_count", "stator_inner_diameter", "stator_outer_diameter"},
+            "GEOM_SLOT_TOOTH_PITCH_OVERLAP": {"slot_opening", "tooth_width", "slot_count", "stator_inner_diameter"},
         }
         for issue in issues:
             if issue.get("severity") != "BLOCKING":

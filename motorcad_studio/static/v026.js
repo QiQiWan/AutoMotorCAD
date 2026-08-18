@@ -85,6 +85,7 @@
       }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
+      if(payload.pending){box.innerHTML=`<span class="eyebrow">Validate-and-Run 执行租约</span><p class="hint">${esc(payload.reason||'当前 Case 正在建立执行租约。')}</p>`;return}
       const lease = payload.lease || {};
       const same = Boolean(lease.same_session_validation_and_solve);
       const state = lease.state || 'UNKNOWN';

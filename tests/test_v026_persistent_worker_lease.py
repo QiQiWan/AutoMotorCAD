@@ -12,7 +12,7 @@ from motorcad_studio.version import __version__
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
-V026 = (STATIC / "v026.js").read_text(encoding="utf-8")
+V026 = (STATIC / "runtime/execution-lease.js").read_text(encoding="utf-8")
 TASK_MANAGER = (ROOT / "motorcad_studio" / "task_manager.py").read_text(encoding="utf-8")
 MOTORCAD = (ROOT / "motorcad_studio" / "solvers" / "motorcad.py").read_text(encoding="utf-8")
 POOL_SOURCE = (ROOT / "motorcad_studio" / "runtime" / "persistent_solver_pool.py").read_text(encoding="utf-8")
@@ -22,7 +22,7 @@ client = TestClient(app)
 def test_v026_assets_contract_and_operator_controls_are_enabled():
     assert tuple(map(int, __version__.split("."))) >= (0, 26, 0)
     assert f'data-studio-version="{__version__}"' in INDEX
-    assert f'/static/v026.js?v={__version__}' in INDEX
+    assert f'/static/runtime/execution-lease.js?v={__version__}' in INDEX
     assert 'workerPoolSummaryV026' in INDEX
     assert 'executionLeaseEvidenceV026' in INDEX
     assert 'recycleWorkerPoolV026' in INDEX
@@ -124,7 +124,9 @@ def test_pool_has_hard_recycle_boundaries_for_cancel_timeout_and_solver_error():
 
 
 def test_v026_ui_explains_precheck_vs_authoritative_execution_lease():
-    assert '同一 Execution Lease' in (STATIC / 'v020.js').read_text(encoding='utf-8')
+    guided = (STATIC / 'workflow/model-gate.js').read_text(encoding='utf-8')
+    assert '参数预检查已通过' in guided and '开始计算' in guided
+    assert '同一 Execution Lease' not in guided
     assert 'Validate-and-Run 执行租约' in V026
     assert '同会话校验+求解' in V026
     assert 'StudioDialog.confirm' in V026

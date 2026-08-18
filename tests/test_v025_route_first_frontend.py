@@ -14,7 +14,7 @@ STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 ROUTER = (STATIC / "router.js").read_text(encoding="utf-8")
 CORE = (STATIC / "frontend-core.js").read_text(encoding="utf-8")
-V025 = (STATIC / "v025.js").read_text(encoding="utf-8")
+V025 = (STATIC / "routing/page-controllers.js").read_text(encoding="utf-8")
 APP = (STATIC / "app.js").read_text(encoding="utf-8")
 client = TestClient(app)
 
@@ -68,11 +68,11 @@ def _task_payload(prefix: str, submission_key: str) -> dict:
 def test_v025_assets_contract_and_runtime_order():
     assert tuple(map(int, __version__.split("."))) >= (0, 25, 0)
     assert f'/static/frontend-core.js?v={__version__}' in INDEX
-    assert f'/static/v025.js?v={__version__}' in INDEX
+    assert f'/static/routing/page-controllers.js?v={__version__}' in INDEX
     # The runtime must exist before app.js executes so app.js does not start the old
     # global task-list polling timer.
     assert INDEX.index('/static/frontend-core.js') < INDEX.index('/static/app.js')
-    assert INDEX.index('/static/v025.js') < INDEX.index('/static/router.js')
+    assert INDEX.index('/static/routing/page-controllers.js') < INDEX.index('/static/router.js')
     features = client.get('/api/client-contract').json()['features']
     assert features['route_first_page_lifecycle'] is True
     assert features['idempotent_task_submission'] is True
@@ -117,7 +117,7 @@ def test_deep_links_still_resolve_to_shell_under_route_first_core():
         response = client.get(path)
         assert response.status_code == 200, path
         assert 'MotorCAD Studio' in response.text
-        assert '/static/v025.js' in response.text
+        assert '/static/routing/page-controllers.js' in response.text
 
 
 def test_schema_v15_has_persistent_submission_key_and_unique_index(tmp_path: Path):

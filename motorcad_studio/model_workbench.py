@@ -59,6 +59,12 @@ class ModelWorkbenchService:
         row["parameters"] = self._loads(row.pop("parameters_json", None), {})
         row["materials"] = self._loads(row.pop("materials_json", None), {})
         row["explicit_parameter_ids"] = self._loads(row.pop("explicit_parameter_ids_json", None), [])
+        row["automation_parameters"] = self._loads(row.pop("automation_parameters_json", None), {})
+        row["capability_snapshot"] = self._loads(row.pop("capability_snapshot_json", None), {})
+        row["source_snapshot"] = self._loads(row.pop("source_snapshot_json", None), {})
+        row["motor_snapshot"] = self._loads(row.pop("motor_snapshot_json", None), {})
+        row["motor_snapshot_schema_version"] = int(row.get("motor_snapshot_schema_version") or 1)
+        row["motor_snapshot_hash"] = str(row.get("motor_snapshot_hash") or "")
         return row
 
     def _template(self, template_id: str) -> dict[str, Any]:
@@ -115,7 +121,7 @@ class ModelWorkbenchService:
             (record["design_id"], int(record["revision"])),
         )
         for row in rows:
-            params = self._loads(row.get("parameters_json"), {})
+            params = {key: value for key, value in self._loads(row.get("parameters_json"), {}).items() if value is not None and value != ""}
             explicit = self._loads(row.get("explicit_parameter_ids_json"), [])
             check = self._precheck(template, {**(template.get("defaults") or {}), **params}, explicit)
             if check["valid"]:
@@ -246,24 +252,32 @@ class ModelWorkbenchService:
         Winding/Definition tabs while keeping unsupported dimensions explicit.
         """
 
+        axial_label = "轴向堆叠剖面" if bool(template.get("is_axial")) else "纵向装配剖面"
+        axial_description = (
+            "转子盘、磁体、轴向气隙与定子盘的堆叠关系"
+            if bool(template.get("is_axial"))
+            else "叠长、端部、转轴与径向磁通电机纵向装配关系"
+        )
         view_specs = [
             (
                 "radial",
                 "径向截面",
                 "定子、槽、气隙、转子与永磁体的径向关系",
                 [
-                    "pole_count", "slot_count", "stator_outer_diameter", "stator_inner_diameter",
-                    "air_gap", "tooth_width", "slot_depth", "slot_opening",
-                    "magnet_thickness", "magnet_arc_deg",
+                    "pole_count", "slot_count", "housing_diameter", "stator_outer_diameter", "stator_inner_diameter",
+                    "shaft_diameter", "shaft_hole_diameter", "air_gap", "tooth_width", "slot_depth",
+                    "slot_width", "slot_opening", "slot_corner_radius", "tooth_tip_depth", "tooth_tip_angle",
+                    "sleeve_thickness", "banding_thickness", "magnet_thickness", "magnet_arc_deg",
                 ],
             ),
             (
                 "axial",
-                "轴向截面",
-                "叠长、端部、转轴与轴向装配关系",
+                axial_label,
+                axial_description,
                 [
-                    "stator_lamination_length", "stator_outer_diameter", "stator_inner_diameter",
-                    "air_gap", "magnet_thickness",
+                    "stator_lamination_length", "rotor_lamination_length", "magnet_length",
+                    "housing_diameter", "stator_outer_diameter", "stator_inner_diameter",
+                    "shaft_diameter", "shaft_hole_diameter", "air_gap", "magnet_thickness",
                 ],
             ),
             (
@@ -276,10 +290,11 @@ class ModelWorkbenchService:
                 "slot",
                 "槽内定义",
                 "槽形、导体占用与绝缘/分隔结构的可视化摘要",
-                ["slot_opening", "tooth_width", "slot_depth", "turns_per_coil", "slot_fill_factor"],
+                ["slot_opening", "slot_width", "slot_corner_radius", "tooth_width", "tooth_tip_depth",
+                 "tooth_tip_angle", "slot_depth", "turns_per_coil", "slot_fill_factor"],
             ),
             ("materials", "材料", "当前设计版本冻结的材料快照", []),
-            ("native", "原生证据", "Motor-CAD 几何、绕组和有限元证据", []),
+            ("evidence", "计算依据", "最近一次模型检查与计算的可用性摘要", []),
             ("compare", "版本对比", "与上一可行设计版本或模板基线比较", []),
         ]
         is_axial = bool(template.get("is_axial"))
@@ -291,7 +306,7 @@ class ModelWorkbenchService:
                 "label": label,
                 "description": description,
                 "parameter_ids": parameter_ids,
-                "available": bool(parameter_ids) or view_id in {"materials", "native", "compare"},
+                "available": bool(parameter_ids) or view_id in {"materials", "evidence", "compare"},
                 "preferred": (view_id == "axial") if is_axial else (view_id == "radial"),
             })
         return result
@@ -366,6 +381,20 @@ class ModelWorkbenchService:
         design_views = self._design_views(rows, template)
         native_evidence = self._latest_case_evidence(revision_id)
         winding_design = self._winding_design(template, merged, current_check, native_evidence)
+        recorded_materials = dict(record.get("materials") or {})
+        recorded_components = dict(recorded_materials.get("component_materials") or {})
+        template_components = dict(template.get("material_defaults") or {})
+        inherited_components = {key: value for key, value in template_components.items() if key not in recorded_components}
+        effective_components = {**template_components, **recorded_components}
+        material_provenance = dict(recorded_materials.get("material_provenance") or {})
+        for component in inherited_components:
+            material_provenance.setdefault(component, {
+                "source_kind": "template_mtt",
+                "source_template_id": template.get("id"),
+                "source_key": ((template.get("material_default_metadata") or {}).get(component) or {}).get("selected_key"),
+            })
+        effective_materials = {**recorded_materials, "component_materials": effective_components, "material_provenance": material_provenance,
+                               "inherited_component_materials": inherited_components, "template_component_materials": template_components}
         groups = []
         for category in self.category_order:
             members = [row for row in rows if row["category"] == category]
@@ -386,6 +415,7 @@ class ModelWorkbenchService:
                 "slot_type": template.get("slot_type"), "winding_note": template.get("winding_note"),
                 "winding_type": template.get("winding_type"), "winding_layers": template.get("winding_layers"),
                 "cooling_note": template.get("cooling_note"),
+                "material_defaults": template_components,
             },
             # Canonical initial snapshot for every visual/editor consumer.  Returning
             # the merged object explicitly prevents the browser from reconstructing
@@ -394,11 +424,14 @@ class ModelWorkbenchService:
             "effective_parameters": merged,
             "preview_signature": preview_signature,
             "preview_source": "design_revision_effective_parameters",
+            "motor_snapshot": record.get("motor_snapshot") or None,
+            "motor_snapshot_schema_version": record.get("motor_snapshot_schema_version") or 1,
+            "motor_snapshot_hash": record.get("motor_snapshot_hash") or "",
             "parameters": rows,
             "groups": groups,
             "design_views": design_views,
             "winding_design": winding_design,
-            "materials": dict(record.get("materials") or {}),
+            "materials": effective_materials,
             "regions": self.regions,
             "dependencies": self.dependencies,
             "issue_bindings": self.issue_bindings,
@@ -420,7 +453,7 @@ class ModelWorkbenchService:
             raise KeyError(revision_id)
         template = self._template(record["template_id"])
         design_values = dict(record.get("parameters") or {})
-        design_values.update(parameters or {})
+        design_values.update({key: value for key, value in (parameters or {}).items() if value is not None and value != ""})
         merged = {**(template.get("defaults") or {}), **design_values}
         explicit = sorted({*(record.get("explicit_parameter_ids") or []), *(changed_parameter_ids or [])})
         check = self._precheck(template, merged, explicit)

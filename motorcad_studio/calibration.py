@@ -42,20 +42,32 @@ class CalibrationRegistry:
         A completed Motor-CAD calculation is stronger capability evidence than the
         old static ``verification_required`` flag.  Persist one Level-4 PASS record
         per template/analysis/version until a later explicit qualification supersedes
-        it. Optional result-extraction warnings do not invalidate solver capability.
-        Model-source verification remains an independent production gate.
+        it. Required result and FEA contracts must both be complete; optional
+        extraction warnings do not invalidate solver capability.
         """
-        latest = self.latest_qualification(template_id, analysis)
-        if latest and str(latest.get("status")) == "PASS" and int(latest.get("level") or 0) >= 4:
-            return None
         raw = result.get("raw") if isinstance(result, dict) else {}
         raw = raw if isinstance(raw, dict) else {}
         validation = raw.get("model_validation") if isinstance(raw.get("model_validation"), dict) else {}
         winding = validation.get("winding_validation") if isinstance(validation.get("winding_validation"), dict) else {}
         warnings = result.get("warnings") if isinstance(result, dict) else []
+        extraction = raw.get("result_extraction_contract") if isinstance(raw.get("result_extraction_contract"), dict) else {}
+        fea = raw.get("fea_contract") if isinstance(raw.get("fea_contract"), dict) else {}
+        # Legacy results without the current extraction/FEA contracts are useful
+        # diagnostics, but they cannot establish a Level-4 native qualification.
+        if (
+            quality_status != "VALID"
+            or extraction.get("qualification_eligible") is not True
+            or fea.get("qualification_eligible") is not True
+        ):
+            return None
+        latest = self.latest_qualification(template_id, analysis)
+        latest_payload = latest.get("result") if isinstance(latest, dict) and isinstance(latest.get("result"), dict) else {}
+        if latest and str(latest.get("status")) == "PASS" and int(latest.get("level") or 0) >= 4 and int(latest_payload.get("qualification_contract_version") or 0) >= 2:
+            return None
         evidence = {
             "ok": True,
             "level": 4,
+            "qualification_contract_version": 2,
             "template_id": template_id,
             "analysis": analysis,
             "source": "successful_task_case",
@@ -66,11 +78,14 @@ class CalibrationRegistry:
                 {"id": "task_execution", "status": "PASS", "message": "真实 Motor-CAD Task/Case 完整执行成功"},
                 {"id": "geometry", "status": "PASS" if validation.get("geometry_api_succeeded") is not False else "WARN", "message": "采用本次 Case 的 Motor-CAD 原生几何检查证据"},
                 {"id": "winding", "status": "PASS" if winding.get("valid") is not False else "WARN", "message": "采用本次 Case 的 Motor-CAD 原生绕组检查证据"},
-                {"id": "result_extraction", "status": "PASS" if not warnings else "WARN", "message": f"结果提取完成，运行警告 {len(warnings or [])} 项"},
+                {"id": "result_extraction", "status": "PASS", "message": f"必需结果自动提取完整；运行警告 {len(warnings or [])} 项"},
+                {"id": "native_fea", "status": "PASS" if fea.get("qualification_eligible") is True else "FAIL", "message": f"有限元证据合同 {fea.get('status', 'MISSING')}"},
             ],
             "model_source": raw.get("model_load") or {},
             "motorcad_target_version": raw.get("motorcad_target_version") or self.motorcad_version,
             "pymotorcad_version": raw.get("pymotorcad_version"),
+            "result_extraction_contract": extraction,
+            "fea_contract": fea,
         }
         return self.record_qualification(evidence, solver_smoke=True)
 

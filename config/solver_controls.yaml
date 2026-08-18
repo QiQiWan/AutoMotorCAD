@@ -94,6 +94,61 @@ contexts:
       default: 60
       minimum: 0
       group: transient
+    - id: transient_time_step
+      automation_name: Transient_Time_Step
+      label: 瞬态时间步长
+      type: number
+      unit: s
+      default: 1
+      minimum: 0.001
+      group: transient
+    - id: thermal_model_size
+      automation_name: ThermalModelSize
+      label: 热网络模型规模
+      type: enum
+      default: 0
+      options:
+        - {value: 0, label: Full model}
+        - {value: 1, label: Reduced node model}
+      group: model
+    - id: thermal_model_type
+      automation_name: ThermalModelType
+      label: 热模型维度
+      type: enum
+      default: 0
+      options:
+        - {value: 0, label: 3D model}
+        - {value: 1, label: 2D FEA calibration}
+      group: model
+    - id: loss_source
+      automation_name: LossSource
+      label: 损耗来源
+      type: enum
+      default: 0
+      options:
+        - {value: 0, label: Steady-state loss}
+        - {value: 1, label: Speed variation table}
+        - {value: 2, label: Imported loss map}
+      group: coupling
+    - id: thermal_coupling_mode
+      automation_name: ThermalCouplingMode
+      label: 电磁—热耦合方式
+      type: enum
+      default: 0
+      options:
+        - {value: 0, label: No coupling}
+        - {value: 1, label: E-Magnetic losses to Thermal}
+        - {value: 2, label: Thermal temperatures to E-Magnetic}
+        - {value: 3, label: Iterate to converged solution}
+      group: coupling
+    - id: thermal_convergence_tolerance
+      automation_name: ThermalConvergenceTolerance
+      label: 热耦合收敛容差
+      type: number
+      unit: °C
+      default: 0.5
+      minimum: 0.01
+      group: convergence
   Lab:
     - id: model_type_motorlab
       automation_name: ModelType_MotorLAB
@@ -171,4 +226,53 @@ contexts:
       type: boolean
       default: false
       group: coupling
-  Mechanical: []
+  Mechanical:
+    - id: shaft_speed
+      automation_name: ShaftSpeed
+      label: 机械校核转速
+      type: number
+      unit: rpm
+      default: 12000
+      minimum: 0
+      group: operating_point
+    - id: mechanical_include_magnets
+      automation_name: MechanicalIncludeMagnets
+      label: 应力模型包含磁钢
+      type: boolean
+      default: true
+      group: model
+    - id: mechanical_include_rotor_bars
+      automation_name: MechanicalIncludeRotorBars
+      label: 应力模型包含转子导条
+      type: boolean
+      default: true
+      group: model
+    - id: mechanical_adhesion_factor
+      automation_name: MechanicalAdhesionFactor
+      label: 磁钢粘接系数
+      type: number
+      default: 1.0
+      minimum: 0
+      maximum: 1
+      group: material
+    - id: mechanical_mesh_size
+      automation_name: MechanicalMeshSize
+      label: 机械网格尺寸
+      type: number
+      unit: mm
+      default: 1.0
+      minimum: 0.05
+      group: mesh
+    - id: force_export_enabled
+      automation_name: ForceExportEnabled
+      label: 导出电磁力时空阶次
+      type: boolean
+      default: true
+      group: nvh
+    - id: nvh_max_order
+      automation_name: NVHMaxOrder
+      label: NVH 最大阶次
+      type: integer
+      default: 48
+      minimum: 1
+      group: nvh

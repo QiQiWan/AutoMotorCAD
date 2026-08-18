@@ -5,6 +5,8 @@ import hashlib
 import json
 import threading
 import time
+import uuid
+import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -13,11 +15,12 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from .db import Database
 from .monitoring import MonitoringService
 from .session_supervisor import MotorCADSessionSupervisor
-from .models import (AutomationRegistryImportRequest, BaselineCaptureRequest, BaselineCompareRequest, CancelRequest, ClientEventCreate, DatasetBuildRequest, DesignCreate, DesignFromTemplateCreate, DesignRevisionCreate, DesignValidationRequest, GeometryPrecheckRequest, GeometryRuntimeCheckRequest, InstallationSelectRequest, MaterialValidationRequest, OutputProfileBundleCreate, OutputProfileCreate, OutputProfileRevisionCreate, ProjectCreate, ProjectUpdate, ResultCalibrationRequest, RetryRequest, RunConfigurationCreate, RunConfigurationReplayRequest, RuntimeVerifyRequest, ScenarioBundleCreate, ScenarioCreate, ScenarioRevisionCreate, SolverProfileBundleCreate, SolverProfileCreate, SolverProfileRevisionCreate, TaskCreate, TemplateQualificationRequest, WorkbenchPrecheckRequest)
+from .models import (AnalysisCalculationCheckRequest, AnalysisCaseCreate, AnalysisDefinitionCreate, AnalysisExecutionRequest, AnalysisExperimentRequest, AnalysisDefinitionRevisionCreate, AnalysisDesignRevisionUpdate, AutomationRegistryImportRequest, BaselineCaptureRequest, BaselineCompareRequest, CancelRequest, ClientEventCreate, DatasetBuildRequest, DesignCreate, DesignDraftCommit, DesignDraftUpdate, DesignFromTemplateCreate, DesignRevisionCreate, DesignValidationRequest, GeometryPrecheckRequest, GeometryRuntimeCheckRequest, InputDomainUpdate, InstallationSelectRequest, MaterialValidationRequest, ModelCreate, MotorChangePreviewRequest, NativeParityRunRequest, NativeParitySuiteRequest, OutputProfileBundleCreate, OutputProfileCreate, OutputProfileRevisionCreate, OptimizationCandidatePromotionRequest, ProjectCreate, ProjectUpdate, ResultCalibrationRequest, RetryRequest, RunConfigurationCreate, RunConfigurationReplayRequest, RuntimeVerifyRequest, ScenarioBundleCreate, ScenarioCreate, ScenarioDefinition, ScenarioRevisionCreate, SolverProfileBundleCreate, SolverProfileCreate, SolverProfileRevisionCreate, TaskCreate, TemplateQualificationRequest, WorkbenchPrecheckRequest)
 from .registry import Registry
 from .api_audit import audit_pymotorcad_api
 from .automation_registry import AutomationRegistryKey, AutomationRegistryStore
@@ -29,20 +32,29 @@ from .solvers.mock import MockSolverAdapter
 from .solvers.motorcad import MotorCADSolverAdapter
 from .task_manager import TaskManager
 from .data_factory import DataFactoryService
-from .workspace import WorkspaceService
+from .workspace import DesignDraftConflictError, WorkspaceService
+from .motor_domain import MotorDomainRegistry, MotorSnapshot
 from .domain import DomainService
 from .template_service import TemplateService
 from .material_catalog import MaterialCatalog
+from .material_library import MaterialLibraryService
 from .result_viewer import ResultViewerService
+from .results_optimization import ResultsOptimizationService
 from .calibration import CalibrationRegistry
+from .native_parity import NativeParityProfileStore, NativeParityRegistry
 from .runtime.result_probe_process import MotorCADResultProbeRunner
 from .runtime.preflight_process import MotorCADPreflightRunner
 from .runtime.qualification_process import MotorCADQualificationRunner
+from .runtime.native_parity_process import MotorCADNativeParityRunner
 from .runtime.runtime_contract import RuntimeContractRegistry
 from .geometry_guard import validate_geometry_relations
 from .winding_guard import validate_winding_relations
 from .model_workbench import ModelWorkbenchService
 from .ui_guidance import UIGuidanceService
+from .engineering_platform import EngineeringPlatformService
+from .engineering_precheck import load_precheck_catalog, required_input_domains, validate_engineering_inputs
+from .native_tables import cached_file_sha256, file_sha256, read_native_table_page
+from .fea_views import build_fea_frame_view
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -75,6 +87,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="MotorCAD Studio", version=__version__, lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 static_dir = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
@@ -85,6 +98,8 @@ templates = TemplateService(settings.data_dir / "inventory.json", settings.templ
 installations = MotorCADInstallationManager(settings.runtime_dir, settings.motorcad_exe)
 automation_registry = AutomationRegistryStore(settings.runtime_dir, settings.config_dir / "automation_parameter_metadata.yaml")
 calibration = CalibrationRegistry(db, settings.motorcad_version)
+native_parity_profiles = NativeParityProfileStore(settings.config_dir / "native_parity_profiles.yaml")
+native_parity = NativeParityRegistry(db, settings.motorcad_version)
 sessions = MotorCADSessionSupervisor(db)
 tasks = TaskManager(db, templates, registry, settings, automation_registry=automation_registry, log_store=logs)
 _selected_at_startup = installations.selected()
@@ -104,7 +119,12 @@ runtime_contract.set_environment(tasks.motorcad_exe)
 tasks.calibration_registry = calibration
 tasks.session_supervisor = sessions
 tasks.runtime_contract = runtime_contract
-workspace = WorkspaceService(db)
+motor_domain = MotorDomainRegistry(registry, settings.config_dir)
+workspace = WorkspaceService(db, motor_domain)
+engineering_platform = EngineeringPlatformService(
+    db, registry, templates, workspace, automation_registry,
+    settings.config_dir, settings.data_dir / "model_sources", calibration,
+)
 domain = DomainService(db, registry)
 data_factory = DataFactoryService(db, settings, registry, log_store=logs)
 tasks.data_factory = data_factory
@@ -114,7 +134,9 @@ monitoring = MonitoringService(
     scheduler_provider=tasks.runtime_scheduler_snapshot,
 )
 material_catalog = MaterialCatalog(settings.config_dir / "material_catalog.yaml")
-result_viewer = ResultViewerService(db, registry, settings.config_dir / "result_viewer_catalog.yaml")
+material_library = MaterialLibraryService(db, settings.runtime_dir, settings.motorcad_version, tasks.motorcad_exe)
+result_viewer = ResultViewerService(db, registry, settings.config_dir / "result_viewer_catalog.yaml", calibration)
+results_optimization = ResultsOptimizationService(db, registry, workspace, monitoring)
 model_workbench = ModelWorkbenchService(db, registry, templates, settings.config_dir / "model_workbench.yaml")
 ui_guidance = UIGuidanceService(db, settings.config_dir / "ui_terms.yaml")
 _runtime_gate: dict[str, Any] = {"checked_at": 0.0, "ok": False, "result": None}
@@ -123,6 +145,19 @@ _model_runtime_check_lock = threading.RLock()
 _model_runtime_check_cache: dict[str, dict[str, Any]] = {}
 _MODEL_RUNTIME_CHECK_CACHE_TTL_S = 300.0
 _MODEL_RUNTIME_CHECK_CACHE_MAX = 64
+_analysis_precheck_evidence_lock = threading.RLock()
+_analysis_precheck_evidence: dict[str, dict[str, Any]] = {}
+_ANALYSIS_PRECHECK_EVIDENCE_TTL_S = 900.0
+_ANALYSIS_PRECHECK_EVIDENCE_MAX = 128
+
+
+def _clean_parameter_overrides(parameters: dict[str, Any] | None) -> dict[str, Any]:
+    """Drop empty browser values before model normalization or Motor-CAD mapping."""
+    return {
+        str(key): value
+        for key, value in (parameters or {}).items()
+        if value is not None and value != ""
+    }
 
 def _model_runtime_check_key(template_id: str, parameters: dict[str, Any], explicit_parameter_ids: list[str], materials: dict[str, Any]) -> str:
     payload = {
@@ -408,6 +443,15 @@ def client_contract():
             "human_issue_explanations": True,
             "engineering_result_summary": True,
             "motorcad_visual_dimension_tabs": True,
+            "model_first_creation": True,
+            "default_model_on_project_entry": True,
+            "motor_type_catalog": True,
+            "mot_import": True,
+            "dynamic_parameter_catalog": True,
+            "analysis_definitions": True,
+            "multi_analysis_workbench": True,
+            "native_fea_event_stream": True,
+            "engineering_results_first": True,
             "structured_winding_workspace": True,
             "workflow_state_rail": True,
             "thermal_topology_view": True,
@@ -416,6 +460,28 @@ def client_contract():
             "thermal_network_evidence_contract": True,
             "native_fea_multistep_probe": True,
             "engineering_decision_compare_v2": True,
+            "recipe_schema_v3": True,
+            "capability_evidence_ladder": True,
+            "motorcad_context_navigation": True,
+            "dedicated_analysis_editors": True,
+            "result_contract_completeness": True,
+            "physical_cooling_flow_circuit": True,
+            "sensitivity_case_estimator": True,
+            "visual_automation_wrapper": True,
+            "native_fea_contract_gate": True,
+            "automatic_result_extraction": True,
+            "batch_fea_completeness_summary": True,
+            "multi_scenario_case_execution": True,
+            "strict_legacy_result_contract_gate": True,
+            "actual_case_stage_visualization": True,
+            "global_fea_field_range": True,
+            "native_fea_region_filter": True,
+            "native_fea_nearest_point_probe": True,
+            "quality_aware_project_guidance": True,
+            "usable_result_autoselection": True,
+            "safe_task_control_actions": True,
+            "terminal_monitor_handoff": True,
+            "unsaved_parameter_guard": True,
         },
     }
 
@@ -579,6 +645,149 @@ def qualification_history(template_id: str | None = Query(default=None), limit: 
 @app.get("/api/system/qualification/matrix")
 def qualification_matrix():
     return calibration.qualification_matrix([str(item.get("id")) for item in templates.list_templates()])
+
+
+def _run_native_parity_profile(profile_id: str, timeout_s: float) -> dict[str, Any]:
+    try:
+        profile = native_parity_profiles.get(profile_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"native parity profile not found: {profile_id}") from exc
+    target_version = str(profile.get("target_motorcad_version") or "")
+    if target_version and target_version != settings.motorcad_version:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Native parity profile targets {target_version}, but Studio runtime is configured for {settings.motorcad_version}",
+        )
+    try:
+        template = templates.get_template(str(profile.get("template_id") or ""))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"native parity template not found: {profile.get('template_id')}") from exc
+    stamp = f"{int(time.time())}-{uuid.uuid4().hex[:6]}"
+    work_dir = settings.runtime_dir / "native_parity" / profile_id / stamp
+    request_payload = {
+        **_deep_preflight_payload(),
+        "template": template,
+        "profile": profile,
+        "work_dir": str(work_dir),
+        "model_policy": "native_parity",
+    }
+    result = MotorCADNativeParityRunner(timeout_s=timeout_s, terminate_grace_s=settings.solver_cancel_grace_s).run(request_payload)
+    result.setdefault("profile_id", profile_id)
+    result.setdefault("profile_label", profile.get("label"))
+    result.setdefault("template_id", template.get("id"))
+    result.setdefault("analysis", profile.get("analysis") or "emag")
+    result.setdefault("motorcad_target_version", settings.motorcad_version)
+    result.setdefault("artifact_dir", str(work_dir))
+    run_id = native_parity.record(result, str(work_dir))
+    result["run_id"] = run_id
+
+    # A V0.68 PASS is stronger than the older Level-4 smoke qualification because
+    # it additionally closes Studio/native parameter, winding, material, input and
+    # result mapping parity. Preserve it in the existing qualification matrix so
+    # runtime gates can consume the same trusted capability evidence.
+    qualification_payload = {**result, "source": "native_parity_v068", "level": 4 if result.get("qualified") else int(result.get("level") or 0)}
+    result["qualification_record_id"] = calibration.record_qualification(qualification_payload, solver_smoke=bool(result.get("qualified")))
+
+    # Promote independently verified graph names. The worker reads the same graph
+    # a second time and only PASS rows are persisted as runtime calibrations.
+    output_schema = registry.output_schema(str(template.get("id") or ""))
+    for row in result.get("native_result_parity") or []:
+        if row.get("type") != "series" or row.get("status") != "PASS" or not row.get("graph"):
+            continue
+        result_id = str(row.get("result_id") or "")
+        definition = output_schema.get(result_id) or {}
+        calibration.save_result_calibration(
+            str(template.get("id") or ""),
+            result_id,
+            str(definition.get("extractor") or "magnetic_graph"),
+            str(row.get("graph")),
+            int(definition.get("section_number") or 1),
+            "VERIFIED",
+            {"source": "native_parity_v068", "run_id": run_id, "point_count": row.get("point_count"), "motorcad_version": settings.motorcad_version},
+        )
+    logs.audit(
+        level="INFO" if result.get("qualified") else "WARNING",
+        component="native_parity",
+        event_type="NATIVE_PARITY_QUALIFICATION",
+        message=f"native parity {profile_id} status={result.get('status')}",
+        payload={"profile_id": profile_id, "template_id": template.get("id"), "run_id": run_id, "qualified": bool(result.get("qualified")), "score": result.get("score")},
+    )
+    return result
+
+
+@app.get("/api/native-parity/profiles")
+def native_parity_profile_catalog():
+    matrix = native_parity.matrix(native_parity_profiles.list_profiles())
+    latest_by_id = {row["profile_id"]: row for row in matrix.get("profiles") or []}
+    return {
+        "motorcad_version": settings.motorcad_version,
+        "contract_version": native_parity_profiles.contract_version,
+        "profiles": [{**profile, "latest": latest_by_id.get(profile["id"])} for profile in native_parity_profiles.list_profiles()],
+    }
+
+
+@app.get("/api/native-parity/matrix")
+def native_parity_matrix():
+    return native_parity.matrix(native_parity_profiles.list_profiles())
+
+
+@app.get("/api/native-parity/runs")
+def native_parity_runs(profile_id: str | None = Query(default=None), limit: int = Query(default=100, ge=1, le=1000)):
+    return {"motorcad_version": settings.motorcad_version, "runs": native_parity.runs(profile_id, limit)}
+
+
+@app.get("/api/native-parity/runs/{run_id}")
+def native_parity_run_detail(run_id: str):
+    row = db.query_one("SELECT * FROM native_parity_runs WHERE id=?", (run_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="native parity run not found")
+    return {**row, "qualified": bool(row.get("qualified")), "evidence": db.loads(row.get("evidence_json"), {})}
+
+
+@app.get("/api/native-parity/runs/{run_id}/report")
+def native_parity_run_report(run_id: str):
+    row = db.query_one("SELECT artifact_dir FROM native_parity_runs WHERE id=?", (run_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="native parity run not found")
+    path = Path(str(row.get("artifact_dir") or "")) / "native_parity_report.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="native parity report not found")
+    return FileResponse(path, media_type="text/markdown; charset=utf-8", filename=f"{run_id}_native_parity_report.md")
+
+
+@app.get("/api/native-parity/runs/{run_id}/artifacts.zip")
+def native_parity_run_artifacts(run_id: str):
+    row = db.query_one("SELECT artifact_dir FROM native_parity_runs WHERE id=?", (run_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="native parity run not found")
+    artifact_dir = Path(str(row.get("artifact_dir") or "")).resolve()
+    if not artifact_dir.exists() or not artifact_dir.is_dir():
+        raise HTTPException(status_code=404, detail="native parity artifact directory not found")
+    export_dir = settings.runtime_dir / "native_parity" / "exports"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    archive = export_dir / f"{run_id}_native_parity_evidence.zip"
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        for path in sorted(item for item in artifact_dir.rglob("*") if item.is_file()):
+            zf.write(path, path.relative_to(artifact_dir))
+    return FileResponse(archive, media_type="application/zip", filename=archive.name)
+
+
+@app.post("/api/native-parity/run")
+def run_native_parity(payload: NativeParityRunRequest, timeout_s: float = Query(default=900.0, ge=30.0, le=3600.0)):
+    return _run_native_parity_profile(payload.profile_id, timeout_s)
+
+
+@app.post("/api/native-parity/run-suite")
+def run_native_parity_suite(payload: NativeParitySuiteRequest, timeout_s: float = Query(default=900.0, ge=30.0, le=3600.0)):
+    requested = payload.profile_ids or [row["id"] for row in native_parity_profiles.list_profiles()]
+    results: list[dict[str, Any]] = []
+    for profile_id in requested:
+        result = _run_native_parity_profile(str(profile_id), timeout_s)
+        results.append(result)
+        if payload.stop_on_failure and not result.get("qualified"):
+            break
+    matrix = native_parity.matrix(native_parity_profiles.list_profiles())
+    return {"results": results, "matrix": matrix, "complete": bool(matrix.get("complete"))}
 
 
 @app.get("/api/materials/bindings")
@@ -813,10 +1022,19 @@ def task_logs(task_id: str, level: str | None = Query(default=None), limit: int 
 
 
 @app.get("/api/logs/export.zip")
-def export_logs(task_id: str | None = Query(default=None), minutes: int | None = Query(default=240, ge=1, le=10080)):
+def export_logs(
+    task_id: str | None = Query(default=None),
+    minutes: int | None = Query(default=240, ge=1, le=10080),
+    current_session: bool = Query(default=False),
+):
     stamp = int(time.time())
     target = settings.runtime_dir / f"diagnostics-{task_id or 'system'}-{stamp}.zip"
-    logs.export_bundle(target, task_id=task_id, minutes=minutes)
+    logs.export_bundle(
+        target,
+        task_id=task_id,
+        minutes=minutes,
+        session_id=logs.session_id if current_session else None,
+    )
     if task_id:
         task = tasks.get_task(task_id)
         if task:
@@ -860,10 +1078,16 @@ def export_logs(task_id: str | None = Query(default=None), minutes: int | None =
                     "error.log", "solver_runtime.jsonl", "model_validation.json", "model_load.json",
                     "runtime_defaults.json", "parameter_audit.json", "material_audit.json",
                     "execution_lease.json", "motorcad_session.json",
-                    "output_audit.json", "checkpoint_manifest.json", "case_manifest.json",
+                    "output_audit.json", "result_extraction_manifest.json", "motorcad_results.json",
+                    "checkpoint_manifest.json", "case_manifest.json",
                 }
                 case_index: list[dict[str, Any]] = []
-                for case in db.query_all("SELECT id,status,execution_status,work_dir,error FROM cases WHERE task_id=? ORDER BY case_index", (task_id,)):
+                for case in db.query_all(
+                    """SELECT id,status,execution_status,quality_status,work_dir,error,input_hash,
+                              scenario_json,result_json,quality_json
+                         FROM cases WHERE task_id=? ORDER BY case_index""",
+                    (task_id,),
+                ):
                     case_id = str(case.get("id") or "case")
                     work_dir = Path(str(case.get("work_dir") or ""))
                     included: list[str] = []
@@ -874,6 +1098,83 @@ def export_logs(task_id: str | None = Query(default=None), minutes: int | None =
                             if path.exists() and path.is_file():
                                 add_diagnostic_file(path, arc)
                                 included.append(arc)
+                        for relative in (
+                            Path("native_fea/native_fea_manifest.json"),
+                            Path("native_screens/native_screen_manifest.json"),
+                            Path("native_tables/native_table_manifest.json"),
+                        ):
+                            path = work_dir / relative
+                            arc = f"case_diagnostics/{case_id}/{relative.as_posix()}"
+                            if path.exists() and path.is_file():
+                                add_diagnostic_file(path, arc)
+                                included.append(arc)
+                        frame_paths = sorted((work_dir / "native_fea" / "frames").glob("*.json"))
+                        for path in list(dict.fromkeys(frame_paths[:1] + frame_paths[-1:])):
+                            arc = f"case_diagnostics/{case_id}/native_fea/frames/{path.name}"
+                            add_diagnostic_file(path, arc)
+                            included.append(arc)
+                        raw_fea = work_dir / "native_fea" / "native_fea_raw.csv"
+                        if raw_fea.exists() and raw_fea.is_file():
+                            sample_name = f"case_diagnostics/{case_id}/native_fea/native_fea_raw.sample.csv"
+                            try:
+                                archive.writestr(sample_name, raw_fea.read_bytes()[: 512 * 1024])
+                                included.append(sample_name)
+                            except OSError:
+                                pass
+                        integrity_checks: list[dict[str, Any]] = []
+                        fea_manifest_path = work_dir / "native_fea" / "native_fea_manifest.json"
+                        if fea_manifest_path.exists():
+                            try:
+                                fea_manifest = json.loads(fea_manifest_path.read_text(encoding="utf-8"))
+                                frame_records = ((fea_manifest.get("normalization") or {}).get("frames") or [])
+                                for record in list(dict.fromkeys(
+                                    tuple((item.get("index"), item.get("file"), item.get("sha256"), item.get("size_bytes")))
+                                    for item in (frame_records[:1] + frame_records[-1:])
+                                )):
+                                    index, file_name, expected_hash, expected_size = record
+                                    frame_path = work_dir / "native_fea" / "frames" / str(file_name)
+                                    integrity_checks.append({
+                                        "kind": "fea_frame", "index": index, "file": str(file_name),
+                                        "exists": frame_path.exists(),
+                                        "size_match": bool(frame_path.exists() and (not expected_size or frame_path.stat().st_size == int(expected_size))),
+                                        "sha256_match": bool(frame_path.exists() and expected_hash and file_sha256(frame_path) == expected_hash),
+                                    })
+                                expected_raw_hash = fea_manifest.get("raw_sha256")
+                                integrity_checks.append({
+                                    "kind": "fea_raw", "file": raw_fea.name, "exists": raw_fea.exists(),
+                                    "sha256_match": bool(raw_fea.exists() and expected_raw_hash and file_sha256(raw_fea) == expected_raw_hash),
+                                })
+                            except (OSError, json.JSONDecodeError, TypeError) as exc:
+                                integrity_checks.append({"kind": "fea_manifest", "ok": False, "error": f"{type(exc).__name__}: {exc}"})
+                        table_manifest_path = work_dir / "native_tables" / "native_table_manifest.json"
+                        if table_manifest_path.exists():
+                            try:
+                                table_manifest = json.loads(table_manifest_path.read_text(encoding="utf-8"))
+                                for output_id, record in (table_manifest.get("tables") or {}).items():
+                                    table_path = work_dir / "native_tables" / str(record.get("source_file") or "")
+                                    integrity_checks.append({
+                                        "kind": "native_table", "output_id": output_id, "file": table_path.name,
+                                        "exists": table_path.exists(),
+                                        "size_match": bool(table_path.exists() and (not record.get("source_size_bytes") or table_path.stat().st_size == int(record["source_size_bytes"]))),
+                                        "sha256_match": bool(table_path.exists() and record.get("source_sha256") and file_sha256(table_path) == record["source_sha256"]),
+                                    })
+                                    if table_path.exists() and table_path.is_file():
+                                        sample_name = f"case_diagnostics/{case_id}/native_tables/{table_path.name}.sample"
+                                        archive.writestr(sample_name, table_path.read_bytes()[: 512 * 1024])
+                                        included.append(sample_name)
+                            except (OSError, json.JSONDecodeError, TypeError) as exc:
+                                integrity_checks.append({"kind": "native_table_manifest", "ok": False, "error": f"{type(exc).__name__}: {exc}"})
+                        if integrity_checks:
+                            integrity_arc = f"case_diagnostics/{case_id}/artifact_integrity_report.json"
+                            archive.writestr(integrity_arc, json.dumps({
+                                "schema_version": 1, "case_id": case_id,
+                                "status": "PASS" if all(
+                                    item.get("exists", True) and item.get("size_match", True) and item.get("sha256_match", True) and item.get("ok", True)
+                                    for item in integrity_checks
+                                ) else "FAIL",
+                                "checks": integrity_checks,
+                            }, ensure_ascii=False, indent=2, default=str))
+                            included.append(integrity_arc)
                         try:
                             native_logs = sorted(work_dir.rglob("messageLog_*.txt"), key=lambda path: path.stat().st_mtime)
                         except OSError:
@@ -886,8 +1187,39 @@ def export_logs(task_id: str | None = Query(default=None), minutes: int | None =
                             arc = f"case_diagnostics/{case_id}/native/{idx:02d}_{str(rel).replace('\\','/').replace(':','_')}"
                             add_diagnostic_file(path, arc)
                             included.append(arc)
+                    result = db.loads(case.get("result_json"), {}) or {}
+                    raw_result = result.get("raw") if isinstance(result.get("raw"), dict) else {}
+                    contract_arc = f"case_diagnostics/{case_id}/case_contract_summary.json"
+                    archive.writestr(contract_arc, json.dumps({
+                        "case_id": case_id,
+                        "status": case.get("status"),
+                        "execution_status": case.get("execution_status"),
+                        "quality_status": case.get("quality_status"),
+                        "input_hash": case.get("input_hash"),
+                        "scenario": db.loads(case.get("scenario_json"), {}),
+                        "quality": db.loads(case.get("quality_json"), []),
+                        "fea_plan": raw_result.get("fea_plan"),
+                        "fea_contract": raw_result.get("fea_contract"),
+                        "result_extraction_contract": raw_result.get("result_extraction_contract"),
+                        "qualification_contract_version": raw_result.get("qualification_contract_version"),
+                        "data_delivery_contract": {
+                            "native_table_schema": 2,
+                            "native_table_parser": "streaming_complete_scan_v1",
+                            "native_table_page_schema": 1,
+                            "native_fea_normalization_schema": 5,
+                            "native_fea_stream_schema": 1,
+                            "native_fea_io_contract": "two_pass_native_tables_v1",
+                            "native_fea_node_index": "temporary_sqlite_without_rowid",
+                            "native_fea_frame_write": "atomic_replace",
+                            "fea_view_schema": 1,
+                            "fea_view_contract": "verified_progressive_fea_v1",
+                            "max_fea_view_points": 20000,
+                            "frame_integrity_required_before_view": True,
+                        },
+                    }, ensure_ascii=False, indent=2, default=str))
+                    included.append(contract_arc)
                     case_index.append({
-                        "case_id": case_id, "status": case.get("status"), "execution_status": case.get("execution_status"),
+                        "case_id": case_id, "status": case.get("status"), "execution_status": case.get("execution_status"), "quality_status": case.get("quality_status"),
                         "work_dir": str(work_dir), "error": case.get("error"), "included_files": included,
                     })
                 archive.writestr("case_diagnostics/index.json", json.dumps(case_index, ensure_ascii=False, indent=2, default=str))
@@ -1198,7 +1530,17 @@ def create_design_from_template(project_id: str, payload: DesignFromTemplateCrea
             motor_family=payload.motor_family or str(template.get("family_id") or template.get("motor_type") or template.get("topology") or ""),
             template_id=payload.template_id,
             parameters=domain.filter_design_parameters(payload.template_id, dict(template.get("defaults") or {})),
-            materials={},
+            materials={
+                "component_materials": dict(template.get("material_defaults") or {}),
+                "material_provenance": {
+                    component: {
+                        "source_kind": "template_mtt",
+                        "source_template_id": payload.template_id,
+                        "source_key": ((template.get("material_default_metadata") or {}).get(component) or {}).get("selected_key"),
+                    }
+                    for component in (template.get("material_defaults") or {})
+                },
+            },
             notes=f"Created from template {payload.template_id}",
             explicit_parameter_ids=[],
         )
@@ -1221,6 +1563,1078 @@ def create_design_from_template(project_id: str, payload: DesignFromTemplateCrea
     return design
 
 
+@app.get("/api/model-types")
+def model_type_catalog():
+    return engineering_platform.motor_type_catalog()
+
+
+@app.get("/api/analysis-catalog")
+def analysis_catalog(motor_type_id: str | None = Query(default=None), template_id: str | None = Query(default=None)):
+    return engineering_platform.analysis_catalog(motor_type_id, template_id)
+
+
+@app.get("/api/analysis-recipes/{recipe_id}")
+def analysis_recipe_schema(recipe_id: str, motor_type_id: str | None = Query(default=None), template_id: str | None = Query(default=None)):
+    try:
+        return engineering_platform.recipe_schema(recipe_id, motor_type_id, template_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="计算配方不存在") from exc
+
+
+@app.get("/api/engineering-contexts")
+def engineering_contexts():
+    return engineering_platform.engineering_context_catalog()
+
+
+@app.get("/api/input-domains")
+def input_domain_catalog():
+    return engineering_platform.input_domain_catalog()
+
+
+@app.get("/api/precheck/rules")
+def precheck_rule_catalog():
+    return load_precheck_catalog(settings.config_dir / "precheck_rules.yaml")
+
+
+@app.get("/api/workflow-parity/qualification")
+def workflow_parity_qualification(motor_type_id: str | None = Query(default=None), template_id: str | None = Query(default=None)):
+    return engineering_platform.qualification_coverage(motor_type_id, template_id)
+
+
+@app.post("/api/workflow-parity/experiment-estimate")
+def workflow_parity_experiment_estimate(payload: dict[str, Any]):
+    try:
+        return engineering_platform.experiment_estimate(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/workflow-parity/flow-circuit/validate")
+def workflow_parity_flow_circuit(payload: dict[str, Any]):
+    try:
+        return engineering_platform.validate_flow_circuit(payload)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/projects/{project_id}/models", status_code=201)
+def create_model_first(project_id: str, payload: ModelCreate):
+    try:
+        model = engineering_platform.create_model(project_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"模型来源不存在: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    logs.audit(
+        level="INFO", component="workspace", event_type="MODEL_FIRST_DESIGN_CREATED",
+        message=f"model-first design created: {model.get('id')}",
+        payload={"project_id": project_id, "design_id": model.get("id"), "source_kind": payload.source_kind.value, "motor_type_id": payload.motor_type_id},
+    )
+    return model
+
+
+@app.get("/api/projects/{project_id}/analysis-cases")
+def list_analysis_cases(project_id: str):
+    if workspace.get_project(project_id) is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return engineering_platform.list_analysis_cases(project_id)
+
+
+@app.post("/api/projects/{project_id}/analysis-cases", status_code=201)
+def create_analysis_case(project_id: str, payload: AnalysisCaseCreate):
+    try:
+        created = engineering_platform.create_analysis_case(project_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"项目或模型来源不存在: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    logs.audit(
+        level="INFO", component="workspace", event_type="ANALYSIS_CASE_CREATED",
+        message=f"analysis case created: {created.get('id')}",
+        payload={"project_id": project_id, "analysis_case_id": created.get("id"), "design_id": created.get("design_id"), "analysis_revision_id": created.get("analysis_revision_id")},
+    )
+    return created
+
+
+@app.get("/api/model-revisions/{revision_id}/parameter-catalog")
+def model_parameter_catalog(revision_id: str, context: str | None = Query(default=None)):
+    try:
+        return engineering_platform.parameter_catalog(revision_id, context)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Design Revision 不存在") from exc
+
+
+@app.get("/api/projects/{project_id}/analysis-definitions")
+def list_analysis_definitions(project_id: str):
+    if workspace.get_project(project_id) is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return engineering_platform.list_analysis_definitions(project_id)
+
+
+@app.post("/api/projects/{project_id}/analysis-definitions", status_code=201)
+def create_analysis_definition(project_id: str, payload: AnalysisDefinitionCreate):
+    try:
+        return engineering_platform.create_analysis_definition(project_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Design Revision 不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/analysis-definitions/{analysis_id}")
+def get_analysis_definition(analysis_id: str):
+    payload = engineering_platform.get_analysis_definition(analysis_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Analysis Definition 不存在")
+    return payload
+
+
+@app.put("/api/analysis-definitions/{analysis_id}/design-revision")
+def update_analysis_design_revision(analysis_id: str, payload: AnalysisDesignRevisionUpdate):
+    try:
+        return engineering_platform.set_analysis_design_revision(analysis_id, payload.design_revision_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="分析案例或 Design Revision 不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/input-domains")
+def get_analysis_input_domains(analysis_id: str):
+    try:
+        return engineering_platform.input_domain_catalog(analysis_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="分析案例不存在") from exc
+
+
+def _analysis_precheck_payload(analysis_id: str) -> dict[str, Any]:
+    analysis = engineering_platform.get_analysis_definition(analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="分析案例不存在")
+    revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or ""))
+    if not revision:
+        raise HTTPException(status_code=404, detail="电机设计版本不存在")
+    design = db.query_one("SELECT * FROM designs WHERE id=?", (revision["design_id"],)) or {}
+    try:
+        template = templates.get_template(str(design.get("template_id") or ""))
+    except KeyError:
+        template = {"defaults": {}, "id": design.get("template_id")}
+    snapshot = ((analysis.get("revisions") or [{}])[0]).get("definition") or {}
+    parameters = {
+        **_clean_parameter_overrides(template.get("defaults") or {}),
+        **_clean_parameter_overrides(revision.get("parameters") or {}),
+    }
+    issues = []
+    issues.extend(validate_geometry_relations(parameters, template, revision.get("explicit_parameter_ids") or []).get("issues", []))
+    issues.extend(validate_winding_relations(parameters, template, revision.get("explicit_parameter_ids") or []).get("issues", []))
+    cross = validate_engineering_inputs(
+        parameters,
+        scenario=(snapshot.get("load_cases") or [{}])[0],
+        materials=revision.get("materials") or {},
+        input_domains=snapshot.get("input_domains") or {},
+        solver_settings=snapshot.get("solver_settings") or {},
+        required_domains=required_input_domains(analysis.get("module"), analysis.get("recipe_id")),
+    )
+    known = {str(issue.get("code")) for issue in issues}
+    issues.extend(issue for issue in cross["issues"] if str(issue.get("code")) not in known)
+    field_labels: dict[str, str] = {}
+    try:
+        field_labels.update({str(key): str(value.get("label") or key) for key, value in registry.parameter_schema(str(design.get("template_id") or "")).items()})
+    except (KeyError, ValueError):
+        pass
+    for domain_id, domain_spec in engineering_platform.input_domains.items():
+        field_labels[domain_id] = str(domain_spec.get("label") or domain_id)
+        for field in domain_spec.get("fields") or []:
+            field_labels[str(field.get("id"))] = f"{domain_spec.get('label') or domain_id} · {field.get('label') or field.get('id')}"
+    for issue in issues:
+        issue["field_labels"] = [field_labels.get(str(field), str(field)) for field in issue.get("parameter_ids") or []]
+    blocking = sum(1 for issue in issues if str(issue.get("severity")) == "BLOCKING")
+    warnings = sum(1 for issue in issues if str(issue.get("severity")) == "WARNING")
+    by_category: dict[str, int] = {}
+    for issue in issues:
+        category = str(issue.get("category") or "model")
+        by_category[category] = by_category.get(category, 0) + 1
+    return {
+        "valid": blocking == 0,
+        "blocking": blocking,
+        "warnings": warnings,
+        "issues": issues,
+        "by_category": by_category,
+        "analysis_definition_id": analysis_id,
+        "analysis_revision_id": str(((analysis.get("revisions") or [{}])[0]).get("id") or ""),
+        "design_revision_id": revision["id"],
+        "stages": [
+            {"id": "geometry_winding", "label": "几何与绕组", "status": "PASS" if not any((issue.get("category") in {"geometry", "winding"} or str(issue.get("code", "")).startswith(("GEOM", "WINDING"))) and issue.get("severity") == "BLOCKING" for issue in issues) else "FAIL"},
+            {"id": "physical_inputs", "label": "材料与物理边界", "status": "PASS" if not any(issue.get("category") in {"input", "thermal", "materials", "operating"} and issue.get("severity") == "BLOCKING" for issue in issues) else "FAIL"},
+            {"id": "solver", "label": "求解设置", "status": "PASS" if not any(issue.get("category") == "solver" and issue.get("severity") == "BLOCKING" for issue in issues) else "FAIL"},
+        ],
+        "next_check": "Motor-CAD 模型检查" if blocking == 0 else "请先修复阻断项",
+    }
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/precheck")
+def precheck_analysis_definition(analysis_id: str):
+    """Fast deterministic check.  It is intentionally called from calculation check, not on input."""
+    return _analysis_precheck_payload(analysis_id)
+
+
+def _assert_analysis_execution_identity(
+    *,
+    analysis_id: str,
+    expected_analysis_revision_id: str | None,
+    expected_design_revision_id: str | None,
+    current_analysis_revision_id: str,
+    current_design_revision_id: str,
+) -> None:
+    """Reject a browser plan that was superseded before submission/check execution."""
+    stale_analysis = bool(expected_analysis_revision_id) and str(expected_analysis_revision_id) != str(current_analysis_revision_id)
+    stale_design = bool(expected_design_revision_id) and str(expected_design_revision_id) != str(current_design_revision_id)
+    if not (stale_analysis or stale_design):
+        return
+    raise HTTPException(status_code=409, detail={
+        "code": "ANALYSIS_EXECUTION_STALE",
+        "message": "分析设置或设计版本已在其他窗口更新，请刷新执行计划后重新检查。",
+        "analysis_definition_id": analysis_id,
+        "expected": {
+            "analysis_revision_id": expected_analysis_revision_id,
+            "design_revision_id": expected_design_revision_id,
+        },
+        "current": {
+            "analysis_revision_id": current_analysis_revision_id,
+            "design_revision_id": current_design_revision_id,
+        },
+    })
+
+
+def _store_analysis_precheck_evidence(
+    analysis_id: str,
+    result: dict[str, Any],
+    *,
+    analysis_revision: dict[str, Any] | None = None,
+    design_revision: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Store native-check evidence against the exact immutable revisions that were checked."""
+    if not result.get("valid"):
+        return None
+    if analysis_revision is None or design_revision is None:
+        analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
+        analysis_revision = (analysis.get("revisions") or [{}])[0]
+        design_revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or "")) or {}
+    if not analysis_revision.get("id") or not design_revision.get("id"):
+        return None
+    now = time.monotonic()
+    token = f"PCK-{uuid.uuid4().hex.upper()}"
+    record = {
+        "id": token,
+        "analysis_definition_id": analysis_id,
+        "analysis_revision_id": str(analysis_revision.get("id")),
+        "analysis_revision_hash": str(analysis_revision.get("content_hash") or ""),
+        "design_revision_id": str(design_revision.get("id")),
+        "design_revision_hash": str(design_revision.get("content_hash") or ""),
+        "checked_at_monotonic": now,
+        "created_at": db.now(),
+        "expires_in_s": _ANALYSIS_PRECHECK_EVIDENCE_TTL_S,
+        "result": result,
+    }
+    with _analysis_precheck_evidence_lock:
+        expired = [key for key, value in _analysis_precheck_evidence.items() if now - float(value.get("checked_at_monotonic") or 0.0) > _ANALYSIS_PRECHECK_EVIDENCE_TTL_S]
+        for key in expired:
+            _analysis_precheck_evidence.pop(key, None)
+        if len(_analysis_precheck_evidence) >= _ANALYSIS_PRECHECK_EVIDENCE_MAX:
+            oldest = sorted(_analysis_precheck_evidence.items(), key=lambda item: float(item[1].get("checked_at_monotonic") or 0.0))
+            for key, _ in oldest[: max(1, len(_analysis_precheck_evidence) - _ANALYSIS_PRECHECK_EVIDENCE_MAX + 1)]:
+                _analysis_precheck_evidence.pop(key, None)
+        _analysis_precheck_evidence[token] = record
+    return {
+        "id": token,
+        "analysis_revision_id": record["analysis_revision_id"],
+        "design_revision_id": record["design_revision_id"],
+        "created_at": record["created_at"],
+        "expires_in_s": _ANALYSIS_PRECHECK_EVIDENCE_TTL_S,
+    }
+
+
+def _analysis_precheck_evidence_for_submission(
+    analysis_id: str,
+    evidence_id: str | None,
+    *,
+    analysis_revision: dict[str, Any] | None = None,
+    design_revision: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    if not evidence_id:
+        return None
+    with _analysis_precheck_evidence_lock:
+        record = dict(_analysis_precheck_evidence.get(str(evidence_id)) or {})
+    if not record:
+        return None
+    age = time.monotonic() - float(record.get("checked_at_monotonic") or 0.0)
+    if age > _ANALYSIS_PRECHECK_EVIDENCE_TTL_S:
+        with _analysis_precheck_evidence_lock:
+            _analysis_precheck_evidence.pop(str(evidence_id), None)
+        return None
+    if analysis_revision is None or design_revision is None:
+        analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
+        analysis_revision = (analysis.get("revisions") or [{}])[0]
+        design_revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or "")) or {}
+    identity = (
+        record.get("analysis_definition_id") == analysis_id
+        and record.get("analysis_revision_id") == str((analysis_revision or {}).get("id") or "")
+        and record.get("analysis_revision_hash") == str((analysis_revision or {}).get("content_hash") or "")
+        and record.get("design_revision_id") == str((design_revision or {}).get("id") or "")
+        and record.get("design_revision_hash") == str((design_revision or {}).get("content_hash") or "")
+    )
+    return record if identity and (record.get("result") or {}).get("valid") else None
+
+
+def _motorcad_check_message(result: dict[str, Any]) -> tuple[str, str]:
+    status = str(result.get("status") or "FAIL").upper()
+    if status == "PASS":
+        return (
+            "Motor-CAD 已成功加载当前电机，并通过几何、绕组与参数回读检查。",
+            "可以继续设置工况并计算。",
+        )
+    messages = [
+        str(row.get("message") or "")
+        for row in (result.get("checks") or [])
+        if str(row.get("status") or "").upper() == "FAIL" and row.get("message")
+    ]
+    joined = " ".join(messages).lower()
+    if "no module named" in joined or "ansys" in joined or "pymotorcad" in joined:
+        return (
+            "当前计算服务无法导入 PyMotorCAD，因此还没有取得 Motor-CAD 模型检查结果。",
+            "请在运行环境页确认 ansys-motorcad-core 已安装到启动服务所使用的 Python 环境，并重新验证安装。",
+        )
+    if "parameter" in joined or "mapping" in joined or "roundtrip" in joined:
+        return (
+            "Motor-CAD 未能接受或回读当前模型中的一个或多个参数。",
+            "请恢复该机型默认值后逐项调整；若仍失败，请在问题中心按本次请求定位参数映射记录。",
+        )
+    if result.get("blocked_before_motorcad"):
+        return (
+            "Studio 已发现确定性的绕组或几何关系问题，Motor-CAD 检查尚未启动。",
+            "请先按上方问题卡修改对应尺寸、槽极关系或绕组设置。",
+        )
+    return (
+        "Motor-CAD 已启动模型检查，但没有形成完整的通过证据。",
+        "请确认 Motor-CAD 许可证、模板母版和当前机型匹配；问题中心会保留本次检查的技术记录。",
+    )
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/calculation-check")
+def calculation_check_analysis_definition(
+    analysis_id: str,
+    payload: AnalysisCalculationCheckRequest = AnalysisCalculationCheckRequest(),
+):
+    """Run the engineer-facing two-stage gate against one captured immutable revision pair."""
+    analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
+    if not analysis:
+        raise HTTPException(status_code=404, detail="分析案例不存在")
+    analysis_revision = (analysis.get("revisions") or [{}])[0]
+    revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or "")) or {}
+    if not analysis_revision.get("id") or not revision.get("id"):
+        raise HTTPException(status_code=404, detail="分析案例引用的 Design/Analysis Revision 不存在")
+    captured_analysis_revision_id = str(analysis_revision.get("id"))
+    captured_design_revision_id = str(revision.get("id"))
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=payload.expected_analysis_revision_id,
+        expected_design_revision_id=payload.expected_design_revision_id,
+        current_analysis_revision_id=captured_analysis_revision_id,
+        current_design_revision_id=captured_design_revision_id,
+    )
+
+    studio = _analysis_precheck_payload(analysis_id)
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=captured_analysis_revision_id,
+        expected_design_revision_id=captured_design_revision_id,
+        current_analysis_revision_id=str(studio.get("analysis_revision_id") or ""),
+        current_design_revision_id=str(studio.get("design_revision_id") or ""),
+    )
+    if not studio["valid"]:
+        return {
+            "valid": False,
+            "status": "FAIL",
+            "studio": studio,
+            "motorcad": {
+                "status": "SKIPPED",
+                "message": "Studio 预检查发现必须修复的问题，Motor-CAD 检查未启动。",
+                "suggestion": "请先修复上方阻断项，再重新执行计算前检查。",
+            },
+            "stages": [
+                {"id": "studio", "label": "Studio 预检查", "status": "FAIL"},
+                {"id": "motorcad", "label": "Motor-CAD 模型检查", "status": "LOCKED"},
+            ],
+        }
+    design = db.query_one("SELECT * FROM designs WHERE id=?", (revision.get("design_id"),)) or {}
+    template_id = str(design.get("template_id") or "")
+    try:
+        runtime = template_geometry_runtime_check(
+            template_id,
+            GeometryRuntimeCheckRequest(
+                parameters=_clean_parameter_overrides(revision.get("parameters") or {}),
+                explicit_parameter_ids=list(revision.get("explicit_parameter_ids") or []),
+                materials=revision.get("materials") or {},
+                timeout_s=180,
+            ),
+        )
+        message, suggestion = _motorcad_check_message(runtime)
+        native_status = str(runtime.get("status") or "FAIL").upper()
+    except Exception as exc:  # Runtime detail is retained in structured logs, not exposed as JSON to engineers.
+        logs.audit(
+            level="ERROR", component="model_validation", event_type="MODEL_RUNTIME_CHECK_FAILED",
+            message=f"calculation precheck failed for {analysis_id}: {type(exc).__name__}",
+            payload={"analysis_definition_id": analysis_id, "template_id": template_id, "error": str(exc)},
+        )
+        runtime = {}
+        message, suggestion = _motorcad_check_message({"status": "FAIL", "checks": [{"status": "FAIL", "message": str(exc)}]})
+        native_status = "FAIL"
+
+    current_analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
+    current_analysis_revision = (current_analysis.get("revisions") or [{}])[0]
+    current_design_revision = workspace.get_design_revision(str(current_analysis.get("design_revision_id") or "")) or {}
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=captured_analysis_revision_id,
+        expected_design_revision_id=captured_design_revision_id,
+        current_analysis_revision_id=str(current_analysis_revision.get("id") or ""),
+        current_design_revision_id=str(current_design_revision.get("id") or ""),
+    )
+
+    valid = native_status == "PASS"
+    response = {
+        "valid": valid,
+        "status": "PASS" if valid else "FAIL",
+        "studio": studio,
+        "motorcad": {"status": native_status, "message": message, "suggestion": suggestion},
+        "stages": [
+            {"id": "studio", "label": "Studio 预检查", "status": "PASS"},
+            {"id": "motorcad", "label": "Motor-CAD 模型检查", "status": native_status},
+        ],
+    }
+    evidence = _store_analysis_precheck_evidence(
+        analysis_id,
+        response,
+        analysis_revision=analysis_revision,
+        design_revision=revision,
+    ) if valid else None
+    if evidence:
+        response["evidence"] = evidence
+    return response
+
+
+
+def _build_analysis_execution_request(analysis_id: str, options: AnalysisExecutionRequest | None = None) -> tuple[TaskCreate, dict[str, Any]]:
+    """Build one authoritative Task contract from frozen Design + Analysis revisions.
+
+    The engineer-facing execution flow never reconstructs solver inputs from browser
+    form state.  Design parameters/materials come from the referenced immutable
+    Design Revision and operating points/solver settings/outputs come from the latest
+    Analysis Revision.  TaskManager.prepare_request then applies the same physical
+    input materialization and defaults used by every Task submission path.
+    """
+    analysis = engineering_platform.get_analysis_definition(analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="分析案例不存在")
+    latest = (analysis.get("revisions") or [None])[0]
+    if not latest or not latest.get("id"):
+        raise HTTPException(status_code=409, detail="分析案例没有可执行的 Analysis Revision")
+    definition = dict(latest.get("definition") or {})
+    revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or ""))
+    if not revision:
+        raise HTTPException(status_code=404, detail="分析案例引用的 Design Revision 不存在")
+    design = db.query_one("SELECT * FROM designs WHERE id=?", (revision.get("design_id"),)) or {}
+    if not design:
+        raise HTTPException(status_code=404, detail="分析案例引用的电机设计不存在")
+    project = workspace.get_project(str(analysis.get("project_id") or "")) or {}
+    load_cases = list(definition.get("load_cases") or [{}])
+    first_case = load_cases[0] if load_cases else {}
+    controls = options or AnalysisExecutionRequest()
+    task_request = TaskCreate(
+        project_name=str(project.get("name") or "MotorCAD Studio project"),
+        project_id=str(analysis.get("project_id") or "") or None,
+        design_revision_id=str(revision.get("id") or "") or None,
+        analysis_definition_revision_id=str(latest.get("id") or "") or None,
+        submission_key=controls.submission_key,
+        name=str(controls.name or f"{analysis.get('name') or '分析案例'} · 计算"),
+        template_id=str(design.get("template_id") or ""),
+        solver_mode="motorcad",
+        analysis=str(analysis.get("recipe_id") or "emag"),
+        parameters=dict(revision.get("parameters") or {}),
+        explicit_parameter_ids=list(revision.get("explicit_parameter_ids") or []),
+        automation_overrides=dict(revision.get("automation_parameters") or {}),
+        materials=dict(revision.get("materials") or {}),
+        solver_settings=dict(definition.get("solver_settings") or {}),
+        scenario=first_case,
+        scenario_matrix=load_cases if len(load_cases) > 1 else [],
+        requested_outputs=list(definition.get("requested_outputs") or []),
+        quality_profile=controls.quality_profile,
+        reuse_cache=controls.reuse_cache,
+    )
+    tasks.prepare_request(task_request)
+    metadata = {
+        "analysis": analysis,
+        "analysis_revision": latest,
+        "definition": definition,
+        "design": design,
+        "design_revision": revision,
+        "project": project,
+    }
+    return task_request, metadata
+
+
+
+def _validate_analysis_experiment_contract(task_request: TaskCreate, meta: dict[str, Any], payload: AnalysisExperimentRequest) -> dict[str, Any]:
+    experiment = payload.experiment.model_dump(mode="json")
+    estimate = results_optimization.estimate_experiment_cases(experiment)
+    if int(estimate.get("estimated_total_cases") or 0) > 5000:
+        raise HTTPException(status_code=422, detail={
+            "code": "EXPERIMENT_CASE_LIMIT",
+            "message": f"当前设置预计产生 {estimate.get('estimated_total_cases')} 个 Case，超过 5000 个工程安全上限。",
+            "estimate": estimate,
+        })
+    schema = registry.parameter_schema(task_request.template_id)
+    warnings: list[dict[str, Any]] = []
+    for variable in experiment.get("variables") or []:
+        parameter_id = str(variable.get("parameter") or "")
+        spec = schema.get(parameter_id)
+        if not spec:
+            raise HTTPException(status_code=422, detail={"code": "UNKNOWN_EXPERIMENT_PARAMETER", "message": f"未知设计参数：{parameter_id}"})
+        if str(spec.get("type") or "number") not in {"number", "integer"}:
+            raise HTTPException(status_code=422, detail={"code": "NON_NUMERIC_EXPERIMENT_PARAMETER", "message": f"参数 {parameter_id} 不能用于数值扫描。"})
+        low, high = float(variable.get("low")), float(variable.get("high"))
+        minimum, maximum = spec.get("minimum"), spec.get("maximum")
+        if minimum is not None and low < float(minimum):
+            raise HTTPException(status_code=422, detail={"code": "EXPERIMENT_RANGE_OUT_OF_BOUNDS", "message": f"{parameter_id} 下限 {low} 小于允许值 {minimum}"})
+        if maximum is not None and high > float(maximum):
+            raise HTTPException(status_code=422, detail={"code": "EXPERIMENT_RANGE_OUT_OF_BOUNDS", "message": f"{parameter_id} 上限 {high} 大于允许值 {maximum}"})
+        if str(spec.get("category") or "") == "topology":
+            warnings.append({"code": "TOPOLOGY_VARIABLE", "message": f"{spec.get('label') or parameter_id} 属于拓扑离散变量；建议分组比较，不建议作为连续优化变量。", "parameter_id": parameter_id})
+    output_schema = registry.output_schema(task_request.template_id)
+    requested = set(task_request.requested_outputs or [])
+    for objective in experiment.get("objectives") or []:
+        result_id = str(objective.get("result_id") or "")
+        if result_id not in output_schema:
+            raise HTTPException(status_code=422, detail={"code": "UNKNOWN_OBJECTIVE", "message": f"优化目标 {result_id} 不在当前模板结果注册表中。"})
+        requested.add(result_id)
+    for constraint in experiment.get("constraints") or []:
+        field = str(constraint.get("field") or "")
+        if field.startswith("result."):
+            result_id = field[7:]
+            if result_id not in output_schema:
+                raise HTTPException(status_code=422, detail={"code": "UNKNOWN_CONSTRAINT_RESULT", "message": f"约束结果 {result_id} 不在当前模板结果注册表中。"})
+            requested.add(result_id)
+    task_request.requested_outputs = sorted(requested)
+    task_request.experiment = payload.experiment
+    tasks.prepare_request(task_request)
+    issues = tasks.validate_request(task_request)
+    blocking = [row for row in issues if row.get("severity") == "BLOCKING"]
+    return {"estimate": estimate, "warnings": warnings, "validation": issues, "blocking": blocking}
+
+
+def _build_analysis_experiment_request(analysis_id: str, payload: AnalysisExperimentRequest) -> tuple[TaskCreate, dict[str, Any], dict[str, Any]]:
+    controls = AnalysisExecutionRequest(
+        name=payload.name,
+        quality_profile=payload.quality_profile,
+        reuse_cache=payload.reuse_cache,
+        submission_key=payload.submission_key,
+        precheck_evidence_id=payload.precheck_evidence_id,
+        run_native_precheck=payload.run_native_precheck,
+        expected_analysis_revision_id=payload.expected_analysis_revision_id,
+        expected_design_revision_id=payload.expected_design_revision_id,
+    )
+    task_request, meta = _build_analysis_execution_request(analysis_id, controls)
+    load_cases = list(meta["definition"].get("load_cases") or [{}])
+    if payload.load_case_index >= len(load_cases):
+        raise HTTPException(status_code=422, detail={"code": "LOAD_CASE_INDEX_OUT_OF_RANGE", "message": "选择的工况已经不存在，请刷新优化设置。"})
+    selected_case = dict(load_cases[payload.load_case_index] or {})
+    # Parameter studies operate on one frozen operating point. This avoids treating
+    # multiple operating points of the same design as independent NSGA-II individuals.
+    task_request.scenario = ScenarioDefinition.model_validate(selected_case)
+    task_request.scenario_matrix = []
+    task_request.name = str(payload.name or f"{meta['analysis'].get('name') or '分析案例'} · 参数研究")
+    contract = _validate_analysis_experiment_contract(task_request, meta, payload)
+    meta["selected_load_case_index"] = payload.load_case_index
+    meta["selected_load_case"] = selected_case
+    return task_request, meta, contract
+
+
+@app.get("/api/projects/{project_id}/results-workbench")
+def project_results_workbench(project_id: str):
+    try:
+        payload = results_optimization.project_workbench(project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="项目不存在") from exc
+    matrix = native_parity.matrix(native_parity_profiles.list_profiles())
+    payload["native_parity"] = matrix
+    payload["engineering_decision_status"] = "NATIVE_QUALIFIED" if matrix.get("complete") else "NATIVE_QUALIFICATION_PENDING"
+    return payload
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/optimization-catalog")
+def analysis_optimization_catalog(analysis_id: str):
+    task_request, meta = _build_analysis_execution_request(analysis_id)
+    return results_optimization.optimization_catalog(meta["analysis"], meta["design"], meta["design_revision"], meta["definition"])
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/experiments/preview")
+def preview_analysis_experiment(analysis_id: str, payload: AnalysisExperimentRequest):
+    task_request, meta, contract = _build_analysis_experiment_request(analysis_id, payload)
+    current_analysis_revision_id = str(meta["analysis_revision"].get("id") or "")
+    current_design_revision_id = str(meta["design_revision"].get("id") or "")
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=payload.expected_analysis_revision_id,
+        expected_design_revision_id=payload.expected_design_revision_id,
+        current_analysis_revision_id=current_analysis_revision_id,
+        current_design_revision_id=current_design_revision_id,
+    )
+    studio = _analysis_precheck_payload(analysis_id)
+    runtime = _ensure_motorcad_submission_ready()
+    can_submit = bool(studio.get("valid")) and not contract["blocking"] and bool(runtime.get("ok"))
+    return {
+        "analysis_definition_id": analysis_id,
+        "analysis_revision_id": current_analysis_revision_id,
+        "design_revision_id": current_design_revision_id,
+        "selected_load_case_index": meta["selected_load_case_index"],
+        "selected_load_case": meta["selected_load_case"],
+        "experiment": payload.experiment.model_dump(mode="json"),
+        "estimate": contract["estimate"],
+        "warnings": contract["warnings"],
+        "studio_precheck": studio,
+        "task_validation": {"valid": not contract["blocking"], "blocking": len(contract["blocking"]), "issues": contract["validation"]},
+        "runtime_readiness": runtime,
+        "requested_outputs": list(task_request.requested_outputs or []),
+        "can_submit": can_submit,
+    }
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/experiments/execute", status_code=201)
+def execute_analysis_experiment(analysis_id: str, payload: AnalysisExperimentRequest):
+    task_request, meta, contract = _build_analysis_experiment_request(analysis_id, payload)
+    current_analysis_revision_id = str(meta["analysis_revision"].get("id") or "")
+    current_design_revision_id = str(meta["design_revision"].get("id") or "")
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=payload.expected_analysis_revision_id,
+        expected_design_revision_id=payload.expected_design_revision_id,
+        current_analysis_revision_id=current_analysis_revision_id,
+        current_design_revision_id=current_design_revision_id,
+    )
+    if contract["blocking"]:
+        raise HTTPException(status_code=422, detail={"code": "EXPERIMENT_TASK_VALIDATION_FAILED", "message": "参数研究存在阻断项，任务未提交。", "issues": contract["blocking"]})
+    studio = _analysis_precheck_payload(analysis_id)
+    if not studio.get("valid"):
+        raise HTTPException(status_code=422, detail={"code": "ANALYSIS_STUDIO_PRECHECK_FAILED", "message": "Studio 计算前检查存在阻断项，参数研究未提交。", "precheck": studio})
+    native_check: dict[str, Any] | None = None
+    reused_precheck_evidence = False
+    evidence = _analysis_precheck_evidence_for_submission(
+        analysis_id,
+        payload.precheck_evidence_id,
+        analysis_revision=meta["analysis_revision"],
+        design_revision=meta["design_revision"],
+    )
+    if evidence:
+        native_check = dict(evidence.get("result") or {})
+        reused_precheck_evidence = True
+    elif payload.run_native_precheck:
+        native_check = calculation_check_analysis_definition(
+            analysis_id,
+            AnalysisCalculationCheckRequest(
+                expected_analysis_revision_id=current_analysis_revision_id,
+                expected_design_revision_id=current_design_revision_id,
+            ),
+        )
+        if not native_check.get("valid"):
+            raise HTTPException(status_code=422, detail={"code": "ANALYSIS_MOTORCAD_PRECHECK_FAILED", "message": "Motor-CAD 模型检查未通过，参数研究未提交。", "precheck": native_check})
+    if not task_request.submission_key:
+        task_request.submission_key = f"OPT-{uuid.uuid4().hex[:24].upper()}"
+    created = create_task(task_request)
+    logs.audit(
+        level="INFO", component="optimization_workbench", event_type="ANALYSIS_EXPERIMENT_SUBMITTED",
+        message=f"analysis experiment submitted: {analysis_id} -> {created.get('task_id')}",
+        payload={
+            "analysis_definition_id": analysis_id,
+            "analysis_definition_revision_id": task_request.analysis_definition_revision_id,
+            "design_revision_id": task_request.design_revision_id,
+            "task_id": created.get("task_id"),
+            "experiment_mode": task_request.experiment.mode.value,
+            "estimated_total_cases": contract["estimate"].get("estimated_total_cases"),
+            "selected_load_case_index": meta["selected_load_case_index"],
+            "precheck_evidence_reused": reused_precheck_evidence,
+        },
+    )
+    return {
+        **created,
+        "analysis_definition_id": analysis_id,
+        "analysis_definition_revision_id": task_request.analysis_definition_revision_id,
+        "design_revision_id": task_request.design_revision_id,
+        "experiment": task_request.experiment.model_dump(mode="json"),
+        "estimate": contract["estimate"],
+        "native_precheck": native_check,
+        "precheck_evidence_reused": reused_precheck_evidence,
+        "next_route": f"/app/projects/{meta['analysis'].get('project_id')}/results/optimization/tasks/{created.get('task_id')}",
+    }
+
+
+@app.get("/api/tasks/{task_id}/optimization-workbench")
+def task_optimization_workbench(task_id: str):
+    payload = results_optimization.optimization_workbench(task_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    request = db.loads((db.query_one("SELECT request_json FROM tasks WHERE id=?", (task_id,)) or {}).get("request_json"), {}) or {}
+    template_id = str(request.get("template_id") or "")
+    profile = next((row for row in native_parity_profiles.list_profiles() if str(row.get("template_id")) == template_id), None)
+    parity = native_parity.latest(str(profile.get("id"))) if profile else None
+    payload["native_parity"] = {
+        "profile_id": (profile or {}).get("id"),
+        "qualified": bool((parity or {}).get("qualified")),
+        "status": (parity or {}).get("status") or "NOT_RUN",
+        "run_id": (parity or {}).get("id"),
+        "motorcad_version": settings.motorcad_version,
+    }
+    return payload
+
+
+@app.get("/api/designs/{design_id}/revision-compare")
+def compare_design_revisions(design_id: str, revision_ids: str = Query(min_length=1)):
+    ids = [token.strip() for token in revision_ids.split(",") if token.strip()]
+    try:
+        return results_optimization.revision_compare(design_id, ids)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Design 不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/cases/{case_id}/promote-design-revision", status_code=201)
+def promote_optimization_candidate(case_id: str, payload: OptimizationCandidatePromotionRequest):
+    case = db.query_one("SELECT * FROM cases WHERE id=?", (case_id,))
+    if not case:
+        raise HTTPException(status_code=404, detail="Case 不存在")
+    task = db.query_one("SELECT * FROM tasks WHERE id=?", (case.get("task_id"),)) or {}
+    request = db.loads(task.get("request_json"), {}) or {}
+    base_revision_id = str(request.get("design_revision_id") or task.get("design_revision_id") or "")
+    if not base_revision_id or base_revision_id != str(payload.expected_design_revision_id):
+        raise HTTPException(status_code=409, detail={
+            "code": "OPTIMIZATION_PROMOTION_STALE",
+            "message": "候选方案的基准 Design Revision 与当前操作不一致，请刷新优化结果。",
+            "expected_design_revision_id": payload.expected_design_revision_id,
+            "candidate_design_revision_id": base_revision_id,
+        })
+    base = workspace.get_design_revision(base_revision_id)
+    if not base:
+        raise HTTPException(status_code=404, detail="候选方案的基准 Design Revision 已不存在")
+    design = workspace.get_design(str(base.get("design_id") or ""))
+    if not design:
+        raise HTTPException(status_code=404, detail="候选方案所属 Design 已不存在")
+    experiment = dict(request.get("experiment") or {})
+    variable_ids = [str(row.get("parameter") or "") for row in experiment.get("variables") or [] if row.get("parameter")]
+    if not variable_ids:
+        raise HTTPException(status_code=422, detail="当前 Case 不是可提升的参数研究候选方案")
+    candidate_parameters = db.loads(case.get("parameters_json"), {}) or {}
+    promoted = dict(base.get("parameters") or {})
+    promoted_ids = []
+    for parameter_id in variable_ids:
+        if parameter_id in candidate_parameters:
+            promoted[parameter_id] = candidate_parameters[parameter_id]
+            promoted_ids.append(parameter_id)
+    if not promoted_ids:
+        raise HTTPException(status_code=422, detail="候选 Case 未包含可提升的设计变量")
+    notes = payload.notes.strip() or f"由优化候选 {case_id} 提升；基准 Rev.{base.get('revision')}；变量：{', '.join(promoted_ids)}"
+    revision_payload = DesignRevisionCreate(
+        parameters=promoted,
+        materials=dict(base.get("materials") or {}),
+        explicit_parameter_ids=sorted(set((base.get("explicit_parameter_ids") or []) + promoted_ids)),
+        automation_parameters=dict(base.get("automation_parameters") or {}),
+        capability_snapshot=dict(base.get("capability_snapshot") or {}),
+        notes=notes,
+    )
+    created = create_design_revision(str(design.get("id")), revision_payload)
+    linked_analysis_id = payload.update_analysis_definition_id
+    if linked_analysis_id:
+        analysis = engineering_platform.get_analysis_definition(linked_analysis_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="要更新的 Analysis 不存在")
+        if str(analysis.get("design_revision_id") or "") != base_revision_id:
+            raise HTTPException(status_code=409, detail={"code": "OPTIMIZATION_ANALYSIS_LINK_STALE", "message": "Analysis 已经切换到其他 Design Revision，新候选 Revision 已保存但未自动绑定。", "created_revision_id": created.get("id")})
+        engineering_platform.set_analysis_design_revision(linked_analysis_id, str(created.get("id")))
+    logs.audit(
+        level="INFO", component="optimization_workbench", event_type="OPTIMIZATION_CANDIDATE_PROMOTED",
+        message=f"candidate promoted: {case_id} -> {created.get('id')}",
+        payload={"case_id": case_id, "task_id": task.get("id"), "base_revision_id": base_revision_id, "created_revision_id": created.get("id"), "parameter_ids": promoted_ids, "analysis_definition_id": linked_analysis_id},
+    )
+    return {
+        "case_id": case_id,
+        "task_id": task.get("id"),
+        "design_id": design.get("id"),
+        "base_revision_id": base_revision_id,
+        "created_revision": created,
+        "promoted_parameter_ids": promoted_ids,
+        "analysis_definition_id": linked_analysis_id,
+        "next_route": f"/app/projects/{design.get('project_id')}/designs/{design.get('id')}/revisions/{created.get('id')}/geometry/radial",
+    }
+
+def _analysis_execution_recent_tasks(analysis_id: str, revision_ids: set[str], project_id: str, limit: int = 8) -> list[dict[str, Any]]:
+    rows = db.query_all(
+        """SELECT t.id,t.name,t.status,t.progress,t.current_stage,t.case_count,t.run_configuration_id,
+                  t.created_at,t.started_at,t.finished_at,t.request_json,
+                  SUM(CASE WHEN c.quality_status IN ('VALID','WARNING') THEN 1 ELSE 0 END) usable_cases,
+                  SUM(CASE WHEN c.execution_status IN ('RUNNING','QUEUED','RETRYING') THEN 1 ELSE 0 END) active_cases
+             FROM tasks t LEFT JOIN cases c ON c.task_id=t.id
+            WHERE t.project_id=? GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200""",
+        (project_id,),
+    )
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        request_payload = db.loads(row.pop("request_json", None), {})
+        revision_id = str(request_payload.get("analysis_definition_revision_id") or "")
+        if revision_id not in revision_ids:
+            continue
+        result.append({
+            **row,
+            "analysis_definition_id": analysis_id,
+            "analysis_definition_revision_id": revision_id,
+        })
+        if len(result) >= max(1, min(limit, 50)):
+            break
+    return result
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/execution-plan")
+def analysis_execution_plan(analysis_id: str):
+    """Return the complete, read-only engineer execution contract for one Analysis."""
+    task_request, meta = _build_analysis_execution_request(analysis_id)
+    analysis = meta["analysis"]
+    latest = meta["analysis_revision"]
+    definition = meta["definition"]
+    revision = meta["design_revision"]
+    design = meta["design"]
+    studio = _analysis_precheck_payload(analysis_id)
+    try:
+        validation_issues = tasks.validate_request(task_request)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    task_blocking = [row for row in validation_issues if row.get("severity") == "BLOCKING"]
+    task_warnings = [row for row in validation_issues if row.get("severity") == "WARNING"]
+    runtime = _ensure_motorcad_submission_ready()
+    revision_ids = {
+        str(row.get("id")) for row in (analysis.get("revisions") or []) if row.get("id")
+    }
+    recent_tasks = _analysis_execution_recent_tasks(
+        analysis_id, revision_ids, str(analysis.get("project_id") or ""), limit=8
+    )
+    load_cases = list(definition.get("load_cases") or [{}])
+    requested_outputs = list(task_request.requested_outputs or [])
+    recipe = dict(definition.get("recipe") or {})
+    required_domains = required_input_domains(analysis.get("module"), analysis.get("recipe_id"))
+    configured_domains = set((definition.get("input_domains") or {}).keys())
+    missing_domains = [domain_id for domain_id in required_domains if domain_id not in configured_domains]
+    return {
+        "analysis_definition_id": analysis_id,
+        "analysis_name": analysis.get("name"),
+        "project_id": analysis.get("project_id"),
+        "module": analysis.get("module"),
+        "recipe_id": analysis.get("recipe_id"),
+        "recipe": recipe,
+        "design": {
+            "id": design.get("id"),
+            "name": design.get("name"),
+            "motor_type_id": design.get("motor_type_id"),
+            "template_id": design.get("template_id"),
+        },
+        "design_revision": {
+            "id": revision.get("id"),
+            "revision": revision.get("revision"),
+            "content_hash": revision.get("content_hash"),
+        },
+        "analysis_revision": {
+            "id": latest.get("id"),
+            "revision": latest.get("revision"),
+            "content_hash": latest.get("content_hash"),
+            "created_at": latest.get("created_at"),
+        },
+        "load_cases": load_cases,
+        "case_count": len(load_cases),
+        "input_domains": dict(definition.get("input_domains") or {}),
+        "required_input_domains": required_domains,
+        "missing_required_input_domains": missing_domains,
+        "solver_settings": dict(definition.get("solver_settings") or {}),
+        "requested_outputs": requested_outputs,
+        "studio_precheck": studio,
+        "task_validation": {
+            "valid": not task_blocking,
+            "blocking": len(task_blocking),
+            "warnings": len(task_warnings),
+            "issues": validation_issues,
+        },
+        "runtime_readiness": runtime,
+        "execution_request": task_request.model_dump(mode="json"),
+        "recent_tasks": recent_tasks,
+        "can_submit": bool(studio.get("valid")) and not task_blocking and bool(runtime.get("ok")),
+        "submit_authority": "POST /api/analysis-definitions/{analysis_id}/execute",
+    }
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/execute", status_code=201)
+def execute_analysis_definition(analysis_id: str, payload: AnalysisExecutionRequest = AnalysisExecutionRequest()):
+    """Validate and submit the exact immutable revision pair shown in the execution plan."""
+    task_request, meta = _build_analysis_execution_request(analysis_id, payload)
+    current_analysis_revision_id = str(meta["analysis_revision"].get("id") or "")
+    current_design_revision_id = str(meta["design_revision"].get("id") or "")
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=payload.expected_analysis_revision_id,
+        expected_design_revision_id=payload.expected_design_revision_id,
+        current_analysis_revision_id=current_analysis_revision_id,
+        current_design_revision_id=current_design_revision_id,
+    )
+
+    studio = _analysis_precheck_payload(analysis_id)
+    _assert_analysis_execution_identity(
+        analysis_id=analysis_id,
+        expected_analysis_revision_id=current_analysis_revision_id,
+        expected_design_revision_id=current_design_revision_id,
+        current_analysis_revision_id=str(studio.get("analysis_revision_id") or ""),
+        current_design_revision_id=str(studio.get("design_revision_id") or ""),
+    )
+    if not studio.get("valid"):
+        raise HTTPException(status_code=422, detail={
+            "code": "ANALYSIS_STUDIO_PRECHECK_FAILED",
+            "message": "Studio 计算前检查存在阻断项，任务未提交。",
+            "precheck": studio,
+        })
+    native_check: dict[str, Any] | None = None
+    reused_precheck_evidence = False
+    evidence = _analysis_precheck_evidence_for_submission(
+        analysis_id,
+        payload.precheck_evidence_id,
+        analysis_revision=meta["analysis_revision"],
+        design_revision=meta["design_revision"],
+    )
+    if evidence:
+        native_check = dict(evidence.get("result") or {})
+        reused_precheck_evidence = True
+    elif payload.run_native_precheck:
+        native_check = calculation_check_analysis_definition(
+            analysis_id,
+            AnalysisCalculationCheckRequest(
+                expected_analysis_revision_id=current_analysis_revision_id,
+                expected_design_revision_id=current_design_revision_id,
+            ),
+        )
+        if not native_check.get("valid"):
+            raise HTTPException(status_code=422, detail={
+                "code": "ANALYSIS_MOTORCAD_PRECHECK_FAILED",
+                "message": "Motor-CAD 模型检查未通过，任务未提交。",
+                "precheck": native_check,
+            })
+    if not task_request.submission_key:
+        task_request.submission_key = f"ANX-{uuid.uuid4().hex[:24].upper()}"
+    created = create_task(task_request)
+    logs.audit(
+        level="INFO", component="analysis_execution", event_type="ANALYSIS_EXECUTION_SUBMITTED",
+        message=f"analysis execution submitted: {analysis_id} -> {created.get('task_id')}",
+        payload={
+            "analysis_definition_id": analysis_id,
+            "analysis_definition_revision_id": task_request.analysis_definition_revision_id,
+            "design_revision_id": task_request.design_revision_id,
+            "precheck_evidence_reused": reused_precheck_evidence,
+            "task_id": created.get("task_id"),
+            "run_configuration_id": created.get("run_configuration_id"),
+            "case_count": len(task_request.scenario_matrix) or 1,
+        },
+    )
+    return {
+        **created,
+        "analysis_definition_id": analysis_id,
+        "analysis_definition_revision_id": task_request.analysis_definition_revision_id,
+        "analysis_revision": meta["analysis_revision"].get("revision"),
+        "design_revision_id": task_request.design_revision_id,
+        "design_revision": meta["design_revision"].get("revision"),
+        "case_count": len(task_request.scenario_matrix) or 1,
+        "native_precheck": native_check,
+        "precheck_evidence_reused": reused_precheck_evidence,
+        "next_route": f"/app/projects/{meta['analysis'].get('project_id')}/simulation/monitor/{created.get('task_id')}",
+    }
+
+
+@app.get("/api/tasks/{task_id}/workflow-status")
+def analysis_task_workflow_status(task_id: str):
+    task = tasks.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    request_payload = dict(task.get("request") or {})
+    analysis_revision_id = str(request_payload.get("analysis_definition_revision_id") or "")
+    analysis_row: dict[str, Any] = {}
+    analysis_revision: dict[str, Any] = {}
+    if analysis_revision_id:
+        analysis_revision = db.query_one(
+            "SELECT * FROM analysis_definition_revisions WHERE id=?", (analysis_revision_id,)
+        ) or {}
+        if analysis_revision:
+            analysis_row = db.query_one(
+                "SELECT * FROM analysis_definitions WHERE id=?", (analysis_revision.get("analysis_definition_id"),)
+            ) or {}
+    design_revision_id = str(request_payload.get("design_revision_id") or task.get("design_revision_id") or "")
+    design_revision = workspace.get_design_revision(design_revision_id) if design_revision_id else None
+    design = db.query_one("SELECT * FROM designs WHERE id=?", ((design_revision or {}).get("design_id"),)) or {}
+    cases = list(task.get("cases") or [])
+    usable = sum(1 for case in cases if str(case.get("quality_status") or "") in {"VALID", "WARNING"})
+    succeeded = sum(1 for case in cases if str(case.get("execution_status") or "") in {"SUCCEEDED", "CACHED"})
+    failed = sum(1 for case in cases if str(case.get("execution_status") or "") in {"FAILED", "CANCELLED"})
+    status = str(task.get("status") or "")
+    if usable:
+        stage = "RESULTS_AVAILABLE"
+    elif status in {"RUNNING", "QUEUED", "RECOVERING"}:
+        stage = "RUNNING"
+    elif status in {"FAILED", "CANCELLED"}:
+        stage = "ATTENTION"
+    else:
+        stage = "FINISHED"
+    return {
+        "task_id": task_id,
+        "task_name": task.get("name"),
+        "task_status": status,
+        "stage": stage,
+        "progress": task.get("progress"),
+        "current_stage": task.get("current_stage"),
+        "project_id": task.get("project_id"),
+        "analysis_definition_id": analysis_row.get("id"),
+        "analysis_name": analysis_row.get("name"),
+        "analysis_definition_revision_id": analysis_revision_id or None,
+        "analysis_revision": analysis_revision.get("revision"),
+        "design_id": design.get("id"),
+        "design_name": design.get("name"),
+        "design_revision_id": design_revision_id or None,
+        "design_revision": (design_revision or {}).get("revision"),
+        "case_count": len(cases),
+        "succeeded_cases": succeeded,
+        "failed_cases": failed,
+        "usable_cases": usable,
+        "run_configuration_id": task.get("run_configuration_id"),
+        "results_available": usable > 0,
+    }
+
+
+@app.put("/api/analysis-definitions/{analysis_id}/input-domains/{domain_id}")
+def update_analysis_input_domain(analysis_id: str, domain_id: str, payload: InputDomainUpdate):
+    try:
+        return engineering_platform.update_input_domain(analysis_id, domain_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="分析案例不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/revisions", status_code=201)
+def create_analysis_definition_revision(analysis_id: str, payload: AnalysisDefinitionRevisionCreate):
+    try:
+        return engineering_platform.create_analysis_revision(analysis_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Analysis Definition 不存在") from exc
+
+
 @app.post("/api/designs", status_code=201)
 def create_design(payload: DesignCreate):
     try:
@@ -1235,6 +2649,121 @@ def get_design(design_id: str):
     if payload is None:
         raise HTTPException(status_code=404, detail="design not found")
     return payload
+
+
+@app.get("/api/designs/{design_id}/draft")
+def get_design_draft(design_id: str):
+    if workspace.get_design(design_id) is None:
+        raise HTTPException(status_code=404, detail="design not found")
+    draft = workspace.get_design_draft(design_id)
+    return {"exists": bool(draft), "draft": draft}
+
+
+@app.put("/api/designs/{design_id}/draft")
+def save_design_draft(design_id: str, payload: DesignDraftUpdate):
+    existing = workspace.get_design_draft(design_id)
+    if existing and str(existing.get("base_revision_id") or "") != str(payload.base_revision_id):
+        raise HTTPException(status_code=409, detail="该电机已有基于其他 Design Revision 的未冻结草稿，请先恢复或放弃该草稿")
+    try:
+        draft = workspace.save_design_draft(
+            design_id, payload.base_revision_id, payload.parameters, payload.materials,
+            payload.explicit_parameter_ids, payload.active_view, payload.notes, payload.expected_version,
+        )
+        return {"exists": True, "draft": draft}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="design not found") from exc
+    except DesignDraftConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "DESIGN_DRAFT_STALE",
+                "message": "该设计草稿已在另一个窗口更新，请重新加载最新草稿后继续编辑。",
+                "current_version": exc.current.get("version"),
+                "updated_at": exc.current.get("updated_at"),
+            },
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.delete("/api/designs/{design_id}/draft")
+def delete_design_draft(design_id: str, expected_version: int | None = Query(default=None, ge=0)):
+    if workspace.get_design(design_id) is None:
+        raise HTTPException(status_code=404, detail="design not found")
+    try:
+        deleted = workspace.delete_design_draft(design_id, expected_version=expected_version)
+    except DesignDraftConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "DESIGN_DRAFT_STALE",
+                "message": "该设计草稿已在另一个窗口更新，当前删除操作已取消。",
+                "current_version": exc.current.get("version"),
+                "updated_at": exc.current.get("updated_at"),
+            },
+        ) from exc
+    return {"status": "deleted" if deleted else "absent", "design_id": design_id}
+
+
+@app.get("/api/motor-domain/catalog")
+def get_motor_domain_catalog():
+    return motor_domain.catalog()
+
+
+@app.post("/api/projects/{project_id}/motor-domain/backfill")
+def backfill_project_motor_snapshots(project_id: str):
+    try:
+        return workspace.backfill_motor_snapshots(project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="project not found") from exc
+
+
+@app.get("/api/design-revisions/{revision_id}/motor-snapshot")
+def get_design_revision_motor_snapshot(revision_id: str):
+    revision = workspace.get_design_revision(revision_id)
+    if not revision:
+        raise HTTPException(status_code=404, detail="design revision not found")
+    design = workspace.get_design(str(revision.get("design_id") or ""))
+    if not design:
+        raise HTTPException(status_code=404, detail="design not found")
+    snapshot = revision.get("motor_snapshot") or motor_domain.build_snapshot(design, revision).model_dump(mode="json")
+    return {
+        "design_id": design.get("id"),
+        "design_revision_id": revision_id,
+        "design_revision": revision.get("revision"),
+        "snapshot": snapshot,
+        "snapshot_hash": revision.get("motor_snapshot_hash") or MotorSnapshot.model_validate(snapshot).content_hash(),
+        "persisted": bool(revision.get("motor_snapshot_persisted")),
+        "legacy": {
+            "parameters": revision.get("parameters") or {},
+            "materials": revision.get("materials") or {},
+            "explicit_parameter_ids": revision.get("explicit_parameter_ids") or [],
+        },
+    }
+
+
+@app.post("/api/design-revisions/{revision_id}/motor-snapshot/change-impact")
+def preview_design_revision_motor_change(revision_id: str, payload: MotorChangePreviewRequest):
+    revision = workspace.get_design_revision(revision_id)
+    if not revision:
+        raise HTTPException(status_code=404, detail="design revision not found")
+    design = workspace.get_design(str(revision.get("design_id") or ""))
+    if not design:
+        raise HTTPException(status_code=404, detail="design not found")
+    before_payload = revision.get("motor_snapshot") or motor_domain.build_snapshot(design, revision).model_dump(mode="json")
+    before = MotorSnapshot.model_validate(before_payload)
+    changed = dict(revision)
+    changed["parameters"] = {**dict(revision.get("parameters") or {}), **_clean_parameter_overrides(payload.parameters)}
+    changed["explicit_parameter_ids"] = sorted(set(revision.get("explicit_parameter_ids") or []) | set(payload.explicit_parameter_ids or payload.parameters.keys()))
+    after = motor_domain.build_snapshot(design, changed)
+    impact = motor_domain.diff(before, after)
+    return {
+        "design_id": design.get("id"),
+        "design_revision_id": revision_id,
+        "before_snapshot_hash": before.content_hash(),
+        "after_snapshot_hash": after.content_hash(),
+        "impact": impact.model_dump(mode="json"),
+    }
 
 
 @app.get("/api/design-revisions/{revision_id}/workbench")
@@ -1263,11 +2792,11 @@ def create_design_revision(design_id: str, payload: DesignRevisionCreate):
     except KeyError:
         template = None
     if template:
-        # Design Revisions are durable engineering baselines.  Prevent a known-invalid
-        # slot/pole/geometry definition from becoming an immutable project baseline.
-        # Legacy API clients may send a partial parameter payload, so validate it on top
-        # of the template baseline while treating supplied keys as explicit intent.
-        design_parameters = domain.filter_design_parameters(str(template.get("id") or ""), payload.parameters or {})
+        # A revision is an editable engineering draft.  Record deterministic issues in
+        # the audit trail, but apply the hard gate only in the calculation precheck.
+        # This lets an engineer save intermediate geometry without starting a check on
+        # every keystroke, while an invalid draft can never reach Motor-CAD or solve.
+        design_parameters = domain.filter_design_parameters(str(template.get("id") or ""), _clean_parameter_overrides(payload.parameters))
         merged = {**domain.filter_design_parameters(str(template.get("id") or ""), template.get("defaults") or {}), **design_parameters}
         explicit = [pid for pid in (payload.explicit_parameter_ids or list(design_parameters.keys())) if domain.parameter_scope(str(template.get("id") or ""), pid) == "design"]
         geometry_check = validate_geometry_relations(merged, template, explicit)
@@ -1279,21 +2808,75 @@ def create_design_revision(design_id: str, payload: DesignRevisionCreate):
         if blocking:
             logs.audit(
                 level="WARNING", component="design_revision", event_type="DESIGN_REVISION_MODEL_BLOCKED",
-                message=f"blocked invalid immutable revision for {design_id}",
+                message=f"saved draft revision with deterministic issues for {design_id}",
                 payload={"design_id": design_id, "template_id": template.get("id"), "issues": blocking},
             )
-            raise HTTPException(status_code=422, detail={
-                "code": "DESIGN_REVISION_MODEL_INVALID",
-                "message": "当前设计参数存在确定性的几何或绕组阻断，不能保存为不可变 Design Revision。",
-                "issues": blocking,
-            })
     if template:
-        stored_parameters = domain.filter_design_parameters(str(template.get("id") or ""), payload.parameters or {})
+        stored_parameters = domain.filter_design_parameters(str(template.get("id") or ""), _clean_parameter_overrides(payload.parameters))
         stored_explicit = [pid for pid in payload.explicit_parameter_ids if domain.parameter_scope(str(template.get("id") or ""), pid) == "design"]
     else:
-        stored_parameters = payload.parameters
+        stored_parameters = _clean_parameter_overrides(payload.parameters)
         stored_explicit = payload.explicit_parameter_ids
-    return workspace.create_design_revision(design_id, stored_parameters, payload.materials, payload.notes, stored_explicit)
+    created = workspace.create_design_revision(
+        design_id, stored_parameters, payload.materials, payload.notes, stored_explicit,
+        automation_parameters=payload.automation_parameters,
+        capability_snapshot=payload.capability_snapshot,
+    )
+    # Design revisions are immutable and analysis definitions stay pinned to the
+    # revision they explicitly reference.  A caller that wants a case to adopt this
+    # revision must perform an explicit link update; other cases remain reproducible.
+    return created
+
+
+@app.post("/api/designs/{design_id}/draft/commit", status_code=201)
+def commit_design_draft(design_id: str, payload: DesignDraftCommit):
+    # Hold the database re-entrant lock across read -> revision creation -> draft delete.
+    # PUT/DELETE draft writers use the same lock, so another browser tab cannot change
+    # the draft between the optimistic version check and the immutable Revision freeze.
+    with workspace.db.locked():
+        draft = workspace.get_design_draft(design_id)
+        if not draft:
+            raise HTTPException(status_code=404, detail="design draft not found")
+        current_version = int(draft.get("version") or 0)
+        if payload.expected_version is not None and current_version != int(payload.expected_version):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "DESIGN_DRAFT_STALE",
+                    "message": "该设计草稿已在另一个窗口更新，请重新加载最新草稿后再保存 Revision。",
+                    "current_version": current_version,
+                    "updated_at": draft.get("updated_at"),
+                },
+            )
+        base = workspace.get_design_revision(str(draft.get("base_revision_id") or ""))
+        if not base or str(base.get("design_id")) != str(design_id):
+            raise HTTPException(status_code=409, detail="design draft base revision is no longer available")
+        design = workspace.get_design(design_id) or {}
+        latest = (design.get("revisions") or [None])[0]
+        if latest and str(latest.get("id") or "") != str(base.get("id") or ""):
+            raise HTTPException(status_code=409, detail="该电机已产生更新的 Design Revision，请重新打开最新版本后再继续编辑")
+        linked_analysis_id = None
+        if payload.analysis_definition_id:
+            analysis = engineering_platform.get_analysis_definition(payload.analysis_definition_id)
+            if not analysis:
+                raise HTTPException(status_code=404, detail="要更新的分析案例不存在")
+            current_analysis_revision = workspace.get_design_revision(str(analysis.get("design_revision_id") or ""))
+            if not current_analysis_revision or str(current_analysis_revision.get("design_id")) != str(design_id):
+                raise HTTPException(status_code=409, detail="当前分析案例没有引用正在编辑的电机设计")
+            linked_analysis_id = payload.analysis_definition_id
+        revision_payload = DesignRevisionCreate(
+            parameters=dict(draft.get("parameters") or {}),
+            materials=dict(draft.get("materials") or {}),
+            explicit_parameter_ids=list(draft.get("explicit_parameter_ids") or []),
+            notes=str(payload.notes if payload.notes is not None else draft.get("notes") or ""),
+        )
+        created = create_design_revision(design_id, revision_payload)
+        if linked_analysis_id:
+            engineering_platform.set_analysis_design_revision(linked_analysis_id, str(created.get("id") or ""))
+        # The lock guarantees this is the same draft version checked above.
+        workspace.delete_design_draft(design_id, expected_version=current_version)
+        created["linked_analysis_definition_id"] = linked_analysis_id
+        return created
 
 
 @app.get("/api/projects/{project_id}/domain-integrity")
@@ -1542,6 +3125,93 @@ def materials_catalog(language: str = Query(default="zh")):
     return material_catalog.grouped(language)
 
 
+@app.get("/api/material-library/status")
+def material_library_status():
+    return material_library.status()
+
+
+@app.post("/api/material-library/scan")
+def material_library_scan():
+    try:
+        return material_library.scan_and_import()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"材料数据库扫描失败: {exc}") from exc
+
+
+@app.post("/api/material-library/import")
+def material_library_import(payload: dict[str, Any]):
+    path = str(payload.get("path") or "").strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="请提供 Motor-CAD .mdb 文件路径")
+    try:
+        return material_library.import_database(path, replace=bool(payload.get("replace", True)), source="manual")
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"材料数据库文件不存在: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"材料数据库导入失败: {exc}") from exc
+
+
+@app.get("/api/material-library")
+def material_library_list(
+    q: str = Query(default="", max_length=200),
+    kind: str = Query(default="", pattern="^(|solid|fluid)$"),
+    material_type: str = Query(default="", max_length=32),
+    limit: int = Query(default=500, ge=1, le=5000),
+):
+    return {"records": material_library.list_records(q, kind, material_type, limit), "motorcad_version": settings.motorcad_version}
+
+
+@app.get("/api/material-library/{record_id}")
+def material_library_detail(record_id: str):
+    record = material_library.get_record(record_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="材料记录不存在")
+    return record
+
+
+@app.post("/api/material-library")
+def material_library_create(payload: dict[str, Any]):
+    try:
+        return material_library.create_record(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/api/material-library/{record_id}")
+def material_library_update(record_id: str, payload: dict[str, Any]):
+    try:
+        return material_library.update_record(record_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="材料记录不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/material-library/{record_id}/clone")
+def material_library_clone(record_id: str, payload: dict[str, Any] | None = None):
+    try:
+        return material_library.clone_record(record_id, str((payload or {}).get("name") or "").strip() or None)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="材料记录不存在") from exc
+
+
+@app.delete("/api/material-library/{record_id}")
+def material_library_delete(record_id: str):
+    if not material_library.delete_record(record_id):
+        raise HTTPException(status_code=404, detail="材料记录不存在")
+    return {"ok": True, "id": record_id}
+
+
+@app.post("/api/material-library/export-managed")
+def material_library_export_managed(payload: dict[str, Any]):
+    try:
+        return material_library.export_managed(str(payload.get("kind") or "solid"), payload.get("filename"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/result-viewer/catalog")
 def result_viewer_catalog():
     return result_viewer.catalog()
@@ -1556,6 +3226,38 @@ def result_viewer_compare(case_ids: str = Query(..., min_length=1)):
         raise HTTPException(status_code=404, detail=f"Case不存在: {exc.args[0]}") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/tasks/{task_id}/result-comparison")
+def task_result_comparison(task_id: str, case_ids: str = Query(..., min_length=1)):
+    ids = [item.strip() for item in case_ids.split(",") if item.strip()]
+    if len(ids) < 2 or len(ids) > 8 or len(set(ids)) != len(ids):
+        raise HTTPException(status_code=422, detail="同一 Task 工程比较必须选择 2–8 个互不重复的 Case")
+    if not db.query_one("SELECT id FROM tasks WHERE id=?", (task_id,)):
+        raise HTTPException(status_code=404, detail="任务不存在")
+    placeholders = ",".join("?" for _ in ids)
+    rows = db.query_all(f"SELECT id,task_id FROM cases WHERE id IN ({placeholders})", tuple(ids))
+    by_id = {str(row["id"]): str(row["task_id"]) for row in rows}
+    missing = [case_id for case_id in ids if case_id not in by_id]
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Case不存在: {missing[0]}")
+    foreign = [case_id for case_id in ids if by_id.get(case_id) != task_id]
+    if foreign:
+        raise HTTPException(status_code=422, detail={
+            "code": "CASE_COMPARISON_TASK_MISMATCH",
+            "message": "通用工程结果比较要求所有 Case 来自同一个 Task / Run Configuration。",
+            "task_id": task_id,
+            "foreign_case_ids": foreign,
+        })
+    try:
+        payload = result_viewer.compare_cases(ids)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Case不存在: {exc.args[0]}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    payload["comparison_scope"] = "same_task"
+    payload["task_id"] = task_id
+    return payload
 
 
 @app.get("/api/cases/{case_id}/viewer")
@@ -1624,7 +3326,7 @@ def template_geometry_precheck(template_id: str, payload: GeometryPrecheckReques
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     schema = registry.parameter_schema(template_id)
     from .validation import normalize_parameters
-    merged = normalize_parameters({**(template.get("defaults") or {}), **(payload.parameters or {})}, schema)
+    merged = normalize_parameters({**(template.get("defaults") or {}), **_clean_parameter_overrides(payload.parameters)}, schema)
     geometry = validate_geometry_relations(merged, template, payload.explicit_parameter_ids)
     winding = validate_winding_relations(merged, template, payload.explicit_parameter_ids)
     issues = list(geometry.get("issues", [])) + list(winding.get("issues", []))
@@ -1651,7 +3353,8 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     schema = registry.parameter_schema(template_id)
     from .validation import normalize_parameters
-    merged = normalize_parameters({**(template.get("defaults") or {}), **(payload.parameters or {})}, schema)
+    clean_parameters = _clean_parameter_overrides(payload.parameters)
+    merged = normalize_parameters({**(template.get("defaults") or {}), **clean_parameters}, schema)
     winding_precheck = validate_winding_relations(merged, template, payload.explicit_parameter_ids)
     if not winding_precheck.get("valid", True):
         logs.audit(
@@ -1688,7 +3391,7 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         "strict_parameter_mapping": settings.strict_parameter_mapping,
         "model_policy": settings.model_policy,
         "template": template,
-        "parameters": {key: value for key, value in payload.parameters.items() if key in set(payload.explicit_parameter_ids or [])},
+        "parameters": {key: value for key, value in clean_parameters.items() if key in set(payload.explicit_parameter_ids or [])},
         "materials": payload.materials.model_dump(mode="json"),
         "analysis": "emag",
         "run_solver_smoke": False,
@@ -1770,6 +3473,7 @@ def validate_design(payload: DesignValidationRequest):
     task_request = TaskCreate(
         project_id=payload.project_id,
         design_revision_id=payload.design_revision_id,
+        analysis_definition_revision_id=payload.analysis_definition_revision_id,
         scenario_revision_id=payload.scenario_revision_id,
         template_id=payload.template_id,
         solver_mode=payload.solver_mode,
@@ -1936,13 +3640,13 @@ def case_execution_lease(case_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Case不存在")
     if not row.get("work_dir"):
-        raise HTTPException(status_code=404, detail="Case尚无运行目录")
+        return {"case": row, "lease": None, "pending": True, "reason": "Case正在等待运行目录与执行租约"}
     path = (Path(row["work_dir"]) / "execution_lease.json").resolve()
     results_root = settings.results_dir.resolve()
     if results_root != path and results_root not in path.parents:
         raise HTTPException(status_code=403, detail="执行租约路径不在允许目录")
     if not path.exists():
-        raise HTTPException(status_code=404, detail="当前Case尚无Validate-and-Run执行租约证据")
+        return {"case": row, "lease": None, "pending": True, "reason": "Validate-and-Run执行租约正在建立"}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:
@@ -1963,12 +3667,33 @@ def _case_native_fea_root(case_id: str) -> tuple[dict[str, Any], Path]:
     return row, root
 
 
+def _verified_fea_frame(root: Path, record: dict[str, Any]) -> tuple[Path, str, str | None]:
+    frame = (root / "frames" / str(record.get("file"))).resolve()
+    if root not in frame.parents or not frame.exists():
+        raise HTTPException(status_code=404, detail="FEA帧文件已丢失")
+    expected_size = int(record.get("size_bytes") or 0)
+    expected_hash = str(record.get("sha256") or "")
+    if expected_size and frame.stat().st_size != expected_size:
+        raise HTTPException(status_code=409, detail="FEA帧完整性校验失败：文件大小与归档清单不一致")
+    if expected_hash:
+        actual_hash = file_sha256(frame)
+        if actual_hash != expected_hash:
+            raise HTTPException(status_code=409, detail="FEA帧完整性校验失败：SHA-256 与归档清单不一致")
+        return frame, "VERIFIED", expected_hash
+    return frame, "UNVERIFIED_LEGACY", None
+
+
 @app.get("/api/cases/{case_id}/fea-evidence")
 def case_fea_evidence(case_id: str):
     row, root = _case_native_fea_root(case_id)
     manifest_path = root / "native_fea_manifest.json"
     if not manifest_path.exists():
-        return {"case_id": case_id, "task_id": row["task_id"], "available": False, "status": "NOT_EXPORTED"}
+        native_screen = (root.parent / "native_screens" / "fea_results.png").resolve()
+        return {
+            "case_id": case_id, "task_id": row["task_id"], "available": False, "status": "NOT_EXPORTED",
+            "native_screen_available": native_screen.exists(),
+            "native_screen_url": f"/api/cases/{case_id}/native-screen" if native_screen.exists() else None,
+        }
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except Exception as exc:
@@ -1976,6 +3701,13 @@ def case_fea_evidence(case_id: str):
     normalization = manifest.get("normalization") or {}
     capabilities = dict(normalization.get("capabilities") or {})
     capabilities.setdefault("raw_download", bool(manifest.get("raw_size_bytes")))
+    native_screen = (root.parent / "native_screens" / "fea_results.png").resolve()
+    frames = normalization.get("frames") if isinstance(normalization.get("frames"), list) else []
+    registered_frames = sum(
+        isinstance(frame.get("sha256"), str) and len(frame["sha256"]) == 64
+        and int(frame.get("size_bytes") or 0) > 0
+        for frame in frames
+    )
     return {
         "case_id": case_id, "task_id": row["task_id"], "available": True,
         "status": manifest.get("status"), "authority": manifest.get("authority"),
@@ -1985,13 +3717,100 @@ def case_fea_evidence(case_id: str):
         "raw_sha256": manifest.get("raw_sha256"),
         "first_step": manifest.get("first_step"), "final_step": manifest.get("final_step"),
         "normalization": normalization,
+        "validation": manifest.get("validation") or {},
+        "policy": manifest.get("policy"),
+        "contract_id": manifest.get("contract_id"),
         "capabilities": capabilities,
+        "integrity": {
+            "status": "REGISTERED" if registered_frames == len(frames) and frames else "UNVERIFIED_LEGACY",
+            "algorithm": "sha256" if registered_frames else None,
+            "registered_frame_count": registered_frames,
+            "frame_count": len(frames),
+            "verification_policy": "serve_and_probe_time",
+        },
+        "native_screen_available": native_screen.exists(),
+        "native_screen_url": f"/api/cases/{case_id}/native-screen" if native_screen.exists() else None,
         "evidence_boundary": "仅显示 Motor-CAD save_fea_data 的实际导出点；缺失网格连接时不生成伪等值云图。",
     }
 
 
+@app.get("/api/cases/{case_id}/native-screen")
+def case_native_screen(case_id: str):
+    row, root = _case_native_fea_root(case_id)
+    path = (root.parent / "native_screens" / "fea_results.png").resolve()
+    work_root = Path(str(row.get("work_dir") or "")).resolve()
+    if work_root != path and work_root not in path.parents:
+        raise HTTPException(status_code=403, detail="原生画面路径不在允许目录")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="当前 Case 尚无 Motor-CAD 原生画面")
+    screen_manifest = path.parent / "native_screen_manifest.json"
+    if screen_manifest.exists():
+        try:
+            expected = str(json.loads(screen_manifest.read_text(encoding="utf-8")).get("sha256") or "")
+        except (OSError, json.JSONDecodeError, TypeError) as exc:
+            raise HTTPException(status_code=409, detail=f"原生画面清单无法验证: {type(exc).__name__}") from exc
+        if expected and file_sha256(path) != expected:
+            raise HTTPException(status_code=409, detail="原生画面完整性校验失败：SHA-256 不一致")
+    return FileResponse(path, filename=f"{case_id}_motorcad_fea.png", media_type="image/png")
+
+
+@app.get("/api/cases/{case_id}/fea-stream")
+async def case_fea_stream(case_id: str):
+    row = db.query_one(
+        """SELECT cases.id,cases.task_id,cases.work_dir,cases.status,tasks.current_stage
+             FROM cases LEFT JOIN tasks ON tasks.id=cases.task_id WHERE cases.id=?""", (case_id,),
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Case不存在")
+
+    async def stream():
+        last_signature = ""
+        idle_cycles = 0
+        while idle_cycles < 600:
+            case = db.query_one(
+                """SELECT c.id,c.task_id,c.status,c.progress,c.updated_at,t.current_stage
+                     FROM cases c JOIN tasks t ON t.id=c.task_id WHERE c.id=?""", (case_id,),
+            ) or {}
+            try:
+                evidence = case_fea_evidence(case_id)
+            except HTTPException as exc:
+                if exc.status_code != 404:
+                    raise
+                evidence = {
+                    "case_id": case_id, "available": False, "status": "WAITING_FOR_WORK_DIR",
+                    "native_screen_url": None, "authority": None,
+                }
+            frames = ((evidence.get("normalization") or {}).get("frames") or []) if evidence.get("available") else []
+            payload = {
+                "event": "FEA_DATA_FRAME" if frames else "SOLVE_STAGE_CHANGED",
+                "case_id": case_id,
+                "status": case.get("status"),
+                "stage": case.get("current_stage"),
+                "progress": case.get("progress"),
+                "frame_count": len(frames),
+                "latest_frame_index": int(frames[-1].get("index")) if frames else None,
+                "native_screen_url": evidence.get("native_screen_url"),
+                "authority": evidence.get("authority"),
+                "updated_at": case.get("updated_at"),
+            }
+            signature = hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+            if signature != last_signature:
+                last_signature = signature
+                yield f"event: {payload['event']}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                idle_cycles = 0
+            else:
+                idle_cycles += 1
+                if idle_cycles % 15 == 0:
+                    yield ": heartbeat\n\n"
+            if str(case.get("status") or "") in {"COMPLETED", "FAILED", "CANCELLED", "PARTIALLY_COMPLETED"}:
+                yield f"event: ANALYSIS_COMPLETED\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                break
+            await asyncio.sleep(1.0)
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 @app.get("/api/cases/{case_id}/fea-frames/{frame_index}")
-def case_fea_frame(case_id: str, frame_index: int):
+def case_fea_frame(case_id: str, frame_index: int, request: Request):
     _, root = _case_native_fea_root(case_id)
     manifest_path = root / "native_fea_manifest.json"
     if not manifest_path.exists():
@@ -2001,10 +3820,95 @@ def case_fea_frame(case_id: str, frame_index: int):
     record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
     if not record:
         raise HTTPException(status_code=404, detail="FEA帧不存在")
-    frame = (root / "frames" / str(record.get("file"))).resolve()
-    if root not in frame.parents or not frame.exists():
-        raise HTTPException(status_code=404, detail="FEA帧文件已丢失")
-    return JSONResponse(json.loads(frame.read_text(encoding="utf-8")))
+    frame, integrity_status, digest = _verified_fea_frame(root, record)
+    etag = f'"{digest}"' if digest else None
+    if etag and request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    try:
+        payload = json.loads(frame.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA帧内容无法解析: {type(exc).__name__}") from exc
+    payload["integrity"] = {"status": integrity_status, "sha256": digest}
+    headers = {"Cache-Control": "private, max-age=31536000, immutable"}
+    if etag:
+        headers["ETag"] = etag
+    return JSONResponse(payload, headers=headers)
+
+
+@app.get("/api/cases/{case_id}/fea-frames/{frame_index}/view")
+def case_fea_frame_view(
+    case_id: str,
+    frame_index: int,
+    request: Request,
+    field: str = Query(default="b", pattern="^(b|bx|by|pt|current_density|eddy_current_density|stress|displacement)$"),
+    region: str | None = Query(default=None, max_length=160),
+    max_points: int = Query(default=12000, ge=250, le=20000),
+    xmin: float | None = Query(default=None),
+    xmax: float | None = Query(default=None),
+    ymin: float | None = Query(default=None),
+    ymax: float | None = Query(default=None),
+):
+    """Return a verified, field-specific FEA level-of-detail view.
+
+    The immutable frame stays the evidence source.  This endpoint only reduces
+    transfer and browser parsing work; every response retains extrema/region
+    coverage metadata and the source frame digest.
+    """
+    bounds_values = (xmin, xmax, ymin, ymax)
+    if any(value is not None for value in bounds_values) and not all(value is not None for value in bounds_values):
+        raise HTTPException(status_code=422, detail="视口边界必须同时提供 xmin、xmax、ymin、ymax")
+    bounds = tuple(float(value) for value in bounds_values) if all(value is not None for value in bounds_values) else None
+    if bounds and (bounds[0] >= bounds[1] or bounds[2] >= bounds[3]):
+        raise HTTPException(status_code=422, detail="FEA 视口边界无效")
+
+    _, root = _case_native_fea_root(case_id)
+    manifest_path = root / "native_fea_manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="Case尚无原生FEA证据")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA清单无法解析: {type(exc).__name__}") from exc
+    normalization = manifest.get("normalization") or {}
+    if field not in (normalization.get("available_fields") or []):
+        raise HTTPException(status_code=422, detail=f"当前原生导出不包含字段: {field}")
+    frames = normalization.get("frames") or []
+    record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
+    if not record:
+        raise HTTPException(status_code=404, detail="FEA帧不存在")
+    frame_path, integrity_status, digest = _verified_fea_frame(root, record)
+    try:
+        source_payload = json.loads(frame_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA帧内容无法解析: {type(exc).__name__}") from exc
+    try:
+        payload = build_fea_frame_view(
+            source_payload, field=field, region=region, max_points=max_points, bounds=bounds,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    query_contract = json.dumps(
+        {"digest": digest, "field": field, "region": region, "max_points": max_points, "bounds": bounds},
+        sort_keys=True, separators=(",", ":"),
+    )
+    view_digest = hashlib.sha256(query_contract.encode("utf-8")).hexdigest()
+    etag = f'"{view_digest}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    payload["integrity"] = {"status": integrity_status, "source_sha256": digest, "view_contract_sha256": view_digest}
+    payload["transfer"] = {
+        "contract": "verified_progressive_fea_v1",
+        "source_frame_size_bytes": int(record.get("size_bytes") or 0),
+        "source_frame_point_count": int(record.get("point_count") or 0),
+    }
+    return JSONResponse(
+        payload,
+        headers={
+            "Cache-Control": "private, max-age=31536000, immutable",
+            "ETag": etag,
+            "X-FEA-View-Points": str(payload.get("point_count") or 0),
+        },
+    )
 
 
 @app.get("/api/cases/{case_id}/fea-probe")
@@ -2013,7 +3917,7 @@ def case_fea_probe(
     frame_index: int = Query(default=0, ge=0),
     x: float = Query(...),
     y: float = Query(...),
-    field: str = Query(default="b", pattern="^(b|bx|by|pt)$"),
+    field: str = Query(default="b", pattern="^(b|bx|by|pt|current_density|eddy_current_density|stress|displacement)$"),
     region: str | None = Query(default=None),
 ):
     _, root = _case_native_fea_root(case_id)
@@ -2029,10 +3933,11 @@ def case_fea_probe(
     record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
     if not record:
         raise HTTPException(status_code=404, detail="FEA帧不存在")
-    frame_path = (root / "frames" / str(record.get("file"))).resolve()
-    if root not in frame_path.parents or not frame_path.exists():
-        raise HTTPException(status_code=404, detail="FEA帧文件已丢失")
-    frame_payload = json.loads(frame_path.read_text(encoding="utf-8"))
+    frame_path, integrity_status, digest = _verified_fea_frame(root, record)
+    try:
+        frame_payload = json.loads(frame_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA帧内容无法解析: {type(exc).__name__}") from exc
     points = [
         point for point in (frame_payload.get("points") or [])
         if point.get(field) is not None and (region is None or str(point.get("region")) == region)
@@ -2046,6 +3951,7 @@ def case_fea_probe(
         "requested": {"x": x, "y": y, "region": region},
         "nearest": nearest, "value": nearest.get(field), "distance": distance,
         "authority": "motorcad_native_export_nearest_point",
+        "integrity": {"status": integrity_status, "sha256": digest},
     }
 
 
@@ -2055,7 +3961,75 @@ def case_fea_raw(case_id: str):
     raw = root / "native_fea_raw.csv"
     if not raw.exists():
         raise HTTPException(status_code=404, detail="Case尚无原生FEA原始导出")
+    manifest_path = root / "native_fea_manifest.json"
+    if manifest_path.exists():
+        try:
+            expected = str(json.loads(manifest_path.read_text(encoding="utf-8")).get("raw_sha256") or "")
+        except (OSError, json.JSONDecodeError, TypeError) as exc:
+            raise HTTPException(status_code=409, detail=f"FEA原始文件清单无法验证: {type(exc).__name__}") from exc
+        if expected and file_sha256(raw) != expected:
+            raise HTTPException(status_code=409, detail="FEA原始文件完整性校验失败：SHA-256 不一致")
     return FileResponse(raw, filename=f"{case_id}_native_fea.csv", media_type="text/csv")
+
+
+def _verified_native_table(case_id: str, output_id: str) -> tuple[Path, dict[str, Any]]:
+    row, fea_root = _case_native_fea_root(case_id)
+    root = (fea_root.parent / "native_tables").resolve()
+    manifest_path = root / "native_table_manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="当前 Case 尚无原生表格清单")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"原生表格清单无法解析: {type(exc).__name__}") from exc
+    record = (manifest.get("tables") or {}).get(output_id)
+    if not isinstance(record, dict):
+        raise HTTPException(status_code=404, detail="原生表格不存在")
+    path = (root / str(record.get("source_file") or "")).resolve()
+    work_root = Path(str(row.get("work_dir") or "")).resolve()
+    if work_root not in path.parents or root not in path.parents:
+        raise HTTPException(status_code=403, detail="原生表格路径不在允许目录")
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="原生表格文件已丢失")
+    expected_size = int(record.get("source_size_bytes") or 0)
+    expected_hash = str(record.get("source_sha256") or "")
+    if expected_size and path.stat().st_size != expected_size:
+        raise HTTPException(status_code=409, detail="原生表格完整性校验失败：文件大小不一致")
+    if expected_hash and cached_file_sha256(path) != expected_hash:
+        raise HTTPException(status_code=409, detail="原生表格完整性校验失败：SHA-256 不一致")
+    return path, record
+
+
+@app.get("/api/cases/{case_id}/native-tables/{output_id}/rows")
+def case_native_table_rows(
+    case_id: str,
+    output_id: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=200, ge=1, le=500),
+):
+    path, record = _verified_native_table(case_id, output_id)
+    page, error = read_native_table_page(
+        path,
+        columns=list(record.get("columns") or []),
+        delimiter=str(record.get("delimiter") or ","),
+        offset=offset,
+        limit=limit,
+    )
+    if error or page is None:
+        raise HTTPException(status_code=409, detail=f"原生表格分页读取失败：{error or 'unknown'}")
+    page.update({
+        "case_id": case_id,
+        "output_id": output_id,
+        "source_row_count": int(record.get("source_row_count") or 0),
+        "integrity": {"status": "VERIFIED", "source_sha256": record.get("source_sha256")},
+    })
+    return page
+
+
+@app.get("/api/cases/{case_id}/native-tables/{output_id}")
+def case_native_table(case_id: str, output_id: str):
+    path, _ = _verified_native_table(case_id, output_id)
+    return FileResponse(path, filename=f"{case_id}_{path.name}", media_type="text/csv")
 
 
 @app.get("/api/tasks")
@@ -2069,6 +4043,25 @@ def get_task_summary(task_id: str):
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
     return task
+
+
+@app.get("/api/tasks/{task_id}/fea-result-summary")
+def get_task_fea_result_summary(task_id: str):
+    summary = tasks.fea_result_summary(task_id)
+    if summary is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    return summary
+
+
+@app.post("/api/tasks/{task_id}/retry-incomplete")
+def retry_incomplete_task_cases(task_id: str):
+    try:
+        count = tasks.retry_incomplete_cases(task_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="任务不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"task_id": task_id, "requeued_cases": count, "status": "QUEUED" if count else "NO_ACTION"}
 
 
 @app.get("/api/tasks/{task_id}/cases")

@@ -30,14 +30,14 @@
     const native=gate.runtimeStatus||'UNCHECKED';
     const runtime=s.runtimeSubmissionReadyV028;
     const rows=[
-      {label:'Design 快照',detail:design?'已绑定不可变 Revision':'选择 Design Revision',state:design?'done':'current'},
-      {label:'快速提交检查',detail:fast?'Studio + 确定性约束通过':'自动检查参数、工况与模型关系',state:fast?'done':design?'current':'future'},
-      {label:'运行环境',detail:runtime===true?'PyMotorCAD / 有效EXE静态就绪':runtime===false?'运行环境存在阻断':'正在读取静态就绪状态',state:runtime===true?'done':runtime===false?'blocked':'current'},
-      {label:'Task + 资源租约',detail:'幂等创建 + Worker / 许可证 / 内存原子调度',state:fast&&runtime===true?'current':'future'},
-      {label:'Motor-CAD 原生校验',detail:'同一 Worker / Session 参数回读、Geometry、Winding',state:'future'},
-      {label:'求解与结果',detail:'PASS 后直接 FEA → 结果 → Evidence',state:'future'},
+      {label:'当前电机',detail:design?'设计版本已选定':'请选择电机设计版本',state:design?'done':'current'},
+      {label:'参数预检查',detail:fast?'几何、绕组与工况检查通过':'检查尺寸关系、绕组和物理边界',state:fast?'done':design?'current':'future'},
+      {label:'计算环境',detail:runtime===true?'Motor-CAD 可以启动':runtime===false?'计算环境存在问题':'正在检查 Motor-CAD',state:runtime===true?'done':runtime===false?'blocked':'current'},
+      {label:'进入计算',detail:'自动排队并分配可用计算资源',state:fast&&runtime===true?'current':'future'},
+      {label:'模型检查',detail:'Motor-CAD 检查几何、绕组与材料',state:'future'},
+      {label:'求解与结果验证',detail:'自动提取指标、曲线和有限元场',state:'future'},
     ];
-    box.innerHTML=`<div class="execution-flow-title-v028"><div><span class="eyebrow">本次计算将如何执行</span><b>${fast?'可以提交':'尚未满足提交条件'}</b></div><small>日常流程不再要求先启动一个独立 Motor-CAD 实例。提交后原生校验与正式求解连续完成。</small></div><div class="execution-flow-track-v028">${rows.map((row,i)=>`<div class="execution-flow-step-v028 ${row.state}"><span>${row.state==='done'?'✓':i+1}</span><div><b>${escHtml(row.label)}</b><small>${escHtml(row.detail)}</small></div></div>`).join('')}</div>${runtime===false?`<div class="execution-flow-advisory-v028"><b>运行环境阻断：</b> ${escHtml((s.runtimeSubmissionChecksV028||[]).find(x=>String(x.status).toUpperCase()==='FAIL')?.message||'请检查PyMotorCAD与Motor-CAD.exe路径。')}</div>`:''}${native==='FAIL'?'<div class="execution-flow-advisory-v028">独立 Motor-CAD 预检发现问题。该结果作为附加诊断显示，不会冒充正式 Task 的同会话 Validation Evidence。</div>':''}`;
+    box.innerHTML=`<div class="execution-flow-title-v028"><div><span class="eyebrow">开始计算前</span><b>${fast?'可以开始计算':'还有问题需要处理'}</b></div><small>系统会按顺序完成参数预检查、Motor-CAD 模型检查、正式求解和结果提取。</small></div><div class="execution-flow-track-v028">${rows.map((row,i)=>`<div class="execution-flow-step-v028 ${row.state}"><span>${row.state==='done'?'✓':i+1}</span><div><b>${escHtml(row.label)}</b><small>${escHtml(row.detail)}</small></div></div>`).join('')}</div>${runtime===false?`<div class="execution-flow-advisory-v028"><b>计算环境尚未就绪：</b> ${escHtml((s.runtimeSubmissionChecksV028||[]).find(x=>String(x.status).toUpperCase()==='FAIL')?.message||'请检查 Motor-CAD 安装路径。')}</div>`:''}${native==='FAIL'?'<div class="execution-flow-advisory-v028">Motor-CAD 模型检查发现问题，请按提示修改几何、绕组或材料后重试。</div>':''}`;
   }
 
   window.renderExecutionFlowV028=renderExecutionFlowV028;window.loadRuntimeSubmissionReadinessV028=loadRuntimeSubmissionReadinessV028;

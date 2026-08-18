@@ -87,7 +87,7 @@ def validate_scenario(scenario: dict[str, Any], analysis: AnalysisType) -> list[
     flow = scenario.get("coolant_flow_rate_lpm")
     inlet = scenario.get("coolant_inlet_temperature_c")
     air_speed = scenario.get("external_air_speed_mps")
-    if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED}:
+    if analysis in {AnalysisType.THERMAL_STEADY, AnalysisType.THERMAL_TRANSIENT, AnalysisType.EMAG_THERMAL, AnalysisType.EMAG_THERMAL_COUPLED, AnalysisType.LAB_THERMAL, AnalysisType.LAB_DUTY_CYCLE}:
         if cooling in {"water_jacket", "oil_spray", "wet_rotor", "immersion"} and inlet is None:
             issues.append(_issue("COOLING_INLET_MISSING", "WARNING", "液体冷却未设置入口温度，将沿用模板默认值", "coolant_inlet_temperature_c"))
         if cooling == "water_jacket" and (flow is None or float(flow) <= 0):
@@ -102,7 +102,14 @@ def validate_scenario(scenario: dict[str, Any], analysis: AnalysisType) -> list[
 def validate_template_capability(template: dict[str, Any], analysis: AnalysisType, solver_mode: str) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     capabilities = template.get("capabilities", {}).get(solver_mode, {})
-    state = capabilities.get(analysis.value, "unknown")
+    fallback = {
+        "emag_saturation_map": "emag", "emag_torque_envelope": "emag",
+        "emag_multi_force": "emag", "emag_force_harmonics": "emag",
+        "weight": "mechanical", "lab_thermal": "lab_magnetic",
+        "lab_duty_cycle": "lab_operating_point", "lab_generator": "lab_operating_point",
+        "lab_test_performance": "lab_operating_point",
+    }
+    state = capabilities.get(analysis.value, capabilities.get(fallback.get(analysis.value, ""), "unknown"))
     if state == "unsupported":
         issues.append(_issue("ANALYSIS_UNSUPPORTED", "BLOCKING", f"当前模板不支持 {analysis.value} 分析"))
     elif state in {"unknown", "version_dependent", "verification_required", None}:
@@ -118,6 +125,7 @@ def evaluate_result_quality(
     profile: dict[str, Any],
     solver_mode: str,
     series: dict[str, Any] | None = None,
+    maps: dict[str, Any] | None = None,
     parameters: dict[str, Any] | None = None,
 ) -> list[QualityFlag]:
     flags: list[QualityFlag] = []
@@ -128,18 +136,26 @@ def evaluate_result_quality(
     if solver_mode == "mock":
         flags.append(QualityFlag(code="MOCK_RESULT", severity="WARNING", message="Mock结果仅用于软件流程验证"))
     series = series or {}
+    maps = maps or {}
     parameters = parameters or {}
     for output_id in output_ids:
         definition = output_schema.get(output_id)
         if not definition:
             continue
-        if definition.get("type", "scalar") == "series":
+        output_type = str(definition.get("type") or "scalar")
+        if output_type in {"series", "spectrum"}:
             curve = series.get(output_id)
             if not curve or not curve.get("x") or not curve.get("y"):
                 severity = profile.get("missing_required_severity", "BLOCKING") if definition.get("required") else profile.get("missing_optional_severity", "WARNING")
                 flags.append(QualityFlag(code="SERIES_MISSING", severity=severity, message=f"缺少曲线：{definition.get('label', output_id)}", result_id=output_id))
             elif len(curve.get("x", [])) != len(curve.get("y", [])):
                 flags.append(QualityFlag(code="SERIES_LENGTH_MISMATCH", severity="BLOCKING", message="曲线横纵坐标长度不一致", result_id=output_id))
+            continue
+        if output_type in {"map", "map2d", "field", "mesh_field", "vector_field", "table"}:
+            value = maps.get(output_id)
+            if not isinstance(value, (dict, list)) or not value:
+                severity = profile.get("missing_required_severity", "BLOCKING") if definition.get("required") else profile.get("missing_optional_severity", "WARNING")
+                flags.append(QualityFlag(code="STRUCTURED_RESULT_MISSING", severity=severity, message=f"缺少结构化结果：{definition.get('label', output_id)}", result_id=output_id))
             continue
         value = scalars.get(output_id)
         if value is None:

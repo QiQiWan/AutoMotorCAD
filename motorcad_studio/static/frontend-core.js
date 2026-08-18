@@ -27,6 +27,12 @@
     return Boolean(error && (error.name === 'AbortError' || error.code === 'ABORT_ERR' || error.mcsRouteAbort));
   }
 
+  function isContextActive(context) {
+    if (!context) return true;
+    if (typeof context.active !== 'function') return false;
+    try { return Boolean(context.active()); } catch { return false; }
+  }
+
   function createProgress() {
     let node = document.getElementById('routeProgressV025');
     if (node) return node;
@@ -159,5 +165,5 @@
     report('FRONTEND_UNHANDLED_REJECTION', 'ERROR', reason?.message || String(reason || 'Unhandled promise rejection'), {stack: reason?.stack || null});
   });
 
-  window.MCSPageRuntime = {begin, complete, fail, dispose, current, isAbortError, subscribe, report};
+  window.MCSPageRuntime = {begin, complete, fail, dispose, current, isAbortError, isContextActive, subscribe, report};
 })();

@@ -1,0 +1,112 @@
+/* MotorCAD Studio V0.66 — engineering parity closure.
+   Adds component-width navigation, live parameter coverage guidance,
+   material-library fixed panes, and a non-empty design validation dashboard. */
+
+/* Design stage rail: reserve a dedicated auxiliary-tool column so the four
+   engineering stages never compete with version comparison for width. */
+.design-stage-nav-v062,.workbench-stage-nav-v062{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) max-content;
+  align-items:stretch;
+  gap:8px;
+  min-width:0;
+}
+.design-stage-main-v062,.workbench-stage-main-v062{min-width:0;width:100%}
+.design-compare-utility-v062,.workbench-compare-v062{align-self:stretch;white-space:normal;min-width:96px;max-width:124px}
+.design-compare-utility-v062 small,.workbench-compare-v062 small{line-height:1.25;overflow-wrap:anywhere}
+
+@container design-viewer (max-width:1100px){
+  .design-stage-nav-v062{grid-template-columns:minmax(0,1fr)}
+  .design-stage-main-v062{grid-template-columns:repeat(4,minmax(110px,1fr));overflow-x:auto;scrollbar-width:thin}
+  .design-compare-utility-v062{justify-self:end;min-width:112px;max-width:none}
+}
+@container design-workspace (max-width:1180px){
+  .workbench-stage-nav-v062{grid-template-columns:minmax(0,1fr)}
+  .workbench-stage-main-v062{grid-template-columns:repeat(4,minmax(110px,1fr));overflow-x:auto;scrollbar-width:thin}
+  .workbench-compare-v062{justify-self:end;min-width:112px;max-width:none}
+}
+@container design-viewer (max-width:700px){.design-stage-main-v062{grid-template-columns:repeat(2,minmax(150px,1fr))}}
+@container design-workspace (max-width:700px){.workbench-stage-main-v062{grid-template-columns:repeat(2,minmax(150px,1fr))}}
+
+/* The workbench exposes a curated high-frequency parameter surface while
+   retaining a direct route to the target Motor-CAD version's full Automation
+   Parameter catalog. */
+.parameter-coverage-v066{display:grid;gap:6px;margin-top:8px;padding:9px;border:1px solid #d1e0ff;border-radius:9px;background:#f5f8ff}
+.parameter-coverage-v066 span{font-size:9px;line-height:1.45;color:#475467}
+.parameter-coverage-v066 button{width:100%;min-width:0;padding:7px 8px;border-color:#84adff;background:#fff;color:#1849a9;font-size:9px;font-weight:800}
+
+/* Live engineering figures should remain legible without forcing root-page
+   horizontal scroll. */
+.axial-canvas-v031 svg,.radial-canvas-v031 svg,.winding-canvas-v031 svg,.slot-canvas-v031 svg{display:block;width:100%;height:auto;max-width:100%}
+.winding-slot-number-v066{font-size:9px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round}
+
+/* Material library: the dialog owns the viewport; source information remains
+   visible while material list and detail are independently scrollable. */
+.material-library-shell-v061>section{height:min(94vh,980px);max-height:94vh;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+.material-library-body-v061{min-height:0;overflow:hidden;display:grid;grid-template-rows:auto auto auto minmax(0,1fr);gap:12px;padding:14px}
+.material-manager-mode-v066,.material-picker-banner-v062{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 12px;border:1px solid #b2ccff;border-radius:9px;background:#f5f8ff;color:#344054}
+.material-manager-mode-v066 b,.material-picker-banner-v062 b{font-size:10px;color:#1849a9}.material-manager-mode-v066 span,.material-picker-banner-v062 span{font-size:9px;line-height:1.45;color:#475467}
+.material-library-intro-v061{min-height:0;padding:11px 13px}.material-library-intro-v061 h3{margin:2px 0 3px;font-size:15px}.material-library-intro-v061 p{margin:0;font-size:9px;line-height:1.4}
+.material-source-section-v061{min-height:0}.material-source-section-v061>header{padding:9px 12px}.material-source-section-v061>header h3{font-size:13px}.material-source-section-v061>header p{font-size:9px}.material-import-row-v061{padding:8px 12px}.material-source-grid-v061{padding:0 12px 10px}
+.material-manager-v061{height:100%;min-height:0;max-height:none;grid-template-columns:330px minmax(0,1fr)}
+.material-manager-v061>aside{height:100%;min-height:0;overflow:hidden;grid-template-rows:auto auto minmax(0,1fr) auto}
+.material-record-list-v061{min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.material-manager-v061>main{height:100%;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:16px 18px}
+.material-detail-head-v061{position:sticky;top:-16px;z-index:3;margin:-16px -18px 12px;padding:16px 18px 12px;background:var(--panel,#fff);border-bottom:1px solid var(--border,#e4e7ec)}
+.material-key-properties-v066{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.material-key-properties-v066>div{display:grid;gap:3px;min-width:0;padding:10px;border:1px solid var(--border,#e4e7ec);border-radius:9px;background:#f8fafc}
+.material-key-properties-v066 span,.material-key-properties-v066 small{font-size:8px;color:#667085;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.material-key-properties-v066 b{font-size:11px;color:#101828;overflow-wrap:anywhere}.material-key-properties-v066 em{font-size:8px;font-style:normal;color:#667085;font-weight:500}
+.material-detail-section-title-v066{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:14px}.material-detail-section-title-v066 b{font-size:11px}.material-detail-section-title-v066 span{font-size:8px;color:#667085}
+.material-key-empty-v066{margin:10px 0 14px;padding:12px;border:1px dashed #d0d5dd;border-radius:9px;color:#667085;font-size:9px}
+.material-curve-preview-v061{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}.material-curve-card-v061{min-width:0}.material-curve-card-v061 svg{width:100%;height:auto;max-height:230px}
+.material-raw-properties-v066{margin-top:14px;border:1px solid var(--border,#e4e7ec);border-radius:10px;overflow:hidden}.material-raw-properties-v066>summary{cursor:pointer;list-style:none;padding:11px 13px;background:#f8fafc}.material-raw-properties-v066>summary::-webkit-details-marker{display:none}.material-raw-properties-v066>summary>span{display:flex;align-items:center;justify-content:space-between;gap:12px}.material-raw-properties-v066>summary b{font-size:10px}.material-raw-properties-v066>summary small{font-size:8px;color:#667085}.material-raw-properties-v066[open]>summary{border-bottom:1px solid var(--border,#e4e7ec)}
+
+/* Validation/readiness: valuable even before the first solve. */
+.design-readiness-v066{display:grid;gap:16px}.design-readiness-grid-v066{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.design-readiness-grid-v066 article{display:grid;grid-template-columns:26px minmax(0,1fr);grid-template-rows:auto auto;gap:2px 9px;min-width:0;padding:12px;border:1px solid var(--border,#e4e7ec);border-radius:10px;background:#fff}.design-readiness-grid-v066 article>span{grid-row:1/3;display:grid;place-items:center;width:26px;height:26px;border-radius:999px;background:#f2f4f7;font-size:9px;font-weight:900}.design-readiness-grid-v066 article div{display:grid;gap:2px;min-width:0}.design-readiness-grid-v066 article b{font-size:10px}.design-readiness-grid-v066 article small{font-size:8px;line-height:1.4;color:#667085}.design-readiness-grid-v066 article strong{grid-column:2;font-size:9px}.design-readiness-grid-v066 article.pass{border-color:#75e0a7;background:#f6fef9}.design-readiness-grid-v066 article.pass>span{background:#dcfae6;color:#067647}.design-readiness-grid-v066 article.warning{border-color:#fedf89;background:#fffcf5}.design-readiness-grid-v066 article.pending{border-color:#d0d5dd;background:#f9fafb}
+.validation-static-issues-v066{border:1px solid var(--border,#e4e7ec);border-radius:10px;overflow:hidden}.validation-static-issues-v066 header{padding:11px 13px;background:#f8fafc}.validation-static-issues-v066 header>div{display:grid;gap:2px}.validation-static-issues-v066 header b{font-size:10px}.validation-static-issues-v066 header small{font-size:8px;color:#667085}.validation-static-issues-v066 ul{list-style:none;margin:0;padding:0}.validation-static-issues-v066 li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 13px;border-top:1px solid #eef2f6}.validation-static-issues-v066 li:first-child{border-top:0}.validation-static-issues-v066 li b{font-size:9px}.validation-static-issues-v066 li span{font-size:8px;color:#667085}.validation-static-issues-v066 li.blocking{border-left:3px solid #f04438}.validation-static-issues-v066 li.warning{border-left:3px solid #f79009}.validation-pass-v066{border-color:#75e0a7;background:#f6fef9}.validation-action-grid-v066 button{min-height:72px}
+
+.material-template-default-v066{display:inline-flex!important;margin-left:6px;padding:2px 5px;border-radius:999px;background:#ecfdf3;color:#067647;font-size:8px!important;font-weight:800}
+.material-apply-guidance-v066{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:9px 11px;border:1px solid #b2ccff;border-radius:9px;background:#f5f8ff}.material-apply-guidance-v066 b{font-size:9px;color:#1849a9}.material-apply-guidance-v066 span{font-size:8px;color:#475467;line-height:1.45}.material-apply-button-v066{white-space:nowrap}
+
+@container design-viewer (max-width:900px){.design-readiness-grid-v066{grid-template-columns:repeat(2,minmax(0,1fr))}.material-apply-guidance-v066{align-items:flex-start;flex-direction:column}}
+@container design-workspace (max-width:900px){.design-readiness-grid-v066{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1100px){.material-key-properties-v066{grid-template-columns:repeat(2,minmax(0,1fr))}.material-curve-preview-v061{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:820px){
+  .material-library-shell-v061>section{height:100vh;max-height:100vh;overflow:auto}
+  .material-library-body-v061{display:block;overflow:visible}.material-library-body-v061>*{margin-bottom:10px}
+  .material-manager-v061{height:auto}.material-manager-v061>aside{height:auto;max-height:none}.material-record-list-v061{max-height:360px}.material-manager-v061>main{height:auto;min-height:460px}.material-detail-head-v061{position:static;margin:0 0 12px;padding:0 0 12px}
+  .material-key-properties-v066,.design-readiness-grid-v066{grid-template-columns:minmax(0,1fr)}
+  .material-manager-mode-v066,.material-picker-banner-v062{align-items:flex-start;flex-direction:column}
+}
+body.dark .parameter-coverage-v066,body.dark .material-manager-mode-v066,body.dark .material-picker-banner-v062,body.dark .material-apply-guidance-v066{background:#172554;border-color:#528bff}body.dark .parameter-coverage-v066 span,body.dark .material-manager-mode-v066 span,body.dark .material-picker-banner-v062 span,body.dark .material-apply-guidance-v066 span{color:#d1e0ff}body.dark .material-detail-head-v061{background:#101828}body.dark .material-key-properties-v066>div,body.dark .material-raw-properties-v066>summary,body.dark .validation-static-issues-v066 header{background:#172033}body.dark .material-key-properties-v066 b{color:#f9fafb}body.dark .design-readiness-grid-v066 article{background:#172033}body.dark .design-readiness-grid-v066 article.pass,body.dark .validation-pass-v066{background:#052e1b}body.dark .design-readiness-grid-v066 article.warning{background:#3b2705}
+
+/* V0.66 shaft-axis assembly section: make winding/slot layers explicit SVG shapes. */
+.longitudinal-shaft-section-v066 .ax-slot-window-v066{
+  fill:#eef3f9;
+  stroke:#8a98aa;
+  stroke-width:1.4;
+}
+.longitudinal-shaft-section-v066 .ax-coil-loop-v066{
+  fill:none;
+  stroke:#f1c62f;
+  stroke-width:13;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.96;
+}
+.longitudinal-shaft-section-v066 .ax-coil-loop-v066.phase-b{
+  stroke:#e8b52a;
+  stroke-width:8;
+}
+.longitudinal-shaft-section-v066 .ax-sleeve-v066{
+  fill:#5b86d7;
+  stroke:#315ea7;
+  stroke-width:1;
+}
+.longitudinal-shaft-section-v066 .ax-shaft-hole-v066{
+  fill:#f8fafc;
+  stroke:#64748b;
+  stroke-width:1.2;
+}
+.longitudinal-shaft-section-v066 .ax-assembly-labels-v066 text{font-size:12px;font-weight:700;fill:#425466}
+.longitudinal-shaft-section-v066 .ax-assembly-labels-v066 line{stroke:#708197;stroke-width:1.2;stroke-dasharray:3 3}

@@ -46,13 +46,26 @@ class UIGuidanceService:
             (project_id,),
         )
         tasks = self.db.query_all(
-            """SELECT id,name,status,updated_at FROM tasks WHERE project_id=?
-               ORDER BY updated_at DESC,created_at DESC LIMIT 100""",
+            """SELECT t.id,t.name,t.status,t.updated_at,
+                      COALESCE(SUM(CASE WHEN c.execution_status IN ('SUCCEEDED','CACHED')
+                                             AND c.quality_status IN ('VALID','WARNING') THEN 1 ELSE 0 END),0) usable_cases,
+                      COALESCE(SUM(CASE WHEN c.quality_status='INVALID' THEN 1 ELSE 0 END),0) invalid_cases,
+                      COALESCE(SUM(CASE WHEN c.execution_status IN ('FAILED','TIMEOUT','CANCELLED') THEN 1 ELSE 0 END),0) failed_cases
+               FROM tasks t LEFT JOIN cases c ON c.task_id=t.id
+               WHERE t.project_id=? GROUP BY t.id
+               ORDER BY t.updated_at DESC,t.created_at DESC LIMIT 100""",
             (project_id,),
         )
         running = [r for r in tasks if str(r.get("status")) in {"QUEUED", "RUNNING", "RECOVERING"}]
         completed = [r for r in tasks if str(r.get("status")) in {"COMPLETED", "PARTIALLY_COMPLETED"}]
         failed = [r for r in tasks if str(r.get("status")) == "FAILED"]
+        usable = [r for r in completed if int(r.get("usable_cases") or 0) > 0]
+        needs_attention = [
+            r for r in tasks
+            if str(r.get("status")) in {"COMPLETED", "PARTIALLY_COMPLETED", "FAILED", "CANCELLED"}
+            and int(r.get("usable_cases") or 0) == 0
+            and (int(r.get("invalid_cases") or 0) > 0 or int(r.get("failed_cases") or 0) > 0)
+        ]
 
         def action(label: str, route: str, kind: str = "primary") -> dict[str, str]:
             return {"label": label, "route": route, "kind": kind}
@@ -70,18 +83,24 @@ class UIGuidanceService:
             reason = "无需重复提交；先查看 Motor-CAD 当前计算进度。"
             next_action = action("查看计算进度", f"{base}/simulation/monitor/{running[0]['id']}")
             step = "solve"
+        elif usable:
+            status = "COMPLETED"
+            headline = "已有结果可以分析"
+            reason = f"当前项目已有 {sum(int(row.get('usable_cases') or 0) for row in usable)} 个通过结果验证的工况。先查看关键性能，再决定是否修改电机。"
+            next_action = action("分析可用结果", f"{base}/results")
+            step = "result"
+        elif needs_attention:
+            status = "NEEDS_CHECK"
+            headline = "最近计算需要处理"
+            reason = "计算已经结束，但尚未形成通过结果验证的工况。请先查看失败原因、缺失结果或有限元场状态。"
+            next_action = action("查看计算问题", f"{base}/simulation/tasks/{needs_attention[0]['id']}")
+            step = "solve"
         elif not runtime_ready:
             status = "BLOCKED"
             headline = "Motor-CAD 运行环境需要处理"
             reason = runtime_detail or "当前电脑还没有满足开始计算所需的 Motor-CAD 基础条件。"
             next_action = action("修复运行环境", "/app/runtime")
             step = "analysis"
-        elif completed:
-            status = "COMPLETED"
-            headline = "已有结果可以分析"
-            reason = f"当前项目已有 {len(completed)} 条完成计算。先查看关键性能，再决定是否修改电机。"
-            next_action = action("分析最新结果", f"{base}/results")
-            step = "result"
         else:
             status = "READY"
             headline = "电机模型已准备好，可以设置分析"
@@ -105,6 +124,8 @@ class UIGuidanceService:
                 "completed": len(completed),
                 "failed": len(failed),
                 "tasks": len(tasks),
+                "usable_cases": sum(int(row.get("usable_cases") or 0) for row in tasks),
+                "invalid_cases": sum(int(row.get("invalid_cases") or 0) for row in tasks),
             },
             "internal_terms_hidden_by_default": [
                 "run_configuration", "execution_lease", "worker", "session", "fingerprint"

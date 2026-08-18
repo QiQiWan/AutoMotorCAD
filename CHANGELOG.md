@@ -1,7 +1,286 @@
 # Changelog
 
-## 0.35.0
+## 0.70.0
 
+- Added the solver-agnostic `motorcad_studio/motor_domain/` foundation: typed identity, parameters/native-binding metadata, components, winding, materials, capabilities, immutable `MotorSnapshot`, explicit `MotorChangeSet`, pure `MotorModel` and a registry/legacy-adapter boundary.
+- Added `config/motor_topologies.yaml` to separate Motor-CAD native type, physical motor family, concrete topology and template/preset identity.
+- Upgraded the database to Schema 23 and persisted `motor_snapshot_json`, schema version and SHA-256 content hash on Design Revisions and persistent Design Drafts.
+- Added idempotent project snapshot backfill plus typed catalog/snapshot/change-impact APIs; unknown parameters and raw material provenance survive legacy round trips.
+- Added a browser motor-domain boundary (`static/domain/motor-domain.js`) so V0.71 Geometry/Winding/Material projections can consume one immutable snapshot contract.
+- Moved the complete single-Case Result Viewer out of `app.js` into `static/results/case-viewer.js`; routed Results now have one stable Result Workbench owner with no legacy Case fallback.
+- Physically migrated eight active historical scripts to stable runtime/workflow/results paths: execution lease, resource scheduler, execution readiness, native result evidence, engineering contexts, FEA field viewer, native result tables and usability closure. Active top-level historical `v0xx.js` files are reduced from 17 to 9.
+- Added V0.70 domain/runtime release and Playwright browser-runtime contracts while preserving V0.62–V0.69 compatibility gates. Native Motor-CAD 2026R1 workstation qualification remains intentionally unclaimed in the Linux build environment.
+
+## 0.69.0
+
+- Added the stable route-owned **Results & Optimization Workbench** with four engineer surfaces: result overview, single-Case native result review, Design Revision comparison, and parameter-study/optimization.
+- Added project-level result aggregation with immutable Design/Analysis lineage, usable-Case counts, optimization-task detection and explicit Motor-CAD native-qualification trust status.
+- Added a stable same-Task **Case 工程结果比较** surface with exact refresh-safe deep links, 2–8 Case selection, server-side Task/Run-Configuration scope enforcement, quality/traceability evidence, changed design/scenario/solver inputs and relative result deltas.
+- Added `GET /api/designs/{design_id}/revision-compare` for 2–6 immutable Design Revisions. Parameter and material deltas are always traceable; performance deltas are only computed when solver authority, analysis, quality profile, operating point and solver settings match.
+- Prevented DOE/optimization Cases from masquerading as frozen Design Revision performance evidence. Revision comparison now uses only single-execution Tasks with usable Cases.
+- Added exact refresh-safe revision-comparison deep links including the selected Design and Revision set.
+- Added Analysis-pinned parameter-study catalog and engineer workflows for full-factorial sweep, Latin Hypercube DOE, Pareto candidate search and NSGA-II. Operating point, Analysis Revision and Design Revision are frozen before study generation.
+- Added engineer-editable result feasibility constraints (`<=`, `<`, `>=`, `>`, `==`) to the study UI and result workbench. Constraint outputs are automatically added to the immutable output request; duplicate multi-objective result IDs are rejected before execution.
+- Added deterministic study-size preview with a 5000-Case hard safety limit, registry validation of variables/objectives/constraints, stale Design/Analysis Revision guards, native-precheck reuse, idempotent submission keys and immutable Run Configuration creation.
+- Added `GET /api/tasks/{task_id}/optimization-workbench` with feasible/Pareto candidates, per-objective best candidates, equal-weight normalized balanced candidate, generation convergence and traceable candidate tables.
+- Added 2–8 Case engineering comparison directly inside optimization results, reusing the existing quality-aware Result Viewer comparison service.
+- Added candidate promotion to a new immutable Design Revision. Only explicit experiment design variables are written back; operating-point values remain owned by Analysis. Optional Analysis rebinding is concurrency guarded.
+- Added native-parity decision-boundary banners so exploratory optimization remains available while formal engineering recommendations are visibly unqualified until the applicable V0.68 Motor-CAD workstation profile has passed.
+- Added component-container responsive layouts and local table overflow containment for result, revision-comparison and optimization views; Playwright verifies 1500/1000/720-class widths without root horizontal overflow.
+- Extended responsive verification to the same-Task Case comparator and dynamic constraint editor; a 720 px number-input min-content overflow found by Chromium was fixed with explicit grid-item/input containment.
+- Added V0.69 API/runtime/release contracts and targeted regression tests. Final regression: 396 tests across 57 test files passed in four isolated batches (98 + 104 + 84 + 110); all 56 static JavaScript files passed `node --check`, Python compileall passed, and V0.62–V0.69 compatibility contracts passed. Motor-CAD 2026R1 native workstation qualification remains intentionally unclaimed in this Linux build environment.
+
+## 0.68.0
+
+- Added a version-scoped Motor-CAD Native Parity qualification framework for BPM, SPM, IPM and AFPM with profile contracts for geometry, winding, materials, operating inputs, native screenshots and required EMag outputs.
+- Upgraded the database to Schema 22 with `native_parity_runs`; qualification evidence is scoped to the configured Motor-CAD version so an older-version PASS cannot qualify 2026R1.
+- Added isolated native-parity worker processes and a one-click Windows suite runner. A hung Motor-CAD RPC/licence/UI session can be terminated without taking down the Studio host.
+- Added the `native_parity` model policy. Registered Motor-CAD templates may bootstrap candidate baselines, while validation/production remain strict. Candidate MOT files are promoted to verified local baselines only after all preceding required checks pass.
+- Added strict native readback plus idempotent Studio canonical write -> Motor-CAD readback contracts for geometry, winding and operating inputs.
+- Added structured winding topology qualification through `get_winding_coil`, checking phase coverage, parallel-path coverage, native slot domain and turns per coil.
+- Added component-material write/readback qualification and independent native material snapshots for every required component.
+- Added mandatory Radial/Axial Motor-CAD geometry evidence, explicit screen navigation before capture, and a visual-review manifest linked to the Studio geometry contract.
+- Added real EMag qualification solve, Studio scalar/series extraction versus independent native readback, and native EMag CSV export.
+- Fixed a concrete native geometry parity defect: `Slot_Opening` was present in source MTT templates but missing from Studio canonical MTT extraction. Baseline slot openings now resolve for a1/i5/e9/e14.
+- Added native-parity report mismatch tables, evidence SHA/artifact packages, per-run ZIP download and an expert/system qualification center with single-profile and full-suite execution.
+- Frozen V0.68 workstation qualification on `ansys-motorcad-core==0.8.8`; the runtime version is recorded and an incompatible PyMotorCAD version blocks qualification while preserving diagnostics.
+- Removed a browser-native `alert()` fallback from the new native-parity UI and kept all operator feedback inside Studio dialogs/toasts.
+- Full build-environment regression: 385 tests across 56 test files passed in four isolated batches (89 + 118 + 91 + 87). Target Windows Motor-CAD 2026R1 native qualification remains intentionally unclaimed until the four-profile suite is executed on the licensed workstation.
+
+## 0.67.0
+
+- Closed the deferred Analysis/Calculate milestone with one six-step engineer workflow: operating points → physical inputs → solver settings → Precheck → submit → live monitor.
+- Physically removed historical `static/v060.js`; stable ownership now lives in `analysis/workbench.js`, `analysis/execution.js` and `analysis/monitor.js`, while `window.MCSV060` is retained only as a narrow compatibility export from the stable workbench.
+- Added `GET /api/analysis-definitions/{analysis_id}/execution-plan` as the authoritative read-only execution contract built from one frozen Design Revision and the current Analysis Revision, including operating points, required input domains, solver settings, outputs, precheck/task readiness and the prepared Task request.
+- Added revision-bound calculation-check requests and short-lived Precheck evidence. Evidence records the exact Design/Analysis revision pair that was actually checked and is reusable at submit time without repeating the native model check.
+- Added `ANALYSIS_EXECUTION_STALE` concurrency protection. Precheck and submit compare browser-displayed Design/Analysis revision IDs with current server authority; a concurrently updated Analysis/Design cannot be silently submitted from a stale page.
+- Added `POST /api/analysis-definitions/{analysis_id}/execute` as the normal submission boundary. It re-materializes the authoritative Task contract, validates/reuses Precheck evidence, assigns an idempotent submission key, creates the immutable Run Configuration and then creates the Task through the existing Task service.
+- Added `GET /api/tasks/{task_id}/workflow-status` so the live monitor exposes Analysis Definition/Revision, Design/Revision, Run Configuration, Case progress, usable-result counts and result availability as one engineering lineage.
+- Added exact refresh-safe deep links for `/simulation/analyses/{analysis}/execute/{cases|inputs|solver|precheck|submit|monitor}` and route/session disposal guards for long-running Precheck/submit calls.
+- Removed the duplicate normal-workbench native Precheck owner. Legacy `newTask` is now an advanced compatibility path only; normal navigation and input/precheck handoffs stay inside the Analysis/Compute workbench.
+- Added stale-submit UI recovery: on HTTP 409 the checked evidence/submission state is cleared, the newest execution plan is reloaded, and submission remains locked until the new revision pair passes Precheck.
+- Preserved recipe-driven native solver authority: scenario load-case values are materialized into canonical parameters before the Motor-CAD adapter invokes electromagnetic, thermal, coupled or Motor-CAD Lab calculations.
+- Static frontend debt improved from V0.66: active historical `v0xx.js` 18 → 17. Current metrics are 51 `setTimeout`, 353 `innerHTML`, 119 explicit `window.*` assignments and 1 global `MutationObserver`.
+- Added V0.67 contract, execution runtime, responsive-layout and lifecycle verifiers. Full regression collection: **375 tests passed across four isolated batches (88 + 98 + 84 + 105)**; Python compileall, all 51 static JavaScript syntax checks, 26 JSON + 23 YAML parses and V0.62-V0.67 release contracts passed.
+
+## 0.66.0
+
+- Corrected roadmap drift: completed the delayed Design/material parity work while also carrying out the V0.65-planned historical runtime migration. Analysis/Calculate convergence remains the next explicit milestone.
+- Fixed `decorateDesignViewer is not defined` by loading stable Design controllers before historical compatibility layers and retaining a temporary `window.decorateDesignViewer` compatibility boundary owned by `design/viewer.js`.
+- Rebuilt the radial-flux longitudinal assembly preview as a shaft-centerline section with stator/slot windows, active conductor sides, end windings, magnets, sleeve/banding, airgaps, rotor laminations, shaft/shaft-hole, bearings and housing; geometry is driven directly from current Draft values.
+- Reworked winding visualization with slot-number labels aligned to the slot table, P1...Pn parallel-path visualization, and a parameter-reactive slot-definition drawing driven by slot opening/width/depth/corner, tooth-tip geometry, turns and fill factor.
+- Expanded the canonical high-frequency design registry to 35 parameter IDs and widened radial/axial/slot workbench surfaces. Added a clear advanced path to the complete target-version Motor-CAD Automation Parameter Names catalog instead of hard-coding every context-dependent field into the primary editor.
+- Added template `.mtt` material-default extraction and froze real template material assignments into newly created Design Rev.1 baselines where the template supplies them. Empty template assignments remain unassigned; imported native-model flows do not invent material defaults.
+- Modularized the Material Library into `materials/library.js`; added independent list/detail scrolling, auto-selected material details, key engineering properties, B-H/demagnetization/loss curve previews, raw-field inspection and an explicit `用于当前部件` picker action.
+- Updated Design Material Assignment so common parts inherit template defaults and normally require no user action; replacement follows a direct component → library → inspect → apply workflow.
+- Replaced the previously sparse Design Validation surface with readiness cards for geometry, winding, materials and Motor-CAD evidence, Studio issue summaries and explicit verification/analysis next actions.
+- Reflowed Geometry/Winding/Materials/Validation navigation using container width so the stage rail and version-comparison utility do not collide with the parameter inspector.
+- Physically removed active `v020.js`, `v025.js` and `v061.js`; responsibilities now live in `workflow/model-gate.js`, `routing/page-controllers.js` and `materials/library.js`. Removed the retired V0.20 Design-editor hooks that remained in `v022.js` and `v041.js`.
+- Static frontend debt improved from V0.65: active historical `v0xx.js` 21 → 18, `setTimeout` 54 → 51, `innerHTML` assignments 365 → 350, global `MutationObserver` remains 1. Explicit `window.*` assignments remain 114 because the Design Viewer compatibility alias is intentionally retained.
+- Added V0.66 engineering-parity, component-layout and stable-shell runtime contracts. Full regression collection: 367 tests passed across four isolated batches (90 + 96 + 81 + 100); Python compileall, all static JavaScript syntax checks, 24 JSON + 23 YAML parses and V0.62-V0.66 compatibility/release contracts passed.
+
+## 0.65.0
+
+- Removed the historical `v024.js` and `v031.js` files from the active static tree and `index.html`; Design edit lifecycle now lives in `design/editor.js`, Draft persistence in `design/draft-service.js`, validation orchestration in `design/precheck.js`, workflow rail in `workflow/flow-rail.js`, and FEA/thermal visual compatibility in `results/fea-thermal.js`.
+- Upgraded the database to Schema 21 and added a monotonically increasing Design Draft `version` used for optimistic concurrency.
+- Guarded Draft PUT with `expected_version` and resolved that version at serialized send time, preventing false stale conflicts when a second local edit is queued while the first autosave is still in flight.
+- Guarded Draft DELETE with `expected_version`, preventing one browser tab from discarding a newer Draft saved by another tab.
+- Guarded Draft Revision commit with `expected_version` and a database critical section spanning version check, immutable Revision creation and Draft deletion, preventing concurrent updates from being silently committed or removed.
+- Added structured `DESIGN_DRAFT_STALE` HTTP 409 handling and a read-only stale-Draft editor state that requires explicit reload/resolution before further editing or navigation.
+- Added route-safe Draft flush: Router navigation, browser back/forward and project-tree Design/Revision changes now pass through `MCSDesignEditor.prepareRouteChange`; failed persistence restores the last stable route.
+- Made Studio and Motor-CAD validation explicit, edit-version-aware and editor-session-scoped. Native validation receives its own `AbortController`; stale requests are discarded/canceled after editor replacement or route exit.
+- Removed per-keystroke validation network traffic while keeping immediate local geometry/winding/material preview and Draft autosave.
+- Added responsive V0.65 validation pipeline, action cards and stale-conflict treatment using the existing `design-workspace` container contract.
+- Added `verify_v065_contract.py`, `verify_v065_draft_queue.js` and `verify_v065_interaction_layout.py`; retained V0.62-V0.64 compatibility verifiers.
+- Full regression collection: 360 tests passed across four isolated batches (89 + 118 + 80 + 73); Python compileall, all static JavaScript syntax checks, 24 JSON + 23 YAML parses and Playwright/Chromium layout contracts passed.
+
+## 0.64.0
+
+- Physically migrated Design presentation ownership from historical `v031.js` into stable `static/design/` modules for Geometry, Winding, Material Assignment, Design Validation, Parameter Inspector and a shared renderer facade.
+- Added `design/viewer.js` as the read-only Design lifecycle owner with abortable workbench requests, request-token/revision guards and exact routed-view restoration.
+- Replaced timeout-based evidence-result switching with deterministic result deep links; fallback loading explicitly awaits Case list hydration before opening a Case.
+- Reduced `v031.js` to the workflow-state rail plus FEA/thermal result compatibility layer; Design renderer/controller functions no longer live there.
+- Changed the persistent Draft autosave path to a serialized immutable-snapshot queue with request versions and editor sessions; older completions cannot update newer Draft UI state.
+- Routed explicit Draft deletion through the same serialized queue so an in-flight PUT cannot recreate a Draft after the operator deletes it.
+- Made `v024.js` delegate Geometry/Winding/Materials/Validation rendering and parameter-list/selected-parameter markup to stable Design modules, shrinking its local presentation ownership.
+- Added component-width CSS contracts using named containers for the Design Viewer and workspace. The read-only inspector and Draft editor now reflow from the actual available workspace width, independent of browser viewport width.
+- Added local overflow containment for winding/material tables to prevent root-page horizontal scrolling.
+- Updated router, context navigation and workbench state fallbacks to prefer `MCSDesignViewer`, while retaining `MCSVisualV031` only as a compatibility fallback.
+- Added `test_v064_design_renderer_modularization.py`, `verify_v064_contract.py` and a Playwright/Chromium component layout verifier.
+- Full regression collection: 354 tests passed across four isolated batches (79 + 117 + 77 + 81); Python compileall, JavaScript syntax, JSON/YAML parsing and layout contract checks passed.
+
+## 0.63.0
+
+- Added `MCSDesignStore` as the shared state boundary for read-only design viewing, persistent Draft editing and router synchronization; project/design/revision/mode/view/selection no longer rely on independent renderer-local ownership.
+- Added `MCSDesignNavigation` as the single stage/sub-view contract for Geometry, Winding, Materials and Design Validation, including deterministic next-step semantics for read and edit modes.
+- Applied exact design-route state to the shared store before workspace rendering, and made the viewer prefer routed store state over legacy preferred-view state to prevent transient Winding-to-section view flashes after refresh/navigation.
+- Design/revision identity changes now clear stale loaded data, parameter selection, dirty count and Draft status from the shared store before the new workspace data arrives, preventing cross-design state leakage during fast navigation.
+- Reorganized the Draft editor into a responsive engineering workbench: component tree + visual canvas + sticky parameter inspector on wide screens, editor below canvas on medium screens, and a single-column fallback on narrow screens. Diagnostics now span below the work area instead of squeezing the visual model.
+- Simplified the read-only Design object header to one primary `Edit Design` action. Revision history is explicitly secondary and direct Revision cloning is moved into the history rail.
+- Added explicit next-step cards inside edit views so Geometry -> Winding -> Slot -> Materials -> Validation -> Save Revision remains visible while tuning parameters.
+- Added `MCSPageRuntime.isContextActive()` and replaced unsafe direct route-context `.active()` calls. DOM events or foreign objects can no longer trigger the `routeCtx.active is not a function` failure class.
+- Preserved the V0.62 persistent Design Draft, stale-base conflict protection, reusable Motor Design semantics, pinned Analysis Revision behavior and per-material section provenance.
+- Added `test_v063_design_workbench_convergence.py` and `scripts/verify_v063_contract.py` for shared-state ownership, module load order, route safety, responsive workbench layout and global DOM-observer limits.
+- Full regression collection: 347 tests passed across four isolated batches (79 + 117 + 77 + 74); Python compileall, all static JavaScript syntax checks and JSON/YAML parsing passed.
+
+
+## 0.62.0
+
+- 收敛工程师主路径为“电机设计 → 分析设置 → 计算 → 结果”，电机设计内部固定为“几何 → 绕组 → 材料 → 设计验证”；隐藏普通工程视图中的重复 Geometry / Winding / Input Data 上下文栏，版本比较下沉为辅助工具。
+- 新增 `app-core-v062.js` 统一设计阶段/子视图映射与生命周期事件；设计路由升级为可刷新深链接，精确表达径向、纵向装配、绕组连接、槽内定义、材料和设计验证，并在 `/edit` 下恢复同一编辑视图。
+- 新增后端持久化 Design Draft，数据库 Schema 升级至 20；草稿自动保存参数、材料、显式参数 ID 和当前视图，刷新后恢复，零差异自动删除，跨 Revision 草稿禁止静默覆盖。
+- 草稿提交增加并发保护：基准 Revision 不再是最新版本时返回 409，避免另一个会话已经生成新 Revision 后继续静默分支。
+- 修正 Design / Analysis 版本所有权：创建新的 Design Revision 不再批量推动该电机的全部分析案例；Analysis Definition 固定引用一个 Design Revision，并提供显式版本切换 API。
+- 创建分析案例新增“已有电机设计”来源，一个 Motor Design 可以被多个 Analysis Definition 复用；编辑保存时明确询问当前活动案例是否采用新 Revision，其他分析和历史 Task 保持原版本。
+- 材料管理拆分为系统级 Material Library 与设计级 Material Assignment。材料选择器记录来源数据库、源文件 SHA-256、单材料段 SHA-256、Motor-CAD 版本和 Studio/Motor-CAD 来源类型；冷却介质继续归属于分析设置。
+- 错误 toast 增加 5 秒签名去重、重复次数聚合和最多 3 条可见限制，降低单一后台错误连续刷屏。
+- 移除 `v020/v031/v041/v046/v059/v060` 等页面级全局 DOM 观察器，改用路由/工作区/分析/指导生命周期事件；当前仅保留 i18n 动态翻译所需的 1 个 MutationObserver。
+- 修复材料草稿深层对象稳定比较，避免 JSON replacer 丢弃嵌套 provenance 字段；材料修改、恢复和自动保存可正确判断 dirty state。
+- 设计草稿的放弃/替换改为 Studio 页内确认对话框；保存新 Revision 时明确显示分析案例版本切换影响，不再使用浏览器原生确认框。
+- 进一步收敛响应式布局：编辑态隐藏项目树/只读 Inspector 并扩展设计画布，中等宽度自动重排诊断区，工作区根节点禁止横向溢出，1366–1920 桌面宽度优先保证几何/绕组可读空间。
+- 完整 pytest 文件集合共 341 项，分四个隔离批次执行为 132 + 104 + 62 + 43 项全部通过；Python compileall、前端 JavaScript 语法、JSON/YAML 与 V0.62 版本合同同步验证。
+
+## 0.60.1
+
+- 修复项目刷新将 DOM `MouseEvent` 误传为路由上下文导致的 `routeCtx.active is not a function`，并统一清理任务、时间线、日志和 Case Viewer 的同类事件绑定。
+- 重构径向磁通电机纵向装配剖面，并为轴向磁通模板提供独立盘式堆叠预览；视图选择增加会话保持和过期异步响应丢弃，解决绕组短暂选中后跳回其他截面。
+- 修复绕组布局硬最小宽度与项目双列 Grid 的冲突；Motor-CAD 上下文栏占满项目工作区，绕组图、槽表和参数栏按组件实际宽度自适应。
+- 新增 Motor-CAD 材料库模块：读取标准 `.mdb`、保留完整原始字段/曲线、记录来源路径与 SHA-256、支持 Studio 管理副本 CRUD、managed `.mdb` 导出并接入现有材料数据库计算路径。
+- 在几何、绕组、槽内、材料和输入数据之间增加明确的“推荐路径”下一步入口，降低设计完成后的流程断点。
+- 修复创建分析案例弹层透明、主题变量缺失时无底色、参数弹层叠层和关闭后滚动锁残留；两个工程弹层互斥并支持叉号、背景与 Esc 关闭。
+- 创建案例或模型后只执行一次项目/设计路由，取消 `showTab + loadWorkspace + openWorkspaceDesign` 的重复加载，错误提示不再出现 `undefined`。
+- 参数编辑改为实时本地预览、保存设计草稿、计算前统一检查；取消每次输入后的网络预检查和整组列表重绘。
+- 新增“Studio 确定性预检查 → Motor-CAD 模型检查”的两阶段计算门禁；第一阶段失败时第二阶段保持锁定，计算与结果阶段灰显。
+- 空数值 `null` 按“未覆盖”处理并回退到设计/模板值，修复 `slot_opening` 触发 Pydantic 原始 JSON 以及模型检查始终失败的问题。
+- 全部参数保存会清除历史空覆盖值，直接创建新设计版本；分析案例自动跟随其电机的最新设计版本，历史任务仍保留冻结配置。
+- Motor-CAD 检查只返回工程师可理解的结论和处理建议；完整 RPC、参数映射和异常细节继续写入问题中心与诊断日志。
+- Python 全量回归 336 项通过；JavaScript 语法、Python compileall、材料库 round-trip、JSON/YAML 解析及 V0.60.1 版本一致性检查通过。
+
+## 0.60.0
+
+- 新增项目级“分析案例”对象与观察页，一个项目可管理多台电机及其独立分析；创建案例时一次完成分析类型、机型和设计起点选择，随后直接进入电机设计。
+- 新增冷却、损耗、材料、接触界面、辐射、对流、端部空间和流动回路八个专用输入编辑器，包含工程标签、单位、范围、默认值和用途说明。
+- 新增输入物化层：保存的输入模块自动进入 Scenario、MaterialConfiguration、Therm LossSource 和求解物理输入审计，多工况逐点继承并检查。
+- 计算前检查覆盖几何包含关系、气隙、槽深、绕组整数关系、槽满率、运行工况、温度、流量、辐射、材料和求解离散设置，并返回字段级处理建议。
+- 普通工程师模式移除 Design 快照、资源租约、原生证据、Worker 调度、JSON/MOT 清单等内部实现面板；技术信息继续保留在专家模式、问题中心和诊断包。
+- 计算设置页收敛为当前分析案例、运行工况、批量方式、结果项和检查并计算；冷却/材料/热边界从分析案例输入自动读取，避免重复输入。
+- 求解监控增加 CASE_INPUTS_READY 与 PHYSICAL_INPUTS 阶段，记录输入模块、映射数量、结果请求和异常上下文；每个 Motor-CAD 工况归档输入应用清单。
+- 修复分析案例输入仅保存未进入求解、分析定义多工况漏取输入、空输入造成版本化配置伪覆盖，以及旧项目概览/计算页重复技术面板问题。
+- Python 全量回归 327 项通过；JavaScript 语法、Python compileall、JSON/YAML 解析及 V0.60 版本一致性检查通过。
+
+## 0.59.0
+
+- 项目内导航合并为四阶段工程状态条，每个阶段同时显示完成条件、当前状态和唯一推荐操作，降低重复导航与上下文占用。
+- 项目状态从“Task 已结束”升级为“存在 SUCCEEDED/CACHED 且质量为 VALID/WARNING 的可用 Case”；无可用结果时直接进入计算问题。
+- 结果首页默认选择最近可用任务和首个通过结果验证的工况；结果侧栏只显示本次计算实际具有数据的模块，并汇总未生成模块。
+- 已有可用结果不再受当前 Motor-CAD 环境状态阻断，离线时仍可分析历史性能、曲线与有限元场。
+- 停止后续工况与立即终止当前工况增加页内确认、等待态和重复点击保护；任务结束后主动关闭 SSE 并提供结果/问题交接。
+- 参数目录增加未保存修改保护；关闭侧栏或离开页面前要求确认，避免参数变更静默丢失。
+- 结果输入快照递归展开嵌套工况、材料和求解配置，不在普通工程结果界面显示原始 JSON。
+- 提升几何、绕组、槽内、FEA 与大图模板预览的最小高度和文字下限；补齐窄屏重排、深色模式及路由焦点播报。
+- Python 全量回归 320 项通过；JavaScript 语法、Python compileall、JSON/YAML 解析及 V0.59 版本一致性检查通过。
+
+## 0.58.0
+
+- 机型拓扑卡升级为真实选择控件，并按拓扑筛选当前安装登记的工程模板；无匹配模板时明确回到机型默认模型、MOT 导入或 Revision 克隆。
+- 参数目录增加实际变更计数、数值/整数/上下限即时校验、错误聚焦与无变更拦截；只持久化实际修改字段，避免隐式覆盖污染 Design Revision。
+- 结果首页、Task 深链、Case 深链和批量跳转统一为单次 Case 自动打开合同；加入加载 token，过期响应不能覆盖用户最新选择。
+- 普通任务与结果界面移除 JSON 主按钮、Result ID、PyMotorCAD API、证据级别和底层状态码；技术证据继续保留在诊断包。
+- Input Data 卡片补齐实际去向，材料进入材料库、流动回路进入流路编辑器，其余物理域进入对应分析工作台。
+- 有限元监控按模型输入、有限元求解、空间场输出、结果提取、结果验证与归档六个工程阶段聚合，并提供最近关键事件和定向诊断包入口。
+- 两处全局 DOM 观察器改为逐帧合并扫描，降低结果、监控和参数表渲染期间的重复页面扫描。
+- 完成宽屏、中屏与窄屏布局重排，统一键盘焦点、选中、修改、错误、加载、空状态和阻断状态，提高图表、卡片及说明文字可读性。
+- Python 全量回归 309 项通过；JavaScript 语法、Python compileall、JSON/YAML 解析及 V0.58 版本一致性检查通过。
+
+## 0.57.0
+
+- 新建模型入口对齐 Motor-CAD 的九类机型，增加机型 → 拓扑 → 来源三级选择；保留新项目默认 BPM 直接进入模型的路径。
+- 17 类分析配方补齐用途、求解方式、工况说明、工程输出与必需/可选结果；内部证据策略不再出现在普通工程界面。
+- 重写绕组端部路径，使连线只在定子槽与端部绕组环带内闭合；槽内导体按左右槽腔分别裁剪、排布并执行非重合约束。
+- 参数目录与 Input Data 改为工程语义卡片，默认显示物理意义、单位、范围、影响和结果用途；Automation 名称、指纹、JSON 与内部策略下沉到诊断包。
+- 结果页自动选择首个 Case，并明确拆分执行状态和结果验证；INVALID Case 隐藏零值 KPI，只开放实际已有数据的结果模块。
+- 修复 PyMotorCAD 0.8.x 屏幕抓取调用：初始化 Tab 名称，并向 `save_motorcad_screen_to_file` / `save_screen_to_file` 传入屏幕名和文件名。
+- 扭矩—转速图增加多组目标版本候选图名，降低目标版本图名差异导致的必需结果缺失。
+- 有限元监控新增导出尝试、文件形成、场标准化成功/告警事件；每次尝试的 Step 范围、字段集合和错误进入清单与任务诊断包。
+- 日志诊断新增启动会话过滤与 PyMotorCAD 依赖根因，任务诊断包补齐 Case 状态、运行时输入、参数/材料/输出审计、会话、结果提取、有限元清单及首末帧样本。
+- 对用户上传的 V0.56 诊断包完成根因审计：当前会话 0 ERROR；两次任务执行成功但结果验证 INVALID；历史 `No module named 'ansys'` 与当前任务分离。
+- Python 全量回归 299 项通过；前端 JavaScript 语法、Python compileall 及发布配置解析通过。
+
+## 0.56.0
+
+- Motor-CAD 原生 `ElementsTable / NodesTable / RegionsTable` 标准化改为两遍流式扫描，移除执行路径中的整文件文本、全量单元行和全量节点字典驻留。
+- 第一遍将节点坐标写入临时 SQLite `WITHOUT ROWID` 索引，第二遍只按显示预算查询入选单元引用的节点；成功、格式失败与异常路径均清理临时索引。
+- 新增确定性在线工程采样，固定保留坐标边界、每个可用场的全源极值和区域代表点，其余容量按稳定哈希填充。
+- 全局范围、逐帧范围、有限值覆盖率、坐标有效率和唯一坐标数均从完整源数据在线计算，不依赖显示样本。
+- 标准化帧改为逐帧原子替换并登记 SHA-256；单帧完成即可形成独立完整归档，避免中断后留下半写 JSON。
+- 支持从原生 ElementsTable 结构表头自动推断输出字段，并兼容逗号、分号、Tab 与竖线分隔符。
+- 结果页显示“两遍流式标准化”和磁盘节点索引计数；诊断合同公开标准化 Schema、I/O 合同、节点索引与原子写入策略。
+- 新增 10 万原生单元、双帧、真实节点连接、区域/极值保留和内存上界回归；全量 295 项测试通过。
+
+## 0.53.0
+
+- FEA 标准化升级至 Schema V4，全局色标、每帧范围和资格指标统一从完整源数据计算，不再受显示抽样影响。
+- 浏览器帧采用区域/坐标边界/各场极值优先的确定性抽样，并记录区域覆盖、极值保留、有效坐标率和字段有限值覆盖率。
+- 解析 Motor-CAD ElementsTable、NodesTable 与 RegionsTable；节点坐标完整时绘制真实三角单元填色和边界，缺少节点时明确降级为单元中心点。
+- 机械场默认请求官方示例使用的 `SVM/Ux/Uy`，自动计算总位移；应力与位移单位分别记录为 MPa/mm，未确认字段保持原生单位待验收。
+- 自动结果提取升级至 Contract V2，拦截非数值/非有限标量、坏曲线、坏二维图、场与矢量结构错误，并生成紧凑数据质量摘要。
+- FEA 资格合同增加坐标丢弃比例、必需字段覆盖率、最少空间点、区域覆盖和极值保留门禁；历史清单保留兼容并显示质量指标缺失警告。
+- 检查点清单升级至 Schema V2，使用原子替换和 SHA-256 校验；电磁-热恢复同时校验 MOT、载荷和全部 FEA 证据，证据不完整时自动重新执行电磁求解。
+- 结果页增加抽样完整性、真实网格/中心点模式、单位依据、源单元/显示单元/三角形计数和提取数据质量摘要。
+- 全量离线回归 273 项通过；Python、JavaScript、YAML/JSON 与 V0.53 发布合同验证通过。
+
+## 0.52.1
+
+- 修复 Analysis Definition 多工况只保存/执行首项的问题，逐 Case 冻结工况、哈希、执行与结果上下文。
+- 首次创建分析定义与后续 Revision 统一使用专用配方编辑器，并冻结 `analysis_definition_revision_id`。
+- 修复原生 FEA 平面配置被旧派生快照覆盖、字符串布尔误判及 required/optional 资格语义。
+- 历史结果和缓存必须具有当前结果提取及 FEA 合同，缺失合同不能晋级 Level 4。
+- FEA Viewer 使用真实 Case 阶段，增加全字段选择、全帧色标、区域筛选、最近点探测和异步竞态保护。
+- 修复机械应力场未进入结构化结果、Case 热网络使用错误工况、重试 Attempt 重复累加与旧产物显示问题。
+- 诊断包增加 Case 合同摘要、结果提取清单、FEA 清单、首末帧和受限大小的原始 FEA 样本。
+- 扩大工程画布和可读性下限，完善中等宽度、窄屏与深色模式布局。
+- 全量离线回归 264 项通过；Python、JavaScript、YAML/JSON 与发布合同验证通过。
+
+## 0.52.0
+
+- V0.47：分析定义升级为全工况默认值物化与逐 Case 类型、枚举、上下限校验；保存 FEA 计划与合同哈希。
+- V0.48：原生 FEA 导出升级为策略驱动管线，增加 required/optional/not-applicable、字段/区域/坐标/连接完整度及机械应力/位移场标准化。
+- V0.49：新增自动结果提取清单；必需标量、曲线、Map、场或表缺失/无效会阻止工程结果资格。
+- V0.50：结果页新增八阶段 FEA 轨迹、提取矩阵、场选择、求解帧、全局色标和原始数据下载。
+- V0.51：新增 Task FEA/提取汇总、定向重试不完整 Case，并限制真实寻优仅使用质量 VALID 的 Case。
+- V0.52：移除独立 Scripting 工程上下文和 API；真实资格晋级要求质量、必需结果和 required FEA 三项同时通过。
+- 全量离线回归 259 项通过；Windows + Motor-CAD 2026R1 实机验收继续按模板/配方记录，未取得证据时不晋级 NATIVE_QUALIFIED。
+
+## 0.46.0
+
+- V0.42：分析配方升级至 Schema V3，17 类配方分别定义字段组、Motor-CAD 方法、必需/可选输出和结果视图；资格改为五级证据链。
+- V0.43：增加九个 Motor-CAD 工程上下文、八类 Input Data 物理域和四页绕组信息架构；Flow 明确表示物理冷却流动回路。
+- V0.44：分析创建和版本编辑统一使用配方驱动专用表单；后端补齐默认值物化、类型、范围、枚举、必填和输出注册校验。
+- V0.45：结果中心增加 Output Data、Graphs、热网络、温度、应力、NVH 视图；每个 Case 返回结果完整度、缺失必需输出和原生证据等级。
+- V0.46：增加 DOE/敏感性计算量估算、冷却流动回路连通性校验、受控脚本静态校验、资格覆盖矩阵与全量高 DPI 响应式样式。
+- 热求解控制扩展至模型规模、维度、损耗源、耦合方式、时间步与收敛容差；机械控制扩展至转速、部件、黏结、网格和 NVH 阶次。
+
+## 0.41.0
+
+- 修复 Windows 高 DPI 下设计工作区三层侧栏挤压主画布的问题；新增容器级响应式布局并整体提高几何、绕组、槽内、FEA 与热拓扑可读性。
+- 修复表单 `.wide` 内容未跨列导致“电机模型”区域按钮和说明竖排的问题；模型区改名为“本次计算模型”，求解配置下沉到高级设置，运行配置追溯默认折叠。
+- 修复默认项目创建异步按钮在 `await` 后访问失效 `currentTarget` 的前端异常。
+- 修复失效项目路由导致 project/simulation-assets/domain-integrity/ui-guidance 连续 404；现在会清空旧上下文并返回项目管理。
+- 修复 Design Revision 程序化载入后 Run Configuration 追溯仍显示“未选择”的状态同步错误。
+- 新增槽口宽度、齿宽、槽数与定子内径的显式耦合阻断，覆盖诊断包中 Slot_Opening 自动改写和 Stator/StatorAir 相交故障。
+- 关键几何/绕组任务覆盖提交前自动执行 Motor-CAD 原生检查；关键设计修改增加“Motor-CAD 检查并重绘”。
+- 分析定义创建由浏览器 prompt 升级为页内工程表单。
+- 新增 V0.41 诊断修复回归测试与完成度说明。
+
+## 0.40.0
+
+- 新增模型优先入口：新项目默认 BPM 模型，并支持按 9 种 Motor-CAD 机型、工程模板、MOT 文件或现有 Revision 创建模型。
+- Design/Revision 新增 `source_kind`、`motor_type_id`、模型来源、几何模式、MOT 证据、Automation 参数与能力快照；数据库 Schema 升级至 18。
+- 新增完整参数目录，将版本化工程参数与目标版本 Automation Parameter Names 合并，支持按求解上下文过滤并保存新 Revision。
+- 新增五模块分析工作台与版本化 Analysis Definition；分析类型从 8 类扩展至 17 类，覆盖高级 EMag、Therm/Coupled、Lab、Mechanical/Weight。
+- 新增 Motor-CAD 原生有限元画面捕获、Case FEA SSE 事件流，以及 B/Bx/By/Pt/J/JEddy 场变量、区域、步进、探测和原始证据视图。
+- 计算工况补齐转速、峰值/RMS 电流、母线电压与相位超前角；从 Analysis Definition 进入计算设置时继承模型版本、分析类型、首个工况和输出选择。
+- 工程界面以空间场、拓扑、曲线和指标为主；结构化原始数据保留在开发者诊断和 API 层。
 - 将 Motor-CAD `winding_pattern.txt` 从普通附件升级为可降级解析的 `winding_definition.json`，记录线圈槽对、相别、匝数、支路、原生校验、源文件 SHA-256 与字段证据状态。
 - 绕组视图在存在结构化原生证据时绘制实际进/回槽关系；尚无证据时保持参数示意并明确显示其权限层级。
 - 新增后端热网络证据合同和 `/api/cases/{case_id}/thermal-network`；原生热节点/热阻与标量温度摘要采用不同 authority 和 completeness。
@@ -9,7 +288,7 @@
 - 新增 `/api/cases/{case_id}/fea-probe`；缺少完整节点坐标与连接时关闭真实网格、连续云图和等值线能力，避免伪造物理场。
 - Case 对比升级为 Schema 2，增加设计/工况/求解三域变化、目标方向、Pareto 非支配解、改善/退化、质量门禁、完整追溯和描述性影响。
 - 新增 V0.35 决策工作台、证据能力提示与响应式样式。
-- 全量 241 项测试通过；Python compileall 与前端 JavaScript 静态语法检查通过。
+- V0.40 无求解器服务验收、FEA 字段归一化、Python compileall、配置解析与前端 JavaScript 静态语法检查通过；V0.35 历史全量回归基线为 241 项。
 
 ## 0.31.0
 

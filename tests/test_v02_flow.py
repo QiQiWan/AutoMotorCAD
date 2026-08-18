@@ -16,7 +16,7 @@ def test_validation_and_mock_task_flow():
             "solver_mode": "mock",
             "analysis": "emag_thermal",
             "parameters": {"air_gap": 1.1, "shaft_speed_rpm": 3200},
-            "scenario": {"ambient_temperature_c": 25, "initial_temperature_c": 25, "cooling_type": "oil_spray"},
+            "scenario": {"ambient_temperature_c": 25, "initial_temperature_c": 25, "cooling_type": "oil_spray", "coolant_flow_rate_lpm": 2},
             "requested_outputs": ["shaft_torque_nm", "winding_max_temperature_c"],
         },
     )
@@ -32,7 +32,7 @@ def test_validation_and_mock_task_flow():
             "solver_mode": "mock",
             "analysis": "emag_thermal",
             "parameters": {"air_gap": 1.1, "shaft_speed_rpm": 3200},
-            "scenario": {"ambient_temperature_c": 25, "initial_temperature_c": 25, "cooling_type": "oil_spray"},
+            "scenario": {"ambient_temperature_c": 25, "initial_temperature_c": 25, "cooling_type": "oil_spray", "coolant_flow_rate_lpm": 2},
             "sweep": {"enabled": True, "parameter": "air_gap", "start": 0.9, "stop": 1.1, "count": 3},
             "requested_outputs": ["shaft_torque_nm", "winding_max_temperature_c", "total_loss_w"],
             "quality_profile": "standard",

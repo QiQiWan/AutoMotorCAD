@@ -1,42 +1,302 @@
-version: 1
+version: 4
+
+field_sets:
+  native_evidence:
+    label: 原生证据
+    description: 仅归档 Motor-CAD 真实输出，不生成合成工程结果。
+    visibility: system
+    fields:
+      - {id: native_screen_capture, key: native_screen_capture, target: solver, type: boolean, label: 保存原生求解画面, default: true}
+      - {id: native_fea_export, key: native_fea_export, target: solver, type: boolean, label: 导出原生 FEA 场, default: true}
+      - {id: native_fea_policy, key: native_fea_policy, target: solver, type: enum, label: FEA 完整度策略, default: auto, options: [{value: auto, label: 按分析配方自动判定}, {value: required, label: 必需（不完整则阻止结果资格）}, {value: optional, label: 可选（记录告警）}, {value: disabled, label: 关闭}]}
+  emag_operating_point:
+    label: 电磁工作点
+    description: 速度、电流、电压和控制角。
+    fields:
+      - {id: shaft_speed_rpm, key: shaft_speed_rpm, target: load_case, type: number, label: 转速, unit: rpm, minimum: 0, maximum: 300000, default: 3000, required: true}
+      - {id: peak_current_a, key: peak_current_a, target: load_case, type: number, label: 峰值电流, unit: A, minimum: 0, maximum: 10000, default: 80}
+      - {id: dc_bus_voltage_v, key: dc_bus_voltage_v, target: load_case, type: number, label: 直流母线电压, unit: V, minimum: 0, maximum: 5000, default: 400}
+      - {id: phase_advance_deg, key: phase_advance_deg, target: load_case, type: number, label: 相位超前角, unit: deg-elec, minimum: -90, maximum: 90, default: 0}
+  emag_calculation:
+    label: 电磁计算项
+    description: 选择 Motor-CAD 需要执行的性能测试及离散精度。
+    fields:
+      - {id: current_definition, key: CurrentDefinition, target: automation.EMag, type: enum, label: 电流定义, default: 0, options: [{value: 0, label: Peak}, {value: 1, label: RMS}]}
+      - {id: torque_points_per_cycle, key: TorquePointsPerCycle, target: automation.EMag, type: integer, label: 每电周期点数, minimum: 6, maximum: 720, default: 30}
+      - {id: torque_number_cycles, key: TorqueNumberCycles, target: automation.EMag, type: integer, label: 计算电周期数, minimum: 1, maximum: 100, default: 1}
+      - {id: torque_calculation, key: TorqueCalculation, target: automation.EMag, type: boolean, label: 转矩, default: true}
+      - {id: back_emf_calculation, key: BackEMFCalculation, target: automation.EMag, type: boolean, label: 反电动势, default: true}
+      - {id: cogging_torque_calculation, key: CoggingTorqueCalculation, target: automation.EMag, type: boolean, label: 齿槽转矩, default: false}
+      - {id: inductance_calculation, key: InductanceCalc, target: automation.EMag, type: boolean, label: 电感, default: false}
+      - {id: demagnetization_calculation, key: DemagnetizationCalc, target: automation.EMag, type: boolean, label: 退磁, default: false}
+  force_setup:
+    label: 电磁力与 NVH 接口
+    fields:
+      - {id: force_open_circuit, key: ElectromagneticForcesCalc_OC, target: automation.EMag, type: boolean, label: 开路电磁力, default: false}
+      - {id: force_on_load, key: ElectromagneticForcesCalc_Load, target: automation.EMag, type: boolean, label: 负载电磁力, default: true}
+      - {id: force_positions, key: MultiForceNumberPositions, target: automation.EMag, type: integer, label: 转子位置数, minimum: 2, maximum: 720, default: 36}
+      - {id: max_harmonic_order, key: ForceMaxHarmonicOrder, target: automation.EMag, type: integer, label: 最大谐波阶次, minimum: 1, maximum: 500, default: 50}
+  thermal_operating_point:
+    label: 热工况
+    fields:
+      - {id: shaft_speed_rpm, key: shaft_speed_rpm, target: load_case, type: number, label: 转速, unit: rpm, minimum: 0, maximum: 300000, default: 3000}
+      - {id: ambient_temperature_c, key: ambient_temperature_c, target: load_case, type: number, label: 环境温度, unit: degC, minimum: -80, maximum: 300, default: 25, required: true}
+      - {id: coolant_inlet_temperature_c, key: coolant_inlet_temperature_c, target: load_case, type: number, label: 冷却介质入口温度, unit: degC, minimum: -80, maximum: 250, default: 25}
+      - {id: coolant_flow_rate_lpm, key: coolant_flow_rate_lpm, target: load_case, type: number, label: 冷却介质流量, unit: L/min, minimum: 0, maximum: 10000, default: 0}
+  thermal_model:
+    label: 热模型与耦合
+    fields:
+      - {id: thermal_model_size, key: thermal_model_size, target: solver, type: enum, label: 模型规模, default: full, options: [{value: full, label: Full model}, {value: reduced_node, label: Reduced node}]}
+      - {id: thermal_model_type, key: thermal_model_type, target: solver, type: enum, label: 模型类型, default: model_3d, options: [{value: model_3d, label: 3D model}, {value: calibration_2d, label: 2D FEA calibration}]}
+      - {id: loss_source, key: loss_source, target: solver, type: enum, label: 损耗来源, default: template, options: [{value: template, label: 模型当前损耗}, {value: emag, label: EMag 计算损耗}, {value: lab, label: Lab 损耗}, {value: table, label: 转速/温度表}]}
+      - {id: coupling_mode, key: coupling_mode, target: solver, type: enum, label: 耦合方式, default: none, options: [{value: none, label: 无耦合}, {value: losses_to_thermal, label: 损耗传递至热模型}, {value: temperature_to_emag, label: 温度传递至电磁}, {value: converged, label: 迭代至收敛}]}
+  thermal_transient:
+    label: 瞬态控制
+    fields:
+      - {id: transient_calculation_type, key: Transient_Calculation_Type, target: automation.Therm, type: integer, label: 瞬态计算类型, minimum: 0, maximum: 20, default: 0}
+      - {id: transient_time_period, key: Transient_Time_Period, target: automation.Therm, type: number, label: 计算时长, unit: s, minimum: 0.001, maximum: 100000000, default: 60, required: true}
+      - {id: transient_time_step, key: Transient_Time_Step, target: automation.Therm, type: number, label: 时间步长, unit: s, minimum: 0.000001, maximum: 1000000, default: 1}
+      - {id: transient_cycles, key: transient_cycles, target: solver, type: integer, label: 循环次数, minimum: 1, maximum: 10000, default: 1}
+  lab_model_build:
+    label: Lab 模型构建
+    description: 几何、材料和损耗模型变化后需要重新构建。
+    fields:
+      - {id: model_type_motorlab, key: ModelType_MotorLAB, target: automation.Lab, type: integer, label: Lab 模型类型, minimum: 0, maximum: 20, default: 1}
+      - {id: model_build_speed, key: ModelBuildSpeed_MotorLAB, target: automation.Lab, type: number, label: 模型最高转速, unit: rpm, minimum: 1, maximum: 300000, default: 10000, required: true}
+      - {id: max_model_current, key: MaxModelCurrent_MotorLAB, target: automation.Lab, type: number, label: 模型最大电流, unit: A, minimum: 0.1, maximum: 10000, default: 480, required: true}
+      - {id: saturation_model_points, key: SatModelPoints_MotorLAB, target: automation.Lab, type: integer, label: 饱和模型分辨率, minimum: 0, maximum: 1000, default: 0}
+      - {id: loss_model_lab, key: LossModel_Lab, target: automation.Lab, type: integer, label: Lab 损耗模型, minimum: 0, maximum: 20, default: 0}
+      - {id: build_saturation_model, key: BuildSatModel_MotorLAB, target: automation.Lab, type: boolean, label: 构建饱和模型, default: true}
+  lab_operating_point:
+    label: Lab 工作点
+    fields:
+      - {id: speed_demand_motorlab, key: SpeedDemand_MotorLAB, target: automation.Lab, type: number, label: 转速需求, unit: rpm, minimum: 0, maximum: 300000, default: 4000, required: true}
+      - {id: stator_current_demand_lab, key: StatorCurrentDemand_Lab, target: automation.Lab, type: number, label: 定子电流需求, unit: A, minimum: 0, maximum: 10000, default: 480}
+      - {id: operating_mode_lab, key: OperatingMode_Lab, target: automation.Lab, type: integer, label: 运行模式, minimum: 0, maximum: 20, default: 0}
+      - {id: operating_point_spec, key: OpPointSpec_MotorLAB, target: automation.Lab, type: integer, label: 工作点定义, minimum: 0, maximum: 20, default: 1}
+  lab_duty_cycle:
+    label: Duty Cycle
+    fields:
+      - {id: duty_cycle_type, key: duty_cycle_type, target: solver, type: enum, label: 循环类型, default: custom, options: [{value: custom, label: 自定义时间序列}, {value: automotive, label: 汽车驾驶循环}]}
+      - {id: duty_cycle_source, key: duty_cycle_source, target: solver, type: text, label: 循环文件或注册名称, default: ''}
+      - {id: thermal_transient_coupling, key: thermal_transient_coupling, target: solver, type: enum, label: 热瞬态耦合, default: none, options: [{value: none, label: 无耦合}, {value: losses_to_thermal, label: 损耗传递至热模型}, {value: coupled_transient, label: 瞬态紧耦合}]}
+      - {id: duty_cycle_count, key: duty_cycle_count, target: solver, type: integer, label: 循环次数, minimum: 1, maximum: 10000, default: 1}
+  mechanical_stress:
+    label: 转子应力模型
+    fields:
+      - {id: shaft_speed_rpm, key: shaft_speed_rpm, target: load_case, type: number, label: 转速, unit: rpm, minimum: 0, maximum: 300000, default: 10000, required: true}
+      - {id: include_magnets, key: include_magnets, target: solver, type: boolean, label: 磁钢参与计算, default: true}
+      - {id: include_rotor_bars, key: include_rotor_bars, target: solver, type: boolean, label: 转子条参与计算, default: true}
+      - {id: adhesion_factor, key: adhesion_factor, target: solver, type: number, label: 黏结系数, minimum: 0, maximum: 1, default: 1}
+      - {id: mechanical_mesh_size, key: mechanical_mesh_size, target: solver, type: number, label: 机械网格尺寸, unit: mm, minimum: 0.001, maximum: 100, default: 1}
+  experiment_setup:
+    label: 敏感性与优化
+    fields:
+      - {id: experiment_mode, key: mode, target: experiment, type: enum, label: 试验模式, default: single, options: [{value: single, label: 单工况}, {value: full_factorial, label: 全因子}, {value: latin_hypercube, label: 拉丁超立方}, {value: nsga2, label: NSGA-II}]}
+      - {id: samples, key: samples, target: experiment, type: integer, label: 样本数, minimum: 2, maximum: 5000, default: 20}
+
 recipes:
   emag:
+    module: EMag
     label: 电磁单工作点
+    description: 在一个转速、电流与控制角下求解转矩、反电动势、损耗和磁场分布。
+    solve_mode: steady_electromagnetic
+    engineering_output: 工作点性能、波形、损耗与有限元场
     contexts: [EMag]
     methods: [do_magnetic_calculation]
-    production_ready: true
+    field_sets: [emag_operating_point, emag_calculation, native_evidence, experiment_setup]
+    required_outputs: [shaft_torque_nm, torque_angle_curve]
+    optional_outputs: [efficiency_percent, back_emf_curve, airgap_flux_density_curve, torque_harmonics]
+    result_views: [overview, performance, graphs, fea, output_data]
   thermal_steady:
+    module: Therm
     label: 稳态热
+    description: 计算给定损耗与冷却边界下达到热平衡后的部件温度和热流。
+    solve_mode: steady_state
+    engineering_output: 稳态温度、热网络与热流
     contexts: [Therm]
     methods: [do_steady_state_analysis]
-    production_ready: true
+    field_sets: [thermal_operating_point, thermal_model, native_evidence, experiment_setup]
+    required_outputs: [winding_max_temperature_c]
+    optional_outputs: [magnet_temperature_c, housing_temperature_c, thermal_node_table]
+    result_views: [overview, thermal_schematic, temperatures, output_data]
   thermal_transient:
+    module: Therm
     label: 瞬态热
+    description: 按时间步计算升温、冷却和热惯性，适用于短时过载与循环工况。
+    solve_mode: transient
+    engineering_output: 温度—时间曲线与峰值温度
     contexts: [Therm]
     methods: [do_transient_analysis]
-    production_ready: false
+    field_sets: [thermal_operating_point, thermal_model, thermal_transient, native_evidence]
+    required_outputs: [winding_temperature_time]
+    optional_outputs: [housing_temperature_time, heat_flow_time, thermal_node_table]
+    result_views: [overview, thermal_schematic, temperatures, graphs, output_data]
   emag_thermal:
+    module: Coupled
     label: 电磁 + 稳态热（顺序）
+    description: 先计算电磁损耗，再将损耗传递给稳态热模型；两个物理域顺序执行。
+    solve_mode: sequential_coupling
+    engineering_output: 电磁性能、损耗与稳态温度
     contexts: [EMag, Therm]
     methods: [do_magnetic_calculation, do_steady_state_analysis]
-    production_ready: true
+    field_sets: [emag_operating_point, emag_calculation, thermal_operating_point, thermal_model, native_evidence]
+    required_outputs: [shaft_torque_nm, winding_max_temperature_c]
+    optional_outputs: [total_loss_w, torque_angle_curve, thermal_node_table]
+    result_views: [overview, performance, fea, thermal_schematic, output_data]
   emag_thermal_coupled:
-    label: Motor-CAD原生电磁-热耦合
+    module: Coupled
+    label: Motor-CAD 原生电磁-热耦合
+    description: 使用 Motor-CAD 原生耦合计算在损耗与温度之间迭代，适合温度反馈显著的设计。
+    solve_mode: native_iterative_coupling
+    engineering_output: 收敛后的电磁性能与温度
     contexts: [EMag, Therm]
     methods: [do_magnetic_thermal_calculation]
-    production_ready: false
+    field_sets: [emag_operating_point, emag_calculation, thermal_operating_point, thermal_model, native_evidence]
+    required_outputs: [shaft_torque_nm, winding_max_temperature_c]
+    optional_outputs: [total_loss_w, magnet_temperature_c, thermal_node_table]
+    result_views: [overview, performance, fea, thermal_schematic, output_data]
   mechanical:
-    label: 机械计算
+    module: Mechanical
+    label: 转子应力与机械计算
+    description: 在指定转速下计算转子等效应力、位移和机械安全裕度。
+    solve_mode: mechanical_fea
+    engineering_output: 应力云图、最大位移与模态表
     contexts: [Mechanical]
     methods: [do_mechanical_calculation]
-    production_ready: false
+    field_sets: [mechanical_stress, native_evidence, experiment_setup]
+    required_outputs: [max_von_mises_stress_mpa]
+    optional_outputs: [max_displacement_mm, stress_field, modal_frequency_table]
+    result_views: [overview, stress, output_data]
   lab_magnetic:
-    label: Lab电磁性能图
+    module: Lab
+    label: Lab 电磁性能图
+    description: 构建降阶 Lab 模型并生成效率、损耗及转矩—转速工作范围图。
+    solve_mode: reduced_order_map
+    engineering_output: 效率图、损耗图与运行包络
     contexts: [Lab]
     methods: [build_model_lab, calculate_magnetic_lab]
-    production_ready: false
+    field_sets: [lab_model_build, native_evidence, experiment_setup]
+    required_outputs: [lab_efficiency_map]
+    optional_outputs: [torque_speed_envelope, lab_loss_map]
+    result_views: [overview, lab, graphs, output_data]
   lab_operating_point:
-    label: Lab工作点
+    module: Lab
+    label: Lab 工作点
+    description: 使用已构建 Lab 模型快速计算指定转速与需求下的工作点。
+    solve_mode: reduced_order_point
+    engineering_output: 工作点转矩、效率和约束状态
     contexts: [Lab]
     methods: [build_model_lab, calculate_operating_point_lab]
-    production_ready: false
+    field_sets: [lab_model_build, lab_operating_point, native_evidence, experiment_setup]
+    required_outputs: [lab_shaft_torque_nm]
+    optional_outputs: [lab_efficiency_percent, lab_operating_point_table]
+    result_views: [overview, performance, lab, output_data]
+  emag_saturation_map:
+    module: EMag
+    label: 饱和与损耗图
+    description: 扫描电流与控制角，识别磁路饱和和损耗随工况的变化。
+    solve_mode: electromagnetic_map
+    engineering_output: 饱和图与损耗分布
+    contexts: [EMag]
+    methods: [calculate_saturation_map]
+    field_sets: [emag_operating_point, emag_calculation, native_evidence, experiment_setup]
+    required_outputs: [emag_saturation_map]
+    optional_outputs: [lab_loss_map]
+    result_views: [overview, performance, graphs, output_data]
+  emag_torque_envelope:
+    module: EMag
+    label: 转矩-转速包络
+    description: 扫描速度与相位超前角，计算电压、电流约束下的最大转矩运行边界。
+    solve_mode: torque_speed_sweep
+    engineering_output: 转矩—转速包络、功率与效率
+    contexts: [EMag]
+    methods: [calculate_torque_envelope]
+    field_sets: [emag_operating_point, emag_calculation, native_evidence, experiment_setup]
+    required_outputs: [torque_speed_envelope]
+    optional_outputs: [output_power_w, efficiency_percent]
+    result_views: [overview, performance, graphs, output_data]
+  emag_multi_force:
+    module: EMag
+    label: 多位置电磁力
+    description: 在多个转子位置计算气隙力，为结构、振动和噪声分析提供载荷。
+    solve_mode: position_sweep
+    engineering_output: 位置力表与空间/时间谐波
+    contexts: [EMag]
+    methods: [do_multi_force_calculation]
+    field_sets: [emag_operating_point, force_setup, native_evidence]
+    required_outputs: [force_position_table]
+    optional_outputs: [force_spatial_harmonics, force_temporal_harmonics]
+    result_views: [overview, graphs, nvh, output_data]
+  emag_force_harmonics:
+    module: EMag
+    label: 电磁力谐波
+    description: 对电磁力进行空间和时间阶次分解，定位主要激励阶次。
+    solve_mode: harmonic_postprocess
+    engineering_output: 力谐波频谱与 NVH 输入
+    contexts: [EMag]
+    methods: [calculate_force_harmonics_spatial, calculate_force_harmonics_temporal]
+    field_sets: [emag_operating_point, force_setup, native_evidence]
+    required_outputs: [force_spatial_harmonics, force_temporal_harmonics]
+    optional_outputs: [nvh_campbell_map]
+    result_views: [overview, graphs, nvh, output_data]
+  weight:
+    module: Mechanical
+    label: 重量计算
+    description: 根据几何与材料密度计算整机和组件质量，用于功率密度与成本评估。
+    solve_mode: deterministic
+    engineering_output: 总质量与组件质量分解
+    contexts: [Mechanical]
+    methods: [do_weight_calculation]
+    field_sets: [native_evidence, experiment_setup]
+    required_outputs: [total_weight_kg]
+    optional_outputs: [component_weight_table]
+    result_views: [overview, output_data]
+  lab_thermal:
+    module: Lab
+    label: Lab 热包络与热图
+    description: 使用 Lab 降阶模型计算连续运行热边界和温度图谱。
+    solve_mode: reduced_order_thermal_map
+    engineering_output: 热包络、温度图和绕组峰值温度
+    contexts: [Lab, Therm]
+    methods: [build_model_lab, calculate_thermal_lab]
+    field_sets: [lab_model_build, thermal_operating_point, thermal_model, native_evidence]
+    required_outputs: [lab_thermal_map]
+    optional_outputs: [lab_thermal_envelope, winding_max_temperature_c]
+    result_views: [overview, lab, temperatures, output_data]
+  lab_duty_cycle:
+    module: Lab
+    label: Lab Duty Cycle
+    description: 沿驾驶或自定义时间序列计算电磁损耗与热响应。
+    solve_mode: duty_cycle_transient
+    engineering_output: 循环温度、性能与能量损耗
+    contexts: [Lab, Therm]
+    methods: [build_model_lab, calculate_duty_cycle_lab]
+    field_sets: [lab_model_build, lab_duty_cycle, thermal_operating_point, native_evidence]
+    required_outputs: [duty_cycle_temperature_time]
+    optional_outputs: [duty_cycle_performance_table, total_loss_w]
+    result_views: [overview, lab, temperatures, graphs, output_data]
+  lab_generator:
+    module: Lab
+    label: Lab 发电工况
+    description: 计算发电模式下的运行范围、效率和损耗分布。
+    solve_mode: generator_map
+    engineering_output: 发电效率图与损耗图
+    contexts: [Lab]
+    methods: [build_model_lab, calculate_generator_lab]
+    field_sets: [lab_model_build, lab_operating_point, native_evidence]
+    required_outputs: [lab_generator_map]
+    optional_outputs: [lab_efficiency_map, lab_loss_map]
+    result_views: [overview, lab, graphs, output_data]
+  lab_test_performance:
+    module: Lab
+    label: Lab 测试性能
+    description: 按目标 Motor-CAD 版本的 Lab 测试定义生成性能结果表。
+    solve_mode: lab_test_sequence
+    engineering_output: 测试性能表与关键工作点
+    contexts: [Lab]
+    methods: [build_model_lab, calculate_test_performance_lab]
+    field_sets: [lab_model_build, lab_operating_point, native_evidence]
+    required_outputs: [lab_test_performance_table]
+    optional_outputs: [lab_efficiency_percent, lab_shaft_torque_nm]
+    result_views: [overview, lab, output_data]

@@ -20,6 +20,17 @@ from .config_schema import (
 
 
 class Registry:
+    ANALYSIS_OUTPUT_FALLBACKS = {
+        "emag_saturation_map": "emag",
+        "emag_torque_envelope": "emag",
+        "emag_multi_force": "emag",
+        "emag_force_harmonics": "emag",
+        "weight": "mechanical",
+        "lab_thermal": "thermal_steady",
+        "lab_duty_cycle": "lab_operating_point",
+        "lab_generator": "lab_operating_point",
+        "lab_test_performance": "lab_operating_point",
+    }
     def __init__(self, config_dir: Path, motorcad_version: str = "2026R1"):
         self.config_dir = config_dir
         self.motorcad_version = motorcad_version
@@ -31,7 +42,11 @@ class Registry:
         self.model_sources = self._load_required(config_dir / "model_sources.yaml").get("models", {})
         self.api_catalog = self._load_required(config_dir / "pymotorcad_api_catalog.yaml")
         self.motor_families = self._load_required(config_dir / "motor_families.yaml").get("families", {})
-        self.analysis_recipes = self._load_required(config_dir / "analysis_recipes.yaml").get("recipes", {})
+        analysis_payload = self._load_required(config_dir / "analysis_recipes.yaml")
+        self.analysis_recipe_version = int(analysis_payload.get("version") or 1)
+        self.analysis_field_sets = analysis_payload.get("field_sets", {})
+        self.analysis_recipes = analysis_payload.get("recipes", {})
+        self.engineering_contexts = self._load_required(config_dir / "engineering_contexts.yaml")
         solver_controls_payload = self._load_required(config_dir / "solver_controls.yaml")
         version_dir = config_dir / "solver_versions" / motorcad_version
         parameter_mapping_payload = self._load_required(version_dir / "parameter_mapping.yaml")
@@ -177,7 +192,29 @@ class Registry:
         return deepcopy(self.motor_families)
 
     def analysis_recipe_schema(self) -> dict[str, Any]:
-        return deepcopy(self.analysis_recipes)
+        recipes = deepcopy(self.analysis_recipes)
+        for recipe_id, recipe in recipes.items():
+            sections = []
+            for field_set_id in recipe.get("field_sets", []):
+                field_set = deepcopy(self.analysis_field_sets.get(field_set_id) or {})
+                if not field_set:
+                    continue
+                field_set["id"] = field_set_id
+                sections.append(field_set)
+            recipe["id"] = recipe_id
+            recipe["schema_version"] = self.analysis_recipe_version
+            recipe["sections"] = sections
+        return recipes
+
+    def engineering_context_schema(self) -> dict[str, Any]:
+        return deepcopy(self.engineering_contexts)
+
+    def official_api_methods(self) -> set[str]:
+        return {
+            str(method)
+            for category in (self.api_catalog.get("categories") or {}).values()
+            for method in (category.get("methods") or [])
+        }
 
     def solver_control_schema(self) -> dict[str, Any]:
         return deepcopy(self.solver_controls)
@@ -189,10 +226,11 @@ class Registry:
         return deepcopy(self.version_capabilities.get("templates", {}).get(template_id, {}))
 
     def output_ids_for_analysis(self, analysis: str, template_id: str | None = None) -> list[str]:
+        effective_analysis = self.ANALYSIS_OUTPUT_FALLBACKS.get(analysis, analysis)
         result = []
         for output_id, definition in self.output_schema(template_id).items():
             analyses = definition.get("analyses", [])
-            if not analyses or analysis in analyses:
+            if not analyses or analysis in analyses or effective_analysis in analyses:
                 result.append(output_id)
         return result
 
@@ -204,10 +242,11 @@ class Registry:
         empty-profile contract explicit: required outputs plus ``default_selected``
         outputs are requested.  Expert users can still choose any registered output.
         """
+        effective_analysis = self.ANALYSIS_OUTPUT_FALLBACKS.get(analysis, analysis)
         result: list[str] = []
         for output_id, definition in self.output_schema(template_id).items():
             analyses = definition.get("analyses", [])
-            if analyses and analysis not in analyses:
+            if analyses and analysis not in analyses and effective_analysis not in analyses:
                 continue
             if definition.get("required") or definition.get("default_selected"):
                 result.append(output_id)

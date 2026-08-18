@@ -9,7 +9,9 @@ from typing import Any
 import yaml
 
 from .db import Database
+from .fea_pipeline import build_fea_plan, validate_fea_manifest
 from .registry import Registry
+from .result_extraction import build_extraction_contract, extraction_contract_sha256
 from .thermal_network import normalize_thermal_network
 
 
@@ -21,11 +23,12 @@ class ResultViewerService:
     extracted for every case while still exposing the full result-navigation model.
     """
 
-    def __init__(self, db: Database, registry: Registry, catalog_path: Path):
+    def __init__(self, db: Database, registry: Registry, catalog_path: Path, calibration: Any | None = None):
         self.db = db
         self.registry = registry
         with Path(catalog_path).open("r", encoding="utf-8") as handle:
             self.catalog_payload = yaml.safe_load(handle) or {}
+        self.calibration = calibration
 
     def catalog(self) -> dict[str, Any]:
         outputs = self.registry.output_schema()
@@ -61,6 +64,8 @@ class ResultViewerService:
         quality = self.db.loads(row.get("quality_json"), []) or []
         warnings = self.db.loads(row.get("warnings_json"), []) or []
         artifacts = self.db.query_all("SELECT id,kind,name,path,size_bytes,created_at FROM artifacts WHERE case_id=? ORDER BY id", (case_id,))
+        terminal = str(row.get("execution_status") or "") in {"SUCCEEDED", "CACHED", "FAILED", "TIMEOUT", "CANCELLED"}
+        current_artifacts = artifacts if terminal and bool(result) else []
         stages = self.db.query_all("SELECT stage,status,progress,started_at,finished_at,checkpoint_path,payload_json FROM case_stages WHERE case_id=? ORDER BY id", (case_id,))
         for stage in stages:
             stage["payload"] = self.db.loads(stage.pop("payload_json"), {})
@@ -73,24 +78,128 @@ class ResultViewerService:
         tables = result.get("tables") or raw_result.get("tables") or {}
         spectrum_ids = [key for key, value in series.items() if "harmonic" in key.lower() or (isinstance(value, dict) and value.get("kind") == "spectrum")]
         scalar_keys = [str(key).lower() for key in scalars]
-        fea_manifest = self._artifact_json(artifacts, "native_fea_manifest.json")
-        winding_definition = self._artifact_json(artifacts, "winding_definition.json")
+        fea_manifest = self._artifact_json(current_artifacts, "native_fea_manifest.json")
+        extraction_manifest = self._artifact_json(current_artifacts, "result_extraction_manifest.json")
+        winding_definition = self._artifact_json(current_artifacts, "winding_definition.json")
+        normalization = (fea_manifest or {}).get("normalization") if isinstance((fea_manifest or {}).get("normalization"), dict) else {}
+        if normalization.get("normalized"):
+            for native_field in normalization.get("available_fields") or []:
+                output_id = {"stress": "stress_field"}.get(str(native_field).lower())
+                if output_id:
+                    fields.setdefault(output_id, {
+                        "kind": "native_fea_reference",
+                        "native_field": str(native_field).lower(),
+                        "frame_count": int(normalization.get("frame_count") or 0),
+                        "authority": (fea_manifest or {}).get("authority"),
+                    })
+        case_scenario = self.db.loads(row.get("scenario_json"), {}) or request.get("scenario") or {}
         thermal_network = normalize_thermal_network(
             {"scalars": scalars, "series": series, "maps": maps, "fields": fields, "vectors": vectors, "tables": tables},
-            request.get("scenario") or {},
+            case_scenario,
         )
+        present_outputs = set(scalars) | set(series) | set(maps) | set(fields) | set(vectors) | set(tables)
+        recipe = self.registry.analysis_recipe_schema().get(str(row.get("analysis") or ""), {})
+        output_schema = self.registry.output_schema(row.get("template_id"))
+        required_outputs = list(recipe.get("required_outputs") or [])
+        optional_outputs = list(recipe.get("optional_outputs") or [])
+        extraction_contract = build_extraction_contract(
+            requested_outputs=list(dict.fromkeys([*(request.get("requested_outputs") or []), *required_outputs])),
+            required_outputs=required_outputs,
+            output_schema=output_schema,
+            scalars=scalars,
+            series=series,
+            maps=maps,
+            fields=fields,
+            vectors=vectors,
+            tables=tables,
+            audit=raw_result.get("output_audit") if isinstance(raw_result.get("output_audit"), dict) else {},
+        )
+        artifact_integrity = {"status": "NOT_APPLICABLE", "eligible": True}
+        if str(row.get("solver_mode") or "") == "motorcad" and terminal:
+            if extraction_manifest:
+                artifact_schema = int(extraction_manifest.get("schema_version") or 0)
+                stored_digest = extraction_manifest.get("content_sha256") or extraction_contract_sha256(extraction_manifest)
+                current_digest = extraction_contract.get("content_sha256") or extraction_contract_sha256(extraction_contract)
+                if artifact_schema < 3:
+                    artifact_integrity = {
+                        "status": "SCHEMA_UPGRADE_REQUIRED", "eligible": False,
+                        "artifact_schema_version": artifact_schema, "current_schema_version": 3,
+                        "message": "历史提取清单需要重新计算以升级到 Contract V3",
+                    }
+                elif stored_digest != current_digest:
+                    artifact_integrity = {
+                        "status": "DRIFT", "eligible": False,
+                        "artifact_schema_version": artifact_schema,
+                        "stored_sha256": stored_digest, "current_sha256": current_digest,
+                        "message": "归档提取清单与当前 Case 数据重算结果不一致",
+                    }
+                else:
+                    artifact_integrity = {
+                        "status": "VERIFIED", "eligible": True,
+                        "artifact_schema_version": artifact_schema, "content_sha256": current_digest,
+                        "message": "归档提取清单与当前结果重算一致",
+                    }
+            else:
+                artifact_integrity = {
+                    "status": "MISSING", "eligible": False,
+                    "message": "Motor-CAD Case 缺少结果提取归档清单",
+                }
+        extraction_contract["artifact_integrity"] = artifact_integrity
+        fea_plan = build_fea_plan(str(row.get("analysis") or ""), request.get("solver_settings") or {})
+        fea_contract = validate_fea_manifest(fea_manifest, fea_plan)
+        if not terminal:
+            fea_contract = {**fea_contract, "status": "PENDING", "eligible": False, "qualification_eligible": False, "issues": ["当前 Case 尚未完成"]}
+        missing_required = list(extraction_contract.get("missing_required") or [key for key in required_outputs if key not in present_outputs])
+        invalid_required = list(extraction_contract.get("invalid_required") or [])
+        expected_count = len(required_outputs)
+        completeness = round(100 * (expected_count - len(missing_required)) / expected_count, 1) if expected_count else 100.0
+        evidence_tier = "STRUCTURED_RESULT"
+        if fea_manifest:
+            capabilities = (fea_manifest.get("normalization") or {}).get("capabilities") or {}
+            evidence_tier = "NATIVE_MESH_FIELD" if capabilities.get("mesh_edges") else "NATIVE_POINT_FIELD"
+        if any(str(item.get("name") or "").lower().endswith((".png", ".bmp")) and "screen" in str(item.get("name") or "").lower() for item in current_artifacts):
+            evidence_tier = "NATIVE_SCREEN_AND_FIELD" if fea_manifest else "NATIVE_SCREEN"
+        qualification = self.calibration.latest_qualification(str(row.get("template_id") or ""), str(row.get("analysis") or "")) if self.calibration and row.get("template_id") else None
+        result_contract = {
+            "recipe_schema_version": self.registry.analysis_recipe_version,
+            "required": required_outputs,
+            "optional": optional_outputs,
+            "present": sorted(present_outputs),
+            "missing_required": missing_required,
+            "invalid_required": invalid_required,
+            "completeness_percent": completeness,
+            "status": "COMPLETE" if not missing_required and not invalid_required and fea_contract.get("eligible", True) and artifact_integrity.get("eligible", True) else "INCOMPLETE",
+            "evidence_tier": evidence_tier,
+            "native_qualification": qualification,
+            "extraction": extraction_contract,
+            "fea": fea_contract,
+            "archive_integrity": artifact_integrity,
+            "integrity_issues": [] if artifact_integrity.get("eligible", True) else [artifact_integrity.get("message")],
+            "qualification_eligible": bool(
+                not missing_required and not invalid_required
+                and extraction_contract.get("qualification_eligible") is True
+                and fea_contract.get("qualification_eligible") is True
+                and artifact_integrity.get("eligible") is True
+            ),
+        }
         availability = {
             "overview": bool(scalars or quality),
             "performance": any(any(token in key for token in ("torque", "efficiency", "power", "voltage")) for key in scalar_keys) or any("torque_speed" in str(key).lower() for key in maps),
             "losses": any("loss" in key for key in scalar_keys) or any("loss" in str(key).lower() for key in maps),
+            "output_data": bool(present_outputs),
+            "graphs": bool(series or maps),
             "inputs": True,
             "waveforms": any(key not in spectrum_ids for key in series),
             "harmonics": bool(spectrum_ids),
             "fea": bool(fea_manifest or fields or vectors) or any("fea" in key.lower() or "field" in key.lower() or "flux" in key.lower() for key in maps),
             "thermal": bool(thermal_network.get("available")) or any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors]),
+            "thermal_schematic": bool(thermal_network.get("available")),
+            "temperatures": any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables]),
             "lab": any("lab" in key.lower() or "efficiency_map" in key.lower() or "torque_speed" in key.lower() for key in [*scalars, *series, *maps]),
             "mechanical": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors] for token in ("stress", "force", "nvh")),
-            "artifacts": bool(artifacts),
+            "stress": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("stress", "displacement", "modal")),
+            "nvh": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("force", "nvh", "campbell", "modal")),
+            "artifacts": bool(current_artifacts),
         }
         modules = deepcopy(self.catalog_payload.get("modules", {}))
         for key, item in modules.items():
@@ -107,6 +216,7 @@ class ResultViewerService:
                 "quality_status": row.get("quality_status"),
                 "project_id": row.get("project_id"),
                 "design_revision_id": row.get("design_revision_id"),
+                "analysis_definition_revision_id": request.get("analysis_definition_revision_id"),
                 "scenario_revision_id": row.get("scenario_revision_id"),
                 "solver_profile_revision_id": request.get("solver_profile_revision_id"),
                 "output_profile_revision_id": request.get("output_profile_revision_id"),
@@ -115,24 +225,28 @@ class ResultViewerService:
             },
             "inputs": {
                 "parameters": parameters,
-                "scenario": request.get("scenario") or {},
+                "scenario": case_scenario,
                 "materials": request.get("materials") or {},
                 "solver_settings": request.get("solver_settings") or {},
                 "automation_overrides": request.get("automation_overrides") or {},
                 "fingerprint": self.db.loads(row.get("fingerprint_json"), {}) or {},
             },
             "results": {"scalars": scalars, "series": series, "maps": maps, "fields": fields, "vectors": vectors, "tables": tables},
+            "analysis_recipe": recipe,
+            "result_contract": result_contract,
             "evidence": {
                 "thermal_network": thermal_network,
                 "native_fea": fea_manifest,
+                "result_extraction": extraction_contract,
                 "winding_definition": winding_definition,
             },
             "quality": quality,
             "warnings": warnings,
-            "artifacts": artifacts,
+            "artifacts": current_artifacts,
+            "historical_artifacts": artifacts if not current_artifacts and artifacts else [],
             "stages": stages,
             "modules": modules,
-            "output_schema": self.registry.output_schema(row.get("template_id")),
+            "output_schema": output_schema,
         }
     @staticmethod
     def _numeric(value: Any) -> float | None:

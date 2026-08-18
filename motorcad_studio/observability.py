@@ -66,6 +66,12 @@ def _diagnostic_classification(record: dict[str, Any]) -> dict[str, Any]:
             recommendations.append("检查该路由的API耗时和重复加载；Route-first页面会自动取消旧请求，持续慢加载应继续定位到具体接口或渲染阶段。")
         else:
             recommendations.append("检查记录中的route、浏览器错误堆栈和相邻API请求。优先修复页面生命周期、过期响应覆盖或前端未处理异常。")
+    elif "no module named 'ansys" in hay or "no module named \"ansys" in hay or ("pymotorcad" in hay and any(token in hay for token in ("unavailable", "不可用", "missing", "缺少"))):
+        category = "PYMOTORCAD_DEPENDENCY"
+        root_cause = True
+        consequence = False
+        recommendations.append("确认 Studio 与 Worker 使用同一 Python 解释器；在该解释器中执行 python -m pip install -r requirements-motorcad.txt，然后重启 Studio 并运行深度检查。")
+        recommendations.append("不要只在系统 Python 或另一个虚拟环境中安装 ansys-motorcad-core；诊断包中的 Python executable 与 Worker 能力握手必须指向同一环境。")
     elif any(token in hay for token in ("winding is not feasible", "slot_number/phases/parallel paths", "fundamental winding factor", "windingvalidationerror", "winding_slot_phase_path", "绕组不可行")):
         category = "WINDING"
         root_cause = True
@@ -468,14 +474,14 @@ class StructuredLogStore:
             except OSError:
                 pass
 
-    def export_bundle(self, target: Path, *, task_id: str | None = None, minutes: int | None = None) -> Path:
+    def export_bundle(self, target: Path, *, task_id: str | None = None, minutes: int | None = None, session_id: str | None = None) -> Path:
         target = Path(target)
         target.parent.mkdir(parents=True, exist_ok=True)
-        records = self.query(task_id=task_id, minutes=minutes, limit=5000)
+        records = self.query(task_id=task_id, minutes=minutes, session_id=session_id, limit=5000)
         with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("logs_filtered.jsonl", "".join(json.dumps(row, ensure_ascii=False, default=str) + "\n" for row in records))
-            archive.writestr("diagnostics.json", json.dumps(self.diagnose(minutes=minutes or 240, task_id=task_id), ensure_ascii=False, indent=2, default=str))
-            archive.writestr("session.json", json.dumps({"current_session_id": self.session_id, "exported_at": _iso_now()}, ensure_ascii=False, indent=2))
+            archive.writestr("diagnostics.json", json.dumps(self.diagnose(minutes=minutes or 240, task_id=task_id, session_id=session_id), ensure_ascii=False, indent=2, default=str))
+            archive.writestr("session.json", json.dumps({"current_session_id": self.session_id, "exported_session_id": session_id, "exported_at": _iso_now()}, ensure_ascii=False, indent=2))
             # Export the complete local central-log set, including rotated backups, so
             # an online diagnostic download matches what support staff could inspect on
             # the workstation itself.

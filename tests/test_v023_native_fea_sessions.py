@@ -28,7 +28,8 @@ def test_v023_assets_and_contract_are_enabled():
     assert features["native_fea_evidence"] is True
     assert features["motorcad_session_supervisor"] is True
     assert "/api/cases/" in V023
-    assert "save_fea_data()" in INDEX
+    assert "有限元场" in INDEX
+    assert "save_fea_data()" not in INDEX
 
 
 def test_schema_v14_contains_motorcad_session_ownership_table(tmp_path: Path):

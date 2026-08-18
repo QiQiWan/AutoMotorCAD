@@ -18,6 +18,8 @@ from .baseline import build_comparison_report, capture_baseline
 from .automation_registry import AutomationRegistryKey, AutomationRegistryStore
 from .db import Database
 from .fingerprint import build_simulation_fingerprint
+from .fea_pipeline import build_fea_plan
+from .engineering_precheck import materialize_input_domains, required_input_domains, validate_engineering_inputs
 from .experiments import generate_experiment_cases, optimization_summary
 from .adaptive_optimization import nsga2_next_population
 from .derived_metrics import compute_derived_metrics
@@ -28,7 +30,9 @@ from .models import (
     CaseStatus,
     ExecutionStatus,
     MaterialConfiguration,
+    QualityFlag,
     QualityStatus,
+    ScenarioDefinition,
     SolverMode,
     TaskCreate,
     TaskStatus,
@@ -254,10 +258,23 @@ class TaskManager:
             ),
         )
 
-    def _fingerprint(self, request: TaskCreate, template: dict[str, Any], parameters: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    def _fingerprint(
+        self,
+        request: TaskCreate,
+        template: dict[str, Any],
+        parameters: dict[str, Any],
+        scenario: dict[str, Any] | None = None,
+    ) -> tuple[str, dict[str, Any]]:
         _, _, pymotorcad_version = MotorCADSolverAdapter.import_status()
+        request_payload = request.model_dump(mode="json")
+        if scenario is not None:
+            request_payload["scenario"] = scenario
+            # Each Case must hash only its own operating point. Keeping the whole
+            # batch here prevents cache reuse when the same point is submitted in a
+            # differently ordered Analysis Definition.
+            request_payload["scenario_matrix"] = []
         return build_simulation_fingerprint(
-            request=request.model_dump(mode="json"),
+            request=request_payload,
             template=template,
             parameters=parameters,
             registry_hashes=self.registry.hashes(),
@@ -266,8 +283,52 @@ class TaskManager:
             runtime_calibrations=self.calibration_registry.result_calibrations(template["id"]) if self.calibration_registry is not None else [],
         )
 
+    def _effective_template(self, request: TaskCreate) -> dict[str, Any]:
+        """Resolve the compatibility template and overlay the model-first source."""
+        template = dict(self.templates.get_template(request.template_id))
+        template["model_source"] = dict(template.get("model_source") or {})
+        if not request.design_revision_id:
+            return template
+        row = self.db.query_one(
+            """SELECT d.motor_type_id,d.source_kind,d.source_reference,d.source_mot_path,d.geometry_mode,
+                       dr.source_snapshot_json
+                 FROM design_revisions dr JOIN designs d ON d.id=dr.design_id WHERE dr.id=?""",
+            (request.design_revision_id,),
+        ) or {}
+        source_snapshot = self.db.loads(row.get("source_snapshot_json"), {})
+        if row.get("source_mot_path"):
+            path = Path(str(row["source_mot_path"])).resolve()
+            template["model_source"] = {
+                **template["model_source"],
+                "resolved_local_mot": str(path),
+                "local_mot": str(path),
+                "local_mot_exists": path.exists(),
+                "source_kind": row.get("source_kind"),
+            }
+        elif row.get("source_kind") == "default":
+            template["model_source"] = {
+                **template["model_source"],
+                "use_instance_default": True,
+                "source_kind": "default",
+            }
+        elif row.get("source_kind") == "adaptive_model" and row.get("source_reference"):
+            template["model_source"] = {
+                **template["model_source"],
+                "registered_template": str(row["source_reference"]),
+                "source_kind": row.get("source_kind"),
+            }
+        elif source_snapshot.get("registered_template"):
+            template["model_source"] = {
+                **template["model_source"],
+                "registered_template": str(source_snapshot["registered_template"]),
+                "source_kind": row.get("source_kind"),
+            }
+        template["motor_type"] = row.get("motor_type_id") or template.get("motor_type")
+        template["geometry_mode"] = row.get("geometry_mode") or "dimensions"
+        return template
+
     def validate_request(self, request: TaskCreate) -> list[dict[str, Any]]:
-        template = self.templates.get_template(request.template_id)
+        template = self._effective_template(request)
         if not request.project_id and not self.settings.enable_mock_solver:
             return [{"code":"PROJECT_REQUIRED","severity":"BLOCKING","message":"请先创建或选择当前项目。正式计算必须归属于Project，任务/结果/数据集将自动继承该工程上下文。"}]
         if request.project_id:
@@ -278,7 +339,8 @@ class TaskManager:
                 return [{"code":"PROJECT_TRASHED","severity":"BLOCKING","message":f"当前项目已在回收站，恢复项目后才能继续计算: {request.project_id}"}]
         if request.design_revision_id:
             revision = self.db.query_one(
-                """SELECT dr.id,dr.revision,d.id design_id,d.project_id,d.template_id,d.name design_name
+                """SELECT dr.id,dr.revision,dr.capability_snapshot_json,
+                          d.id design_id,d.project_id,d.template_id,d.name design_name,d.motor_type_id
                    FROM design_revisions dr JOIN designs d ON d.id=dr.design_id WHERE dr.id=?""",
                 (request.design_revision_id,),
             )
@@ -291,6 +353,22 @@ class TaskManager:
                 return [{"code":"DESIGN_REVISION_TEMPLATE_MISMATCH","severity":"BLOCKING","message":f"当前Design Revision基于模板 {revision.get('template_id')}，但任务选择了 {request.template_id}。任务必须使用设计版本对应的模板。"}]
         elif request.solver_mode == SolverMode.MOTORCAD and not self.settings.enable_mock_solver:
             return [{"code":"DESIGN_REVISION_REQUIRED","severity":"BLOCKING","message":"请先在当前项目中创建或选择Design Revision，再从该设计版本发起Motor-CAD计算。这样参数、结果和数据工厂血缘才能保持一致。"}]
+        if request.analysis_definition_revision_id:
+            analysis_revision = self.db.query_one(
+                """SELECT adr.id,adr.definition_json,ad.project_id,ad.design_revision_id,ad.recipe_id,ad.module
+                     FROM analysis_definition_revisions adr
+                     JOIN analysis_definitions ad ON ad.id=adr.analysis_definition_id
+                     WHERE adr.id=?""",
+                (request.analysis_definition_revision_id,),
+            )
+            if not analysis_revision:
+                return [{"code": "ANALYSIS_DEFINITION_REVISION_NOT_FOUND", "severity": "BLOCKING", "message": f"Analysis Revision不存在: {request.analysis_definition_revision_id}"}]
+            if request.project_id and analysis_revision.get("project_id") != request.project_id:
+                return [{"code": "ANALYSIS_DEFINITION_PROJECT_MISMATCH", "severity": "BLOCKING", "message": "Analysis Revision 不属于当前项目"}]
+            if request.design_revision_id and analysis_revision.get("design_revision_id") != request.design_revision_id:
+                return [{"code": "ANALYSIS_DEFINITION_DESIGN_MISMATCH", "severity": "BLOCKING", "message": "Analysis Revision 绑定的电机设计版本与本次任务不一致"}]
+            if str(analysis_revision.get("recipe_id")) != request.analysis.value:
+                return [{"code": "ANALYSIS_DEFINITION_RECIPE_MISMATCH", "severity": "BLOCKING", "message": "Analysis Revision 的分析配方与本次任务不一致"}]
         if request.scenario_revision_id:
             scenario_revision = self.db.query_one(
                 """SELECT sr.id,s.project_id,s.name FROM scenario_revisions sr
@@ -307,9 +385,31 @@ class TaskManager:
         scenario_parameter_overrides = DomainService.scenario_parameter_overrides(request.scenario.model_dump(mode="json"))
         merged = normalize_parameters({**template.get("defaults", {}), **request.parameters, **scenario_parameter_overrides}, schema)
         issues = validate_parameters(merged, schema)
+        if request.design_revision_id and revision:
+            capability_snapshot = self.db.loads(revision.get("capability_snapshot_json"), {})
+            recipe_capability = (capability_snapshot.get("analysis_recipes") or {}).get(request.analysis.value)
+            if isinstance(recipe_capability, dict) and recipe_capability.get("available") is False:
+                issues.append({
+                    "code": "ANALYSIS_UNAVAILABLE_FOR_MOTOR_TYPE",
+                    "severity": "BLOCKING",
+                    "message": (
+                        f"{revision.get('motor_type_id') or '当前机型'} 未声明分析配方 "
+                        f"{request.analysis.value} 所需模块能力。请返回分析工作台选择可用配方。"
+                    ),
+                })
         explicit_ids = self._effective_explicit_parameter_ids(request, template)
         issues.extend(validate_geometry_relations(merged, template, explicit_ids).get("issues", []))
         issues.extend(validate_winding_relations(merged, template, explicit_ids).get("issues", []))
+        cross_domain = validate_engineering_inputs(
+            merged,
+            scenario=request.scenario.model_dump(mode="json"),
+            materials=request.materials.model_dump(mode="json"),
+            input_domains=dict(request.solver_settings.get("input_domains") or {}),
+            solver_settings=request.solver_settings,
+            required_domains=required_input_domains(analysis_revision.get("module"), analysis_revision.get("recipe_id")) if request.analysis_definition_revision_id and analysis_revision else None,
+        )
+        existing_codes = {str(issue.get("code")) for issue in issues}
+        issues.extend(issue for issue in cross_domain["issues"] if str(issue.get("code")) not in existing_codes)
         if request.design_revision_id:
             revision_state = self.db.query_one("SELECT parameters_json,materials_json FROM design_revisions WHERE id=?", (request.design_revision_id,))
             revision_parameters = self.db.loads((revision_state or {}).get("parameters_json"), {}) if revision_state else {}
@@ -372,7 +472,10 @@ class TaskManager:
                     "suggestion": "材料属于Design定义。若希望长期保留，请先保存为新的Design Revision；仅临时试算时可保留本次覆盖。",
                     "details": {"design_revision_id": request.design_revision_id, "deltas": material_deltas},
                 })
-        issues.extend(validate_scenario(request.scenario.model_dump(mode="json"), request.analysis))
+        scenario_rows = request.scenario_matrix or [request.scenario]
+        for index, scenario_row in enumerate(scenario_rows):
+            for issue in validate_scenario(scenario_row.model_dump(mode="json"), request.analysis):
+                issues.append({**issue, "case_index": index} if len(scenario_rows) > 1 else issue)
         issues.extend(validate_template_capability(template, request.analysis, request.solver_mode.value))
         if request.solver_mode.value == "motorcad" and self.calibration_registry is not None:
             evidence = self.calibration_registry.latest_qualification(request.template_id, request.analysis.value)
@@ -413,7 +516,14 @@ class TaskManager:
                     "message": f"production模式要求模板分析能力已验收，当前状态={capability}",
                 })
         valid_contexts = {"Global", "EMag", "Therm", "Lab", "Mechanical"}
-        solver_nested = request.solver_settings.get("automation", request.solver_settings) if isinstance(request.solver_settings, dict) else {}
+        solver_root = request.solver_settings if isinstance(request.solver_settings, dict) else {}
+        # Recipe Schema V3 also stores Studio-level model, evidence and DOE
+        # controls under solver_settings. Only explicit context dictionaries are
+        # Automation variables; scalar orchestration fields must not be mistaken
+        # for raw Motor-CAD contexts.
+        solver_nested = solver_root.get("automation") if isinstance(solver_root.get("automation"), dict) else {
+            key: value for key, value in solver_root.items() if key in valid_contexts and isinstance(value, dict)
+        }
         if solver_nested and not isinstance(solver_nested, dict):
             issues.append({"code": "SOLVER_SETTINGS_INVALID", "severity": "BLOCKING", "message": "求解器原生参数必须按上下文组织为键值对象"})
             solver_nested = {}
@@ -454,6 +564,50 @@ class TaskManager:
         every registered output". Resolve that contract here so the immutable Run
         Configuration, solver extraction and quality gate all see the same outputs.
         """
+        if request.analysis_definition_revision_id:
+            row = self.db.query_one(
+                "SELECT definition_json FROM analysis_definition_revisions WHERE id=?",
+                (request.analysis_definition_revision_id,),
+            ) or {}
+            definition = self.db.loads(row.get("definition_json"), {})
+            saved_settings = dict(definition.get("solver_settings") or {})
+            # The analysis-case revision owns its physical-input modules. Task-level
+            # solver choices may extend that revision but may not silently drop it.
+            saved_domains = dict(definition.get("input_domains") or saved_settings.get("input_domains") or {})
+            request.solver_settings = {**saved_settings, **request.solver_settings, "input_domains": saved_domains}
+            if not request.requested_outputs:
+                request.requested_outputs = list(definition.get("requested_outputs") or [])
+            if not request.scenario_matrix and len(definition.get("load_cases") or []) > 1:
+                request.scenario_matrix = [ScenarioDefinition.model_validate(row) for row in definition["load_cases"]]
+        physical = materialize_input_domains(
+            dict(request.solver_settings.get("input_domains") or {}),
+            scenario=request.scenario.model_dump(mode="json"),
+            materials=request.materials.model_dump(mode="json"),
+            solver_settings=request.solver_settings,
+        )
+        request.scenario = ScenarioDefinition.model_validate(physical["scenario"])
+        request.materials = MaterialConfiguration.model_validate(physical["materials"])
+        request.solver_settings = physical["solver_settings"]
+        domains = dict(request.solver_settings.get("input_domains") or {})
+        if domains and request.scenario_matrix:
+            request.scenario_matrix = [
+                ScenarioDefinition.model_validate(materialize_input_domains(
+                    domains,
+                    scenario=item.model_dump(mode="json"),
+                    materials=request.materials.model_dump(mode="json"),
+                    solver_settings=request.solver_settings,
+                )["scenario"])
+                for item in request.scenario_matrix
+            ]
+        if request.design_revision_id:
+            row = self.db.query_one("SELECT automation_parameters_json FROM design_revisions WHERE id=?", (request.design_revision_id,)) or {}
+            baseline = self.db.loads(row.get("automation_parameters_json"), {})
+            merged: dict[str, dict[str, Any]] = {}
+            for source in (baseline, request.automation_overrides):
+                for context, variables in (source or {}).items():
+                    if isinstance(variables, dict):
+                        merged.setdefault(str(context), {}).update(variables)
+            request.automation_overrides = merged
         if not request.requested_outputs:
             request.requested_outputs = self.registry.default_output_ids_for_analysis(request.analysis.value, request.template_id)
         for objective in request.experiment.objectives:
@@ -473,20 +627,50 @@ class TaskManager:
 
     def create_task(self, request: TaskCreate, submission_hash: str | None = None) -> str:
         self.prepare_request(request)
-        template = self.templates.get_template(request.template_id)
+        template = self._effective_template(request)
         schema = self.registry.parameter_schema(request.template_id)
-        scenario_parameter_overrides = DomainService.scenario_parameter_overrides(request.scenario.model_dump(mode="json"))
-        merged_parameters = normalize_parameters({**template.get("defaults", {}), **request.parameters, **scenario_parameter_overrides}, schema)
         validation = self.validate_request(request)
         blocking = [item for item in validation if item["severity"] == "BLOCKING"]
         if blocking:
             raise ValueError(json.dumps(blocking, ensure_ascii=False))
 
-        cases = self._generate_cases(request, merged_parameters)
+        default_scenario = request.scenario.model_dump(mode="json")
+        if request.scenario_matrix:
+            case_specs = []
+            for scenario_model in request.scenario_matrix:
+                case_scenario = scenario_model.model_dump(mode="json")
+                scenario_overrides = DomainService.scenario_parameter_overrides(case_scenario)
+                case_parameters = normalize_parameters(
+                    {**template.get("defaults", {}), **request.parameters, **scenario_overrides}, schema
+                )
+                case_specs.append((case_parameters, case_scenario))
+        else:
+            scenario_parameter_overrides = DomainService.scenario_parameter_overrides(default_scenario)
+            merged_parameters = normalize_parameters(
+                {**template.get("defaults", {}), **request.parameters, **scenario_parameter_overrides}, schema
+            )
+            case_specs = [(parameters, default_scenario) for parameters in self._generate_cases(request, merged_parameters)]
+        required_domains_for_task: list[str] | None = None
+        if request.analysis_definition_revision_id:
+            analysis_contract = self.db.query_one(
+                """SELECT ad.module,ad.recipe_id FROM analysis_definition_revisions adr
+                     JOIN analysis_definitions ad ON ad.id=adr.analysis_definition_id WHERE adr.id=?""",
+                (request.analysis_definition_revision_id,),
+            ) or {}
+            required_domains_for_task = required_input_domains(analysis_contract.get("module"), analysis_contract.get("recipe_id"))
         case_issues: list[dict[str, Any]] = []
-        for index, parameters in enumerate(cases):
+        for index, (parameters, _case_scenario) in enumerate(case_specs):
             case_validation = list(validate_parameters(parameters, schema))
             case_validation.extend(validate_geometry_relations(parameters, template, self._effective_explicit_parameter_ids(request, template)).get("issues", []))
+            case_validation.extend(validate_winding_relations(parameters, template, self._effective_explicit_parameter_ids(request, template)).get("issues", []))
+            case_validation.extend(validate_engineering_inputs(
+                parameters,
+                scenario=_case_scenario,
+                materials=request.materials.model_dump(mode="json"),
+                input_domains=dict(request.solver_settings.get("input_domains") or {}),
+                solver_settings=request.solver_settings,
+                required_domains=required_domains_for_task,
+            )["issues"])
             for item in case_validation:
                 if item["severity"] == "BLOCKING":
                     case_issues.append({**item, "case_index": index})
@@ -508,22 +692,33 @@ class TaskManager:
             (
                 task_id, request.project_name, request.name, request.template_id, request.solver_mode.value,
                 request.analysis.value, TaskStatus.QUEUED.value, 0, "QUEUED",
-                self.db.dumps(request.model_dump(mode="json")), now, now, len(cases), request.quality_profile,
+                self.db.dumps(request.model_dump(mode="json")), now, now, len(case_specs), request.quality_profile,
                 request.project_id, request.design_revision_id, request.scenario_revision_id, experiment_id, request.run_configuration_id, request.submission_key, submission_hash,
             ),
         )
 
-        for index, parameters in enumerate(cases):
+        for index, (parameters, case_scenario) in enumerate(case_specs):
             case_id = f"{task_id}-C{index + 1:04d}"
-            input_hash, fingerprint = self._fingerprint(request, template, parameters)
+            input_hash, fingerprint = self._fingerprint(request, template, parameters, case_scenario)
             cached = None
             if request.reuse_cache:
-                cached = self.db.query_one(
+                candidates = self.db.query_all(
                     """SELECT * FROM cases WHERE input_hash=? AND cache_eligible=1
                        AND execution_status IN (?,?) AND quality_status=? AND result_json IS NOT NULL
-                       ORDER BY finished_at DESC LIMIT 1""",
+                       ORDER BY finished_at DESC LIMIT 20""",
                     (input_hash, ExecutionStatus.SUCCEEDED.value, ExecutionStatus.CACHED.value, QualityStatus.VALID.value),
                 )
+                for candidate in candidates:
+                    if request.solver_mode != SolverMode.MOTORCAD:
+                        cached = candidate
+                        break
+                    cached_payload = self.db.loads(candidate.get("result_json"), {}) or {}
+                    cached_raw = cached_payload.get("raw") if isinstance(cached_payload.get("raw"), dict) else {}
+                    extraction = cached_raw.get("result_extraction_contract") if isinstance(cached_raw.get("result_extraction_contract"), dict) else {}
+                    fea = cached_raw.get("fea_contract") if isinstance(cached_raw.get("fea_contract"), dict) else {}
+                    if extraction.get("qualification_eligible") is True and fea.get("qualification_eligible") is True:
+                        cached = candidate
+                        break
             status = CaseStatus.SKIPPED_BY_CACHE.value if cached else CaseStatus.PENDING.value
             execution = ExecutionStatus.CACHED.value if cached else ExecutionStatus.PENDING.value
             quality = QualityStatus.VALID.value if cached else QualityStatus.NOT_ASSESSED.value
@@ -532,15 +727,15 @@ class TaskManager:
                 """INSERT INTO cases(
                     id,task_id,case_index,status,execution_status,quality_status,progress,parameters_json,
                     result_json,warnings_json,quality_json,input_hash,fingerprint_json,cached_from_case_id,
-                    work_dir,cache_eligible,updated_at,finished_at,solver_version,generation,case_source,parent_ids_json
-                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    work_dir,cache_eligible,updated_at,finished_at,solver_version,generation,case_source,parent_ids_json,scenario_json
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     case_id, task_id, index, status, execution, quality, 1.0 if cached else 0.0,
                     self.db.dumps(parameters), cached["result_json"] if cached else None,
                     cached["warnings_json"] if cached else None, cached["quality_json"] if cached else None,
                     input_hash, self.db.dumps(fingerprint), cached["id"] if cached else None,
                     str(work_dir), 1 if cached else 0, now, now if cached else None,
-                    self.settings.motorcad_version, 0, "initial", None,
+                    self.settings.motorcad_version, 0, "initial", None, self.db.dumps(case_scenario),
                 ),
             )
             if cached:
@@ -556,7 +751,7 @@ class TaskManager:
                 "INSERT OR REPLACE INTO optimizer_runs(task_id,algorithm,generation,status,config_json,state_json,updated_at) VALUES(?,?,?,?,?,?,?)",
                 (task_id, "nsga2", 0, "RUNNING", self.db.dumps(request.experiment.model_dump(mode="json")), self.db.dumps({"generated_generations": [0]}), self.db.now()),
             )
-        self._event(task_id, "TASK_CREATED", f"task created with {len(cases)} cases", payload={"validation": validation})
+        self._event(task_id, "TASK_CREATED", f"task created with {len(case_specs)} cases", payload={"validation": validation, "scenario_case_count": len(case_specs)})
         self._start_thread(task_id)
         return task_id
 
@@ -593,10 +788,11 @@ class TaskManager:
                     id,task_id,case_index,status,execution_status,quality_status,progress,parameters_json,
                     result_json,warnings_json,quality_json,input_hash,fingerprint_json,cached_from_case_id,
                     work_dir,cache_eligible,updated_at,finished_at,solver_version,generation,case_source,parent_ids_json
-                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    ,scenario_json
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (case_id, task_id, next_index, CaseStatus.PENDING.value, ExecutionStatus.PENDING.value, QualityStatus.NOT_ASSESSED.value, 0.0,
                  self.db.dumps(parameters), None, None, None, input_hash, self.db.dumps(fingerprint), None, str(work_dir), 0, now, None,
-                 self.settings.motorcad_version, generation, source, None),
+                 self.settings.motorcad_version, generation, source, None, self.db.dumps(request.scenario.model_dump(mode="json"))),
             )
             created.append(case_id)
             next_index += 1
@@ -612,10 +808,12 @@ class TaskManager:
             params = (task_id, generation)
         sql += " ORDER BY case_index"
         rows: list[dict[str, Any]] = []
-        task = self.db.query_one("SELECT request_json FROM tasks WHERE id=?", (task_id,)) or {}
+        task = self.db.query_one("SELECT request_json,solver_mode FROM tasks WHERE id=?", (task_id,)) or {}
         request = self.db.loads(task.get("request_json"), {}) or {}
         scenario = request.get("scenario") or {}
         for case in self.db.query_all(sql, params):
+            if task.get("solver_mode") == SolverMode.MOTORCAD.value and case.get("quality_status") != QualityStatus.VALID.value:
+                continue
             parameters = self.db.loads(case.get("parameters_json"), {}) or {}
             result = self.db.loads(case.get("result_json"), {}) or {}
             scalars = result.get("scalars") or {}
@@ -740,10 +938,19 @@ class TaskManager:
         bounded = max(0.0, min(1.0, value))
         current_case = self.db.query_one("SELECT progress FROM cases WHERE id=?", (case_id,)) or {"progress": 0.0}
         bounded = max(float(current_case.get("progress") or 0.0), bounded)
+        now = self.db.now()
+        # Progress callbacks describe a sequential public Studio pipeline. Close
+        # the preceding observable stage before opening the next one so the live
+        # UI does not imply that several solver stages are running concurrently.
+        self.db.execute(
+            """UPDATE case_stages SET status='SUCCEEDED',progress=1,finished_at=?,updated_at=?
+               WHERE case_id=? AND status='RUNNING' AND stage<>?""",
+            (now, now, case_id, stage),
+        )
         status = CaseStatus.EXTRACTING.value if "EXTRACT" in stage else CaseStatus.POSTPROCESSING.value if stage in {"QUALITY_CHECK", "ARCHIVING"} else CaseStatus.RUNNING.value
         self.db.execute(
             "UPDATE cases SET status=?,execution_status=?,progress=?,last_heartbeat=?,updated_at=? WHERE id=?",
-            (status, ExecutionStatus.RUNNING.value, bounded, self.db.now(), self.db.now(), case_id),
+            (status, ExecutionStatus.RUNNING.value, bounded, now, now, case_id),
         )
         progress_rows = self.db.query_all("SELECT progress FROM cases WHERE task_id=?", (task_id,))
         overall = sum(float(row.get("progress") or 0.0) for row in progress_rows) / max(len(progress_rows), 1)
@@ -787,7 +994,7 @@ class TaskManager:
         if not task:
             return
         request = TaskCreate.model_validate(self.db.loads(task["request_json"], {}))
-        template = self.templates.get_template(task["template_id"])
+        template = self._effective_template(request)
         self.db.execute(
             "UPDATE tasks SET status=?,started_at=COALESCE(started_at,?),current_stage=?,updated_at=? WHERE id=?",
             (TaskStatus.RUNNING.value, self.db.now(), "STARTING", self.db.now(), task_id),
@@ -877,6 +1084,12 @@ class TaskManager:
                 request.scenario.model_dump(mode="json")
             ).items() if value is not None
         )
+        for scenario in request.scenario_matrix or []:
+            ids.update(
+                key for key, value in DomainService.scenario_parameter_overrides(
+                    scenario.model_dump(mode="json")
+                ).items() if value is not None
+            )
         if request.design_revision_id:
             revision = self.db.query_one("SELECT explicit_parameter_ids_json FROM design_revisions WHERE id=?", (request.design_revision_id,))
             if revision:
@@ -887,6 +1100,7 @@ class TaskManager:
         task_id = task["id"]
         case_id = case["id"]
         params = self.db.loads(case["parameters_json"], {})
+        case_scenario = self.db.loads(case.get("scenario_json"), {}) or request.scenario.model_dump(mode="json")
         work_dir = Path(case.get("work_dir") or self.settings.results_dir / task_id / case_id)
         work_dir.mkdir(parents=True, exist_ok=True)
         cancel_event = threading.Event()
@@ -906,6 +1120,13 @@ class TaskManager:
         runtime_issues = list(validate_parameters(params, schema))
         runtime_issues.extend(validate_geometry_relations(params, template, explicit_ids).get("issues", []))
         runtime_issues.extend(validate_winding_relations(params, template, explicit_ids).get("issues", []))
+        runtime_issues.extend(validate_engineering_inputs(
+            params,
+            scenario=case_scenario,
+            materials=request.materials.model_dump(mode="json"),
+            input_domains=dict(request.solver_settings.get("input_domains") or {}),
+            solver_settings=request.solver_settings,
+        )["issues"])
         blocking = [item for item in runtime_issues if item["severity"] == "BLOCKING"]
         if blocking:
             codes = [str(item.get("code") or "") for item in blocking]
@@ -960,12 +1181,23 @@ class TaskManager:
             "automation_overrides": request.automation_overrides,
             "materials": request.materials.model_dump(mode="json"),
             "solver_settings": request.solver_settings,
-            "scenario": request.scenario.model_dump(mode="json"),
+            "scenario": case_scenario,
             "analysis": task["analysis"],
             "requested_outputs": request.requested_outputs,
             "result_calibrations": self.calibration_registry.result_calibrations(template["id"]) if self.calibration_registry is not None else [],
             "work_dir": str(work_dir),
         }
+        self._event(
+            task_id, "CASE_INPUTS_READY",
+            "电机参数、运行工况、材料与物理输入已组装并通过本地规则检查",
+            case_id=case_id, stage="INPUTS_READY",
+            payload={
+                "parameter_count": len(params),
+                "requested_output_count": len(request.requested_outputs),
+                "input_modules": sorted((request.solver_settings.get("input_domains") or {}).keys()),
+                "application": request.solver_settings.get("physical_input_application") or {},
+            },
+        )
 
         try:
             self.db.execute("UPDATE cases SET status=?,updated_at=? WHERE id=?", (CaseStatus.WAITING_FOR_SOLVER.value, self.db.now(), case_id))
@@ -1116,8 +1348,38 @@ class TaskManager:
                 profile,
                 task["solver_mode"],
                 series=result.series,
+                maps=result.maps,
                 parameters=quality_parameters,
             )
+            raw_result = result.raw if isinstance(result.raw, dict) else {}
+            extraction_contract = raw_result.get("result_extraction_contract") if isinstance(raw_result.get("result_extraction_contract"), dict) else {}
+            fea_contract = raw_result.get("fea_contract") if isinstance(raw_result.get("fea_contract"), dict) else {}
+            if task["solver_mode"] == SolverMode.MOTORCAD.value and extraction_contract.get("qualification_eligible") is not True:
+                result.quality_flags.append(QualityFlag(
+                    code="RESULT_EXTRACTION_CONTRACT_INCOMPLETE", severity="BLOCKING",
+                    message="Motor-CAD 结果提取合同缺失或未通过完整度校验",
+                ))
+            for output_id in extraction_contract.get("missing_required") or []:
+                if not any(flag.result_id == output_id and flag.severity == "BLOCKING" for flag in result.quality_flags):
+                    result.quality_flags.append(QualityFlag(
+                        code="REQUIRED_EXTRACTION_MISSING", severity="BLOCKING",
+                        message=f"必需结果未由 Motor-CAD 自动提取: {output_id}", result_id=output_id,
+                    ))
+            for output_id in extraction_contract.get("invalid_required") or []:
+                result.quality_flags.append(QualityFlag(
+                    code="REQUIRED_EXTRACTION_INVALID", severity="BLOCKING",
+                    message=f"必需结果自动提取后未通过结构/数值校验: {output_id}", result_id=output_id,
+                ))
+            fea_plan = build_fea_plan(task["analysis"], request.solver_settings)
+            if (
+                task["solver_mode"] == SolverMode.MOTORCAD.value
+                and fea_plan.get("required_for_qualification")
+                and fea_contract.get("qualification_eligible") is not True
+            ):
+                result.quality_flags.append(QualityFlag(
+                    code="REQUIRED_FEA_EVIDENCE_INCOMPLETE", severity="BLOCKING",
+                    message="；".join(fea_contract.get("issues") or ["必需有限元证据不完整"]),
+                ))
             quality_status = derive_quality_status(result.quality_flags, task["solver_mode"])
             fingerprint = self.db.loads(case.get("fingerprint_json"), {})
             manifest_path = work_dir / "case_manifest.json"
@@ -1130,7 +1392,7 @@ class TaskManager:
                         "solver": {"mode": task["solver_mode"], "analysis": task["analysis"], "target_version": self.settings.motorcad_version},
                         "parameters_requested": params,
                         "parameters_effective": quality_parameters,
-                        "scenario": request.scenario.model_dump(mode="json"),
+                        "scenario": case_scenario,
                         "fingerprint": fingerprint,
                         "execution_status": ExecutionStatus.SUCCEEDED.value,
                         "quality_status": quality_status,
@@ -1293,7 +1555,15 @@ class TaskManager:
                updated_at=?,finished_at=? WHERE id=?""",
             (status.value, execution.value, QualityStatus.NOT_ASSESSED.value, error, self.db.now(), self.db.now(), case_id),
         )
-        self.db.execute("UPDATE case_stages SET status=?,finished_at=?,updated_at=? WHERE case_id=? AND status='RUNNING'", (stage, self.db.now(), self.db.now(), case_id))
+        terminal_stage_status = {
+            ExecutionStatus.FAILED: "FAILED",
+            ExecutionStatus.TIMEOUT: "TIMEOUT",
+            ExecutionStatus.CANCELLED: "CANCELLED",
+        }.get(execution, "FAILED")
+        self.db.execute(
+            "UPDATE case_stages SET status=?,finished_at=?,updated_at=? WHERE case_id=? AND status='RUNNING'",
+            (terminal_stage_status, self.db.now(), self.db.now(), case_id),
+        )
         self._record_runtime_contract(task_id, case_id, success=False, error=error)
         self._event(task_id, f"CASE_{stage}", error.splitlines()[0], case_id=case_id, stage=stage, severity="ERROR")
 
@@ -1411,6 +1681,9 @@ class TaskManager:
             f"""SELECT t.*,
                SUM(CASE WHEN c.execution_status IN ('SUCCEEDED','CACHED') THEN 1 ELSE 0 END) AS completed_cases,
                SUM(CASE WHEN c.execution_status IN ('FAILED','TIMEOUT') THEN 1 ELSE 0 END) AS failed_cases,
+               SUM(CASE WHEN c.quality_status='VALID' THEN 1 ELSE 0 END) AS valid_cases,
+               SUM(CASE WHEN c.quality_status='WARNING' THEN 1 ELSE 0 END) AS warning_cases,
+               SUM(CASE WHEN c.execution_status IN ('SUCCEEDED','CACHED') AND c.quality_status IN ('VALID','WARNING') THEN 1 ELSE 0 END) AS usable_cases,
                SUM(CASE WHEN c.quality_status='INVALID' THEN 1 ELSE 0 END) AS invalid_cases,
                SUM(CASE WHEN c.quality_status='UNVERIFIED' THEN 1 ELSE 0 END) AS unverified_cases
                FROM tasks t LEFT JOIN cases c ON c.task_id=t.id
@@ -1441,6 +1714,73 @@ class TaskManager:
         task["case_summary"] = counts
         return task
 
+    def fea_result_summary(self, task_id: str) -> dict[str, Any] | None:
+        task = self.db.query_one("SELECT id,analysis,solver_mode,status FROM tasks WHERE id=?", (task_id,))
+        if not task:
+            return None
+        cases = self.db.query_all(
+            "SELECT id,case_index,execution_status,quality_status,result_json FROM cases WHERE task_id=? ORDER BY case_index",
+            (task_id,),
+        )
+        rows: list[dict[str, Any]] = []
+        for case in cases:
+            result = self.db.loads(case.pop("result_json"), {}) or {}
+            raw = result.get("raw") if isinstance(result.get("raw"), dict) else {}
+            extraction = raw.get("result_extraction_contract") if isinstance(raw.get("result_extraction_contract"), dict) else {}
+            fea = raw.get("fea_contract") if isinstance(raw.get("fea_contract"), dict) else {}
+            if task.get("solver_mode") == SolverMode.MOTORCAD.value:
+                eligible = extraction.get("qualification_eligible") is True and fea.get("qualification_eligible") is True
+            else:
+                eligible = extraction.get("qualification_eligible") is True
+            terminal = case.get("execution_status") in {"SUCCEEDED", "CACHED", "FAILED", "TIMEOUT", "CANCELLED"}
+            rows.append({
+                **case,
+                "extraction_status": extraction.get("status") or "PENDING",
+                "extraction_coverage_percent": extraction.get("coverage_percent"),
+                "missing_required": extraction.get("missing_required") or [],
+                "fea_status": fea.get("status") or "PENDING",
+                "fea_frame_count": int(fea.get("frame_count") or 0),
+                "qualification_eligible": eligible,
+                "retry_recommended": terminal and (case.get("execution_status") in {"FAILED", "TIMEOUT", "CANCELLED"} or not eligible),
+            })
+        complete = sum(bool(row["qualification_eligible"]) for row in rows)
+        return {
+            "schema_version": 1, "task": task, "case_count": len(rows),
+            "complete_cases": complete, "incomplete_cases": len(rows) - complete,
+            "completion_percent": round(100.0 * complete / len(rows), 1) if rows else 0.0,
+            "optimization_eligible_case_ids": [row["id"] for row in rows if row["qualification_eligible"]],
+            "retry_case_ids": [row["id"] for row in rows if row["retry_recommended"]],
+            "cases": rows,
+        }
+
+    def retry_incomplete_cases(self, task_id: str) -> int:
+        summary = self.fea_result_summary(task_id)
+        if summary is None:
+            raise KeyError(task_id)
+        if str((summary.get("task") or {}).get("status")) not in {
+            TaskStatus.COMPLETED.value, TaskStatus.PARTIALLY_COMPLETED.value,
+            TaskStatus.FAILED.value, TaskStatus.CANCELLED.value,
+        }:
+            raise ValueError("任务仍在运行或排队，不能重试不完整 Case")
+        case_ids = list(summary.get("retry_case_ids") or [])
+        if not case_ids:
+            return 0
+        placeholders = ",".join("?" for _ in case_ids)
+        self.db.execute(
+            f"""UPDATE cases SET status=?,execution_status=?,quality_status=?,cache_eligible=0,progress=0,result_json=NULL,
+                error=NULL,warnings_json=NULL,quality_json=NULL,cached_from_case_id=NULL,updated_at=?,finished_at=NULL
+                WHERE task_id=? AND id IN ({placeholders})""",
+            (CaseStatus.PENDING.value, ExecutionStatus.PENDING.value, QualityStatus.NOT_ASSESSED.value, self.db.now(), task_id, *case_ids),
+        )
+        self.db.execute(f"DELETE FROM case_stages WHERE task_id=? AND case_id IN ({placeholders})", (task_id, *case_ids))
+        self.db.execute(
+            "UPDATE tasks SET status=?,progress=0,current_stage=?,cancel_requested=0,finished_at=NULL,updated_at=? WHERE id=?",
+            (TaskStatus.QUEUED.value, "INCOMPLETE_RETRY_QUEUED", self.db.now(), task_id),
+        )
+        self._event(task_id, "INCOMPLETE_CASES_RETRY", f"{len(case_ids)} 个有限元/结果提取不完整 Case 已重新排队", severity="WARNING")
+        self._start_thread(task_id)
+        return len(case_ids)
+
     def list_cases_page(self, task_id: str, offset: int = 0, limit: int = 50) -> dict[str, Any]:
         total_row = self.db.query_one("SELECT COUNT(*) AS count FROM cases WHERE task_id=?", (task_id,))
         if total_row is None:
@@ -1462,6 +1802,7 @@ class TaskManager:
                 artifacts_by_case.setdefault(artifact.get("case_id") or "", []).append(artifact)
         for case in rows:
             case["parameters"] = self.db.loads(case.pop("parameters_json"), {})
+            case["scenario"] = self.db.loads(case.pop("scenario_json", None), {})
             case["result"] = self.db.loads(case.pop("result_json"), None)
             case["warnings"] = self.db.loads(case.pop("warnings_json"), [])
             case["quality"] = self.db.loads(case.pop("quality_json"), [])
@@ -1481,6 +1822,7 @@ class TaskManager:
             artifacts_by_case.setdefault(artifact.get("case_id") or "", []).append(artifact)
         for case in cases:
             case["parameters"] = self.db.loads(case.pop("parameters_json"), {})
+            case["scenario"] = self.db.loads(case.pop("scenario_json", None), {})
             case["result"] = self.db.loads(case.pop("result_json"), None)
             case["warnings"] = self.db.loads(case.pop("warnings_json"), [])
             case["quality"] = self.db.loads(case.pop("quality_json"), [])

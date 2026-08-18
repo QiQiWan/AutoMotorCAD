@@ -12,8 +12,8 @@ from .registry import Registry
 
 DESIGN_PARAMETER_CATEGORIES = {"topology", "geometry", "magnet", "winding"}
 SCENARIO_PARAMETER_CATEGORIES = {"operating", "environment", "cooling"}
-RUN_CONFIGURATION_SCHEMA_VERSION = 1
-DOMAIN_CONTRACT_VERSION = "0.21"
+RUN_CONFIGURATION_SCHEMA_VERSION = 2
+DOMAIN_CONTRACT_VERSION = "0.53.0"
 
 OPERATING_SCENARIO_FIELDS = (
     "shaft_speed_rpm",
@@ -377,12 +377,34 @@ class DomainService:
         design_explicit = self.db.loads(design.get("explicit_parameter_ids_json"), []) or []
         request_design_parameters = self.filter_design_parameters(str(design.get("template_id") or request.template_id), request.parameters or {})
         design_delta = _top_level_delta(design_parameters, {**design_parameters, **request_design_parameters})
-        effective_materials = request.materials.model_dump(mode="json")
+        requested_materials = request.materials.model_dump(mode="json")
+        # An untouched TaskCreate material editor serializes the schema defaults as
+        # ``None / {} / {}``.  Once template-backed revisions carry durable material
+        # assignments, treating that empty envelope as an explicit clear operation
+        # would manufacture a false run override.  Inherit the Design Revision in this
+        # one unambiguous case; any populated material field remains an explicit
+        # effective configuration and is diffed normally.
+        if (
+            requested_materials.get("material_database_path") in (None, "")
+            and not (requested_materials.get("component_materials") or {})
+            and not (requested_materials.get("cooling_fluids") or {})
+        ):
+            effective_materials = dict(design_materials_normalized)
+        else:
+            effective_materials = requested_materials
         material_delta = _top_level_delta(design_materials_normalized, effective_materials)
 
         effective_scenario = request.scenario.model_dump(mode="json")
+        effective_scenario_matrix = [row.model_dump(mode="json") for row in request.scenario_matrix]
         scenario_binding: dict[str, Any] = {"mode": "inline", "revision_id": None, "overrides": {}}
-        if request.scenario_revision_id:
+        if effective_scenario_matrix:
+            scenario_binding = {
+                "mode": "inline_matrix", "revision_id": None,
+                "case_count": len(effective_scenario_matrix),
+                "content_hash": _hash_payload(effective_scenario_matrix),
+                "overrides": {},
+            }
+        elif request.scenario_revision_id:
             scenario = self.db.query_one(
                 """SELECT sr.*,s.project_id,s.name scenario_name FROM scenario_revisions sr
                    JOIN scenarios s ON s.id=sr.scenario_id WHERE sr.id=?""",
@@ -478,6 +500,7 @@ class DomainService:
             },
             "project_id": request.project_id,
             "design_revision_id": request.design_revision_id,
+            "analysis_definition_revision_id": request.analysis_definition_revision_id,
             "scenario_revision_id": request.scenario_revision_id,
             "solver_profile_revision_id": request.solver_profile_revision_id,
             "output_profile_revision_id": request.output_profile_revision_id,
@@ -489,6 +512,7 @@ class DomainService:
             "explicit_parameter_ids": request.explicit_parameter_ids,
             "materials": request.materials.model_dump(mode="json"),
             "scenario": effective_scenario,
+            "scenario_matrix": effective_scenario_matrix,
             "solver_settings": request.solver_settings,
             "automation_overrides": request.automation_overrides,
             "requested_outputs": effective_outputs,
@@ -528,6 +552,7 @@ class DomainService:
         return {
             "project_id": request.project_id,
             "design_revision_id": request.design_revision_id,
+            "analysis_definition_revision_id": request.analysis_definition_revision_id,
             "scenario_revision_id": request.scenario_revision_id,
             "solver_profile_revision_id": request.solver_profile_revision_id,
             "output_profile_revision_id": request.output_profile_revision_id,
@@ -539,6 +564,7 @@ class DomainService:
             "explicit_parameter_ids": request.explicit_parameter_ids,
             "materials": request.materials.model_dump(mode="json"),
             "scenario": request.scenario.model_dump(mode="json"),
+            "scenario_matrix": [row.model_dump(mode="json") for row in request.scenario_matrix],
             "solver_settings": request.solver_settings,
             "automation_overrides": request.automation_overrides,
             "requested_outputs": self.normalized_output_selection(request.analysis.value, request.template_id, request.requested_outputs),
@@ -562,6 +588,7 @@ class DomainService:
                 str(expected.get("template_id") or request.template_id),
                 [],
             )
+        expected.setdefault("scenario_matrix", [])
         actual = self.execution_snapshot_from_request(request)
         deltas: list[dict[str, Any]] = []
         for key in sorted(set(expected) | set(actual)):

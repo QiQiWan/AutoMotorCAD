@@ -111,7 +111,7 @@
     if(!state.activeProjectId)return;
     try{
       const options=routeCtx?.signal?{signal:routeCtx.signal}:{};const [assets,integrity]=await Promise.all([api(`/api/projects/${encodeURIComponent(state.activeProjectId)}/simulation-assets`,options),api(`/api/projects/${encodeURIComponent(state.activeProjectId)}/domain-integrity`,options)]);
-      if(routeCtx&&!routeCtx.active())return;state.simAssetsV021=assets;state.domainIntegrityV021=integrity;renderDomainIntegrityV021();
+      if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;state.simAssetsV021=assets;state.domainIntegrityV021=integrity;renderDomainIntegrityV021();
       renderProfileSelectorsV021(applyDefaults);if(document.querySelector('#simulationAssets.tab.active'))await renderDomainAssetsPageV021();
     }catch(e){if(window.MCSPageRuntime?.isAbortError?.(e))return;console.warn('V0.21 simulation assets',e);toast(`仿真配置资产加载失败：${e.message}`,'WARNING',6500)}
   }
@@ -188,7 +188,7 @@
   function markOutputDirtyV021(){if(!state.outputProfileRevisionIdV021)return;state.outputProfileDirtyV021=true;const el=$('#outputProfileStatusV021');if(el)el.textContent='输出选择已偏离已保存版本；建议保存为新的 Output Profile Revision。';updateDomainCompositionV021();}
 
   async function renderDomainAssetsPageV021(routeCtx=null){
-    if(!state.activeProjectId)return;const options=routeCtx?.signal?{signal:routeCtx.signal}:{};const project=await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}`,options);if(routeCtx&&!routeCtx.active())return;const scenarios=await Promise.all((project.scenarios||[]).map(x=>api(`/api/scenarios/${encodeURIComponent(x.id)}`,options)));if(routeCtx&&!routeCtx.active())return;const assets=state.simAssetsV021||{};const kind=state.domainAssetKindV021||'scenarios';
+    if(!state.activeProjectId)return;const options=routeCtx?.signal?{signal:routeCtx.signal}:{};const project=await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}`,options);if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;const scenarios=await Promise.all((project.scenarios||[]).map(x=>api(`/api/scenarios/${encodeURIComponent(x.id)}`,options)));if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;const assets=state.simAssetsV021||{};const kind=state.domainAssetKindV021||'scenarios';
     const tabs=$$('#domainAssetTabsV021 [data-domain-asset]');tabs.forEach(b=>b.classList.toggle('active',b.dataset.domainAsset===kind));
     const metrics=$('#domainAssetMetricsV021');if(metrics)metrics.innerHTML=[['工况',scenarios.length],['求解配置',(assets.solver_profiles||[]).length],['输出配置',(assets.output_profiles||[]).length],['运行配置',(assets.run_configurations||[]).length]].map(([k,v])=>`<div class="metric-card"><span>${k}</span><b>${v}</b></div>`).join('');
     const list=$('#domainAssetListV021');const detail=$('#domainAssetDetailV021');if(!list||!detail)return;
@@ -224,7 +224,7 @@
   function initV021(){
     if(!state.taskWizardPanelsV019?.length){setTimeout(initV021,100);return}
     ensureOperatingScenarioFields();ensureScenarioVersionActionsV021();ensureDomainCompositionStripV021();ensureProfileControlsV021();ensureLegacyScenarioBannerV021();upgradeCopyV021();bindDomainAssetTabsV021();applyTemplateScenarioDefaultsV021();
-    const previousApplyTaskDesignRevisionV021=applyTaskDesignRevision;applyTaskDesignRevision=async function(revisionId,opts={}){const out=await previousApplyTaskDesignRevisionV021(revisionId,opts);seedLegacyScenarioFromDesignV021(revisionId);return out};
+    const previousApplyTaskDesignRevisionV021=applyTaskDesignRevision;applyTaskDesignRevision=async function(revisionId,opts={}){const out=await previousApplyTaskDesignRevisionV021(revisionId,opts);seedLegacyScenarioFromDesignV021(revisionId);updateDomainCompositionV021();return out};
     if(state.taskDesignRevisionId)seedLegacyScenarioFromDesignV021(state.taskDesignRevisionId);
     loadSimulationAssetsV021();updateDomainCompositionV021();
     $('#analysis')?.addEventListener('change',markSolverDirtyV021);$('#qualityProfile')?.addEventListener('change',markSolverDirtyV021);
@@ -241,8 +241,8 @@
     if(state.activeProjectId)refreshProjectTaskContext({autoLoad:true});
   }
   window.MCSDomainV025={
-    async mountAssets(routeCtx=null){ensureOperatingScenarioFields();await loadSimulationAssetsV021({applyDefaults:false,routeCtx});if(routeCtx&&!routeCtx.active())return;await renderDomainAssetsPageV021(routeCtx)},
-    async mountTaskSetup(routeCtx=null){ensureOperatingScenarioFields();await loadSimulationAssetsV021({routeCtx});if(routeCtx&&!routeCtx.active())return;updateDomainCompositionV021()},
+    async mountAssets(routeCtx=null){ensureOperatingScenarioFields();await loadSimulationAssetsV021({applyDefaults:false,routeCtx});if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;await renderDomainAssetsPageV021(routeCtx)},
+    async mountTaskSetup(routeCtx=null){ensureOperatingScenarioFields();await loadSimulationAssetsV021({routeCtx});if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;updateDomainCompositionV021()},
     renderAssets:renderDomainAssetsPageV021,
     updateComposition:updateDomainCompositionV021,
   };

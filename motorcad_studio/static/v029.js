@@ -68,13 +68,13 @@
     const activeTab=$q('.tab.active')?.id||'';
     bar.innerHTML=`<div class="engineering-context-main-v029"><span class="eyebrow">工程上下文</span><div class="engineering-context-items-v029">
       <button type="button" data-engineer-go="workspace"><small>当前模型</small><b>${safe(d.label)}</b></button>
-      <button type="button" data-engineer-go="newTask"><small>工况</small><b>${safe(sc)}</b></button>
-      <button type="button" data-engineer-go="newTask"><small>分析</small><b>${safe(analysis)}</b></button>
+      <button type="button" data-engineer-go="analysisWorkbench"><small>工况</small><b>${safe(sc)}</b></button>
+      <button type="button" data-engineer-go="analysisWorkbench"><small>分析</small><b>${safe(analysis)}</b></button>
       <button type="button" data-engineer-go="setup" class="${rt.tone}"><small>Motor-CAD</small><b>${safe(rt.label)}</b></button>
       <button type="button" data-engineer-go="monitor"><small>当前任务</small><b>${safe(taskContext())}</b></button>
     </div></div><div class="engineering-context-actions-v029">
       <button type="button" data-engineer-go="workspace" class="${activeTab==='workspace'?'active':''}">模型</button>
-      <button type="button" data-engineer-go="newTask" class="${['newTask','tasks','monitor','simulationAssets'].includes(activeTab)?'primary':''}">配置仿真</button>
+      <button type="button" data-engineer-go="analysisWorkbench" class="${['analysisWorkbench','newTask','tasks','monitor','simulationAssets'].includes(activeTab)?'primary':''}">分析与计算</button>
       <button type="button" data-engineer-go="resultViewer">结果</button>
     </div>`;
     $$q('[data-engineer-go]',bar).forEach(btn=>btn.addEventListener('click',()=>routeGo(btn.dataset.engineerGo)));
@@ -99,7 +99,7 @@
     if(state.runtimeSubmissionReadyV028===false){const row=(state.runtimeSubmissionChecksV028||[]).find(x=>String(x.status).toUpperCase()==='FAIL');return {tone:'error',title:'运行环境需要处理',detail:row?.message||'检查 Motor-CAD.exe 与 PyMotorCAD。'}}
     if(gate.localStatus==='BLOCKING') return {tone:'error',title:'模型关系阻断',detail:'先修复几何/绕组确定性约束，再提交。'};
     if(gate.validationValid===false) return {tone:'error',title:'配置检查未通过',detail:'查看检查提交页中的第一条阻断原因。'};
-    if(state.taskDesignRevisionId&&gate.validationValid===true&&state.runtimeSubmissionReadyV028===true) return {tone:'ok',title:'可进入执行',detail:'正式 Motor-CAD 原生校验将在同一 Execution Lease 中完成。'};
+    if(state.taskDesignRevisionId&&gate.validationValid===true&&state.runtimeSubmissionReadyV028===true) return {tone:'ok',title:'可以开始计算',detail:'系统将继续完成 Motor-CAD 模型检查、求解和结果提取。'};
     return {tone:'pending',title:'配置尚未完整',detail:'完成当前步骤后，系统会更新可执行性。'};
   }
   function runSummaryRows(){

@@ -9,18 +9,18 @@ STATIC = ROOT / "motorcad_studio" / "static"
 
 def test_version_and_engineering_mode_default():
     html = (STATIC / "index.html").read_text(encoding="utf-8")
-    assert 'data-studio-version="0.35.0"' in html
-    assert 'V0.35.0' in html
+    assert 'data-studio-version="0.70.0"' in html
+    assert 'V0.70.0' in html
     assert '<option value="engineering" selected>工程模式 / Engineering</option>' in html
     assert '引导模式 / Guided' in html
-    assert '/static/v029.js?v=0.35.0' in html
+    assert '/static/v029.js?v=0.70.0' in html
 
 
 def test_project_primary_flow_is_five_engineering_stages():
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     project_nav = html.split('<nav class="project-stage-nav', 1)[1].split('</nav>', 1)[0]
     assert project_nav.count('data-project-tab') == 5
-    assert '>设置分析</button>' in project_nav
+    assert '>分析与计算</button>' in project_nav
     assert 'data-project-stage="solve"' not in project_nav
     assert '>求解过程</button>' not in project_nav
 
@@ -46,7 +46,7 @@ def test_engineering_run_summary_and_context_bar_are_present():
         "engineerRunSummaryV029",
         "本次仿真",
         "运行摘要",
-        "配置仿真",
+        "分析与计算",
         "返回模型工作台",
         "motorcad-studio-output-preset-v029",
     ):

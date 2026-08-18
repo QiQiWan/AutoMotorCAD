@@ -12,8 +12,8 @@ from motorcad_studio.version import __version__
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
-V024 = (STATIC / "v024.js").read_text(encoding="utf-8")
-V031 = (STATIC / "v031.js").read_text(encoding="utf-8")
+V024 = "\n".join((STATIC / name).read_text(encoding="utf-8") for name in ("design/editor.js", "design/renderer.js", "design/parameter-inspector.js"))
+V031 = "\n".join((STATIC / name).read_text(encoding="utf-8") for name in ("workflow/flow-rail.js", "results/fea-thermal.js", "design/geometry.js", "design/winding.js", "design/materials.js", "design/validation.js", "design/viewer.js"))
 STYLES = (STATIC / "styles.css").read_text(encoding="utf-8")
 TEMPLATE = "i5_Industrial_SPM_Servo_Tooth_Wound"
 client = TestClient(app)
@@ -35,8 +35,10 @@ def _revision() -> dict:
 def test_v031_asset_order_and_feature_contract_remains_available():
     assert __version__ >= "0.31.0"
     assert f'data-studio-version="{__version__}"' in INDEX
-    assert f'/static/v031.js?v={__version__}' in INDEX
-    assert INDEX.index('/static/v031.js') < INDEX.index('/static/router.js')
+    assert f'/static/workflow/flow-rail.js?v={__version__}' in INDEX
+    assert f'/static/results/fea-thermal.js?v={__version__}' in INDEX
+    assert '/static/v031.js' not in INDEX
+    assert INDEX.index('/static/results/fea-thermal.js') < INDEX.index('/static/router.js')
     features = client.get("/api/client-contract").json()["features"]
     for key in (
         "motorcad_visual_dimension_tabs",
@@ -54,7 +56,7 @@ def test_workbench_exposes_visual_dimensions_and_winding_evidence_boundary():
     assert response.status_code == 200, response.text
     payload = response.json()
     views = {row["id"]: row for row in payload["design_views"]}
-    assert list(views) == ["radial", "axial", "winding", "slot", "materials", "native", "compare"]
+    assert list(views) == ["radial", "axial", "winding", "slot", "materials", "evidence", "compare"]
     assert views["radial"]["preferred"] is True
     assert {"slot_count", "air_gap", "magnet_thickness"}.issubset(views["radial"]["parameter_ids"])
     assert {"turns_per_coil", "parallel_paths", "slot_fill_factor"}.issubset(views["winding"]["parameter_ids"])
@@ -72,16 +74,16 @@ def test_workbench_exposes_visual_dimensions_and_winding_evidence_boundary():
 def test_frontend_contains_linked_geometry_winding_workflow_and_result_views():
     for token in (
         "径向截面",
-        "轴向截面",
+        "纵向装配剖面",
         "绕组排布",
         "槽内定义",
-        "修改当前视图参数",
-        "槽 / 相 / 支路",
-        "仅视图估计",
-        "待 Motor-CAD 证据",
+        "编辑设计",
+        "每相每支路槽数",
+        "视图估计",
+        "等待模型结果",
         "工程热路径摘要",
         "2–98% 分位",
-        "原生数据",
+        "当前计算场数据",
     ):
         assert token in V031 or token in V024
     for selector in (
@@ -96,7 +98,7 @@ def test_frontend_contains_linked_geometry_winding_workflow_and_result_views():
 
 
 def test_native_result_visualization_never_fabricates_missing_fea_or_thermal_evidence():
-    assert "缺少原生节点、单元或场值时不生成替代云图" in V031
+    assert "缺少求解节点、单元或场值时不生成替代云图" in V031
     assert "只显示由 Motor-CAD 原生 FEA 证据解析得到的网格场" in V031
     assert "虚线不代表 Motor-CAD 的完整热网络" in V031
     assert "estimated_coil_throw_authority" in (ROOT / "motorcad_studio" / "model_workbench.py").read_text(encoding="utf-8")

@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 ROUTER = (STATIC / "router.js").read_text(encoding="utf-8")
-V020 = (STATIC / "v020.js").read_text(encoding="utf-8")
-V024 = (STATIC / "v024.js").read_text(encoding="utf-8")
+V020 = (STATIC / "workflow/model-gate.js").read_text(encoding="utf-8")
+V024 = "\n".join((STATIC / name).read_text(encoding="utf-8") for name in ("design/editor.js", "design/navigation.js", "design/viewer.js", "design/renderer.js", "design/geometry.js", "design/winding.js", "design/validation.js", "design/parameter-inspector.js"))
 DIALOGS = (STATIC / "dialogs.js").read_text(encoding="utf-8")
 MOTORCAD = (ROOT / "motorcad_studio" / "solvers" / "motorcad.py").read_text(encoding="utf-8")
 CONFIG = (ROOT / "config" / "model_workbench.yaml").read_text(encoding="utf-8")
@@ -35,12 +35,12 @@ def _revision(prefix: str = "v024") -> dict:
 
 def test_v024_assets_version_and_route_prefer_model_workbench():
     assert tuple(map(int, __version__.split("."))) >= (0, 24, 0)
-    assert f'/static/v024.js?v={__version__}' in INDEX
+    assert f'/static/design/editor.js?v={__version__}' in INDEX
     # Router is loaded after versioned extension scripts so wrappers see V0.24 functions.
-    assert INDEX.index('/static/v024.js') < INDEX.index('/static/router.js')
-    assert "window.openRevisionEditorV024||window.openRevisionEditorV020" in ROUTER
-    assert "wrap('openRevisionEditorV024'" in ROUTER
-    assert "window.openRevisionEditorV024||window.openRevisionEditorV020" in V020
+    assert INDEX.index('/static/design/editor.js') < INDEX.index('/static/router.js')
+    assert "window.MCSDesignEditor?.open" in ROUTER
+    assert "wrap('openRevisionEditorV024'" not in ROUTER
+    assert "window.MCSModelGate" in V020
     features = client.get("/api/client-contract").json()["features"]
     assert features["motor_model_workbench"] is True
     assert features["parameter_dependency_graph"] is True
@@ -82,11 +82,11 @@ def test_workbench_precheck_binds_failure_to_fields_and_repair_actions():
 def test_model_workbench_frontend_has_geometry_winding_evidence_and_compare_views():
     for token in [
         "径向截面",
-        "轴向截面",
-        "绕组排布",
+        "纵向装配剖面",
+        "绕组连接",
         "槽内定义",
-        "Motor-CAD 证据",
-        "版本对比",
+        "模型检查",
+        "设计验证",
         "data-workbench-region",
         "data-workbench-input",
         "运行 Motor-CAD 原生检查",

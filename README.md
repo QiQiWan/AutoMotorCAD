@@ -1,45 +1,174 @@
-# MotorCAD Studio V0.35.0 — Integrated Engineering Analysis
+# MotorCAD Studio V0.70.0 - Motor Domain Foundation + Runtime Convergence
 
-MotorCAD Studio 是以 Ansys Motor-CAD / PyMotorCAD 为后台求解器的电机工程设计、自动仿真、优化、结果分析和数据生产平台。
+MotorCAD Studio is an engineer-facing design, simulation, optimization, result-analysis and data-production environment backed by Ansys Motor-CAD / PyMotorCAD.
 
-V0.35 在 V0.31 的 Motor-CAD 式多维设计视图上进一步完成四个工程闭环：原生绕组文件结构化、热结果证据合同、原生 FEA 多步回放/探测，以及带三域血缘和 Pareto 判断的跨 Case 决策对比。Design Revision 仍提供 `径向截面 → 轴向截面 → 绕组排布 → 槽内定义 → 材料 → 原生证据 → 版本对比`，保存操作仍创建不可变 Revision。
-
-绕组工作区可从 `save_winding_pattern()` 实际文件中识别线圈槽对、相别、匝数和并联支路，并用 SHA-256 绑定证据来源。无法识别的版本格式保留为 `NATIVE_RAW_ONLY`，线径、绝缘和分隔等字段继续显示为“待 Motor-CAD 证据”。
-
-结果页按统一合同区分 Motor-CAD 原生热网络和温度摘要；FEA 工作台直接消费当前 Case 的字段、区域和多步原生导出，支持色标控制、回放、最近点探测及原始数据下载。跨 Case 对比同时显示设计、工况与求解设置变化，给出非支配解和改善/退化摘要。完整完成度、能力边界和工作站验收清单见 `docs/V0.35_INTEGRATED_ENGINEERING_ANALYSIS.md`。
-
-## 推荐使用顺序
-
-1. 在“运行环境”扫描或手动绑定 `Motor-CAD.exe`，确认页面显示的“有效运行路径”与目标安装一致；
-2. 执行 Worker 能力探测，检查 PyMotorCAD、目标版本和 EXE 指纹；
-3. 查看“运行时资源调度与稳定性证据”，根据许可证实际授权数量配置本地容量，并确保内存预留合理；
-4. 进入 Project → 设计电机，按径向、轴向、绕组、槽内和材料视图维护 Design Revision，并完成模型可解性检查；
-5. 在“仿真 → 配置仿真”选择工况、计算方式与输出；右侧运行摘要持续显示本次 Motor-CAD 上下文；
-6. 提交后仍停留在“仿真”域，并在“实时求解”观察 Runtime Resource Lease → Worker → Execution Lease → Motor-CAD Session；
-7. 完成后在结果与诊断包中完成原生许可证证据、Validation Evidence、FEA Evidence 和 Runtime Contract 的结果验证；
-8. 生产部署前在 Windows 工作站运行 20/100/500 Case 合同测试，再据真实 RSS 和失败模式调整 Worker Pool 与内存阈值。
-
-## Windows 运行合同
-
-明确会占用真实 Motor-CAD 许可证，必须显式确认：
-
-```bat
-python scripts\run_motorcad_runtime_contract.py --cycles 20 --confirm-license-use
-```
-
-需要同时执行求解时再加入目标模板、分析类型和 `--solve`。长期耐久建议在独立工作站窗口进行，避免与人工 Motor-CAD 会话竞争许可证。
-
-## 测试
+V0.70 starts the domain-object migration planned after V0.69. The release introduces a solver-agnostic motor core so Design, visualization, Motor-CAD binding, Analysis, Results and Optimization can progressively consume one engineering definition instead of re-interpreting flat parameter dictionaries in every layer. The migration is deliberately incremental: every V0.69 dict contract remains available through a lossless legacy adapter while new Design Revisions persist an immutable typed snapshot.
 
 ```text
-241 passed（包含 V0.35 集成工程分析、证据边界和历史版本全量回归）
+Project
+  ↓
+Design → immutable Design Revision
+  ↓
+MotorSnapshot v2
+  ├─ MotorIdentity: native type / physical family / topology / template origin
+  ├─ ParameterSet + ParameterDescriptor
+  ├─ MotorAssemblySnapshot
+  ├─ WindingModel
+  ├─ MaterialAssignmentSet
+  └─ MotorCapabilitySet
+  ↓
+MotorModel (pure domain object)
+  ├─ immutable parameter patch → MotorChangeSet
+  ├─ component parameter projection
+  └─ design-owned optimization space
+  ↓
+future V0.71 visualization providers / V0.72 Motor-CAD native binding
 ```
 
-发布前同时执行 Python `compileall`、全部前端 JavaScript 静态语法检查和页面视觉验收。
+## V0.70 motor-domain foundation
 
-## 真实工作站仍需完成的验收
+The new `motorcad_studio/motor_domain/` package defines `MotorIdentity`, `ParameterDescriptor`, `ParameterSet`, `MotorAssemblySnapshot`, `WindingModel`, `MaterialAssignmentSet`, `MotorCapabilitySet`, `MotorSnapshot`, `MotorChangeSet`, `MotorModel` and `MotorDomainRegistry`. Templates remain presets/origins rather than becoming the type system. `config/motor_topologies.yaml` now separates the Motor-CAD native type (`BPM`, `BPMOR`, `IM`, ...), physical family (`rfpm`, `afpm`, ...), concrete topology (`rfpm_spm`, `rfpm_ipm`, `outer_rotor_pm`, ...), and template ID.
 
-当前自动测试可以验证 Studio 的资源调度、Worker ownership、路径传播、数据库和前端契约，但无法在 Linux 环境代替 Windows + Motor-CAD 2026R1 完成长时间 RPC、真实浮动许可证竞争、Motor-CAD 崩溃恢复和 100/500 Case 复用耐久性验收。V0.29 继续保留这些运行合同和诊断证据，并新增工程上下文、运行摘要、路由去重和原生模型检查证据复用。
+`MotorModel` is intentionally pure: it has no database, HTTP, browser or Motor-CAD dependency. Applying design changes produces a new immutable model plus an explicit `MotorChangeSet` containing affected owners, views, Analysis domains and the native-readback requirement. The same descriptor layer exposes the design-owned optimization space while excluding scenario/operating-point variables.
+
+Database Schema **23** adds `motor_snapshot_json`, `motor_snapshot_schema_version` and `motor_snapshot_hash` to immutable Design Revisions and persistent Design Drafts. New and edited designs persist MotorSnapshot schema **2** automatically. Existing projects can be upgraded through the project backfill endpoint without rewriting the legacy Design payload. Unknown/native-extension parameters and raw material provenance are retained during snapshot ↔ legacy round trips.
+
+The new HTTP/browser boundary is:
+
+- `GET /api/motor-domain/catalog` — topology and typed parameter descriptor catalog.
+- `POST /api/projects/{project_id}/motor-domain/backfill` — idempotent snapshot persistence for existing Design Revisions/Drafts.
+- `GET /api/design-revisions/{revision_id}/motor-snapshot` — immutable typed Design contract plus compatibility payload.
+- `POST /api/design-revisions/{revision_id}/motor-snapshot/change-impact` — typed parameter-change impact without mutating the Design.
+- `static/domain/motor-domain.js` — browser-side catalog/snapshot/change-impact boundary for V0.71 visualization migration.
+
+## V0.70 runtime convergence
+
+The single-Case Result Viewer is now owned by `static/results/case-viewer.js`. `results/workbench.js` mounts it directly and the route controller no longer falls back into the legacy Result Viewer owner in `app.js`; the remaining app-level functions are compatibility delegates only.
+
+Eight historical active runtime scripts were physically migrated to stable module paths: execution lease, resource scheduler, execution readiness, native result evidence, engineering contexts, FEA field viewer, native result tables and usability closure. The active/physical top-level `v0xx.js` count is now **9**, down from **17** in V0.69. This release intentionally avoids a broad UI rewrite while changing ownership boundaries underneath the existing engineering workflow.
+
+The V0.68 Windows + Motor-CAD 2026R1 native qualification boundary is unchanged. The Linux build can verify the Studio domain/runtime contracts but cannot promote BPM/SPM/IPM/AFPM native qualification without evidence from the licensed target Windows workstation.
+
+## V0.70 verification
+
+The release adds typed-domain, persistence/backfill, HTTP impact-contract, runtime ownership and browser-runtime tests. Final release gates also cover the V0.62–V0.70 compatibility contracts, Python compilation, JavaScript syntax, configuration parsing and the existing Playwright/Chromium Design/Analysis/Results responsive-runtime contracts. See `docs/V0.70_MOTOR_DOMAIN_FOUNDATION_RUNTIME_CONVERGENCE.md` for the implementation and migration details.
+
+## V0.69 result and optimization surfaces
+
+The routed Results workbench provides five surfaces: **结果总览**, **单 Case**, **Case 比较**, **版本比较**, and **参数研究与优化**. The generic Case comparator is deliberately scoped to 2–8 Cases from one immutable Task/Run Configuration, so unlike-condition results are not silently presented as a clean engineering comparison. Design Revision comparison accepts 2–6 revisions and only computes performance deltas when result evidence is genuinely comparable. Parameter studies are pinned to one immutable Design Revision, one immutable Analysis Revision and one selected operating point.
+
+The engineer-facing study strategies are full-factorial sweep, Latin Hypercube DOE, Pareto candidate search and NSGA-II. Result-based feasibility constraints are editable in the same study contract; constrained candidates are carried into feasible/Pareto filtering and candidate ranking. Preview computes the initial/total Case budget and rejects studies beyond the 5000-Case safety boundary before submission. Multi-objective results expose Pareto candidates, per-objective best candidates, generation convergence and an equal-weight normalized balanced candidate as decision support.
+
+Candidate promotion writes only the study's explicit design-variable IDs into a new Design Revision. Shaft speed, current, DC bus voltage, phase advance, coolant/environment inputs and other Analysis-owned operating-point values cannot leak into Design intent through this workflow.
+
+V0.69 also carries the V0.68 native-qualification boundary forward. Optimization can be used for exploratory engineering before workstation qualification is complete, but the workbench displays that status and does not claim the candidate is Motor-CAD-native qualified. This delivery environment is Linux, so the packaged Motor-CAD 2026R1 workstation qualification remains 0% until the V0.68 Windows suite is run on the licensed target workstation.
+
+## V0.68 native parity chain
+
+```text
+Studio template / canonical parameter registry
+    ↓
+Motor-CAD 2026R1 registered template or verified local MOT
+    ↓
+native parameter readback
+    ↓
+Studio write → native readback round trip
+    ↓
+geometry / winding native validation
+    ↓
+material assignment round trip
+    ↓
+Radial + Axial native screenshots
+    ↓
+real EMag calculation
+    ↓
+Studio output extraction ↔ native direct readback
+    ↓
+CSV / MOT / PNG / JSON / Markdown evidence
+    ↓
+verified MOT promotion only after a complete PASS
+```
+
+The four profiles are configured in `config/native_parity_profiles.yaml`:
+
+- **BPM**: `a1`, a generic brushless-PM family baseline.
+- **SPM**: `i5_Industrial_SPM_Servo_Tooth_Wound`.
+- **IPM**: `e9_eMobility_IPM`.
+- **AFPM**: `e14_eMobility_AFM`.
+
+## Qualification environment
+
+V0.68 freezes the qualification environment to **Motor-CAD 2026R1** and **PyMotorCAD 0.8.8**. `requirements-motorcad.txt` and the optional `motorcad` dependency both pin `ansys-motorcad-core==0.8.8`. The worker records the actual runtime version; a mismatch blocks qualification while still allowing diagnostic evidence to be collected.
+
+Database Schema 22 adds `native_parity_runs`. Qualification records are scoped to the active Motor-CAD version, so an older-version PASS cannot qualify 2026R1.
+
+## What V0.68 checks
+
+Each profile verifies:
+
+1. target PyMotorCAD/runtime connectivity;
+2. native model load and baseline source;
+3. required geometry readback;
+4. winding/input readback;
+5. canonical parameter write/readback;
+6. Motor-CAD geometry validation;
+7. Motor-CAD winding diagnostics;
+8. structured `get_winding_coil` topology: phase, path, slot domain and turns;
+9. component material write/readback and independent native snapshot;
+10. required Radial/Axial native geometry screenshots;
+11. real EMag solve;
+12. scalar/series result extraction parity;
+13. native EMag CSV export;
+14. verified local MOT baseline retention/promotion.
+
+A successful profile currently contains 18 required high-level gates with row-level evidence inside the parameter, winding, material and result checks.
+
+## Concrete parity repair found during V0.68
+
+The V0.68 audit found a real canonical geometry gap: source Motor-CAD MTT files contain `Slot_Opening`, but the Studio MTT parser did not map it into `slot_opening`. This meant the preview/default registry could omit a geometry value that existed in the native template. The mapping is now restored; the audited baselines resolve to 4 mm (`a1`), 2 mm (`i5`), 3 mm (`e9`) and 3 mm (`e14`).
+
+## Native evidence and visual review
+
+Each target run keeps a native MOT snapshot, geometry contract, winding evidence, material/parameter audits, native screenshots, EMag CSV, full JSON evidence and a Markdown report. The report highlights row-level differences rather than only returning a global failure.
+
+`native_visual_review_manifest.json` links the captured Motor-CAD Radial/Axial images with the Studio canonical geometry contract and provides a final operator review checklist. Studio previews intentionally simplify some regions, so Motor-CAD native geometry remains the geometric authority.
+
+## Safe baseline bootstrapping
+
+Normal `validation` and `production` policies still require a verified local `.mot`. V0.68 adds the special `native_parity` policy so a target-version registered template can be used as a candidate when the first verified local MOT does not exist. The candidate is promoted to `data/verified_models/.../template.mot` only after every preceding required parity gate passes. A failed run cannot poison the production baseline.
+
+## Workstation runner
+
+The one-click Windows entry point is:
+
+```bat
+run_v068_native_parity_windows.bat
+```
+
+It verifies/installs the pinned PyMotorCAD environment and executes the four profiles in isolated child processes. Planning without launching Motor-CAD is available with:
+
+```bat
+python scripts\run_v068_native_parity.py --plan
+```
+
+The expert/system UI also exposes a Motor-CAD native parity center with profile status, version-scoped matrix, single/suite execution, blockers, report opening and full evidence-package download.
+
+## Current acceptance status
+
+This source package was built and tested in Linux, where no licensed Motor-CAD 2026R1 GUI/RPC installation is available. Therefore:
+
+- **Studio V0.68 implementation completion: 100%**.
+- **Packaged native workstation qualification: 0%** until the Windows suite records real PASS evidence.
+
+Linux unit/integration tests do not substitute for native Motor-CAD evidence. The target workstation must still execute the four-profile suite and complete the visual-review checklist.
+
+## Verification
+
+The complete V0.68 Python collection contains **385 tests across 56 files** and passed in four isolated batches: **89 + 118 + 91 + 87**. Targeted V0.68 tests cover profile/version contracts, DB version scoping, strict numeric comparison, registered-template bootstrapping, structured winding return normalization, isolated API recording/artifact packaging, the PyMotorCAD 0.8.8 pin, and the repaired MTT slot-opening extraction.
+
+Additional release gates include Python compilation, static JavaScript syntax, configuration parsing, V0.62-V0.67 compatibility contracts, the V0.68 release contract, and a dry-run plan that resolves all four profiles.
+
+The detailed qualification design and Windows acceptance procedure are in `docs/V0.68_MOTORCAD_NATIVE_PARITY_QUALIFICATION.md`.
 
 ## 历史版本摘要
 

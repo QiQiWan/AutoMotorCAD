@@ -116,7 +116,7 @@ async function refreshScenarioContext(project=null){
 
 function applyScenarioRevision(revisionId){
   const rec=state.projectScenarioRevisionIndex.get(revisionId);if(!rec)return;const s=rec.revision.scenario||{};
-  const fields={ambient_temperature_c:'ambientTemp',radiation_temperature_c:'radiationTemp',initial_temperature_c:'initialTemp',initial_condition_mode:'initialCondition',cooling_type:'coolingType',coolant_inlet_temperature_c:'coolantTemp',coolant_flow_rate_lpm:'coolantFlow',external_air_speed_mps:'airSpeed',altitude_m:'altitude',fixed_temperature_c:'fixedTemp'};
+  const fields={shaft_speed_rpm:'shaftSpeed',peak_current_a:'peakCurrent',rms_current_a:'rmsCurrent',dc_bus_voltage_v:'dcBusVoltage',phase_advance_deg:'phaseAdvance',ambient_temperature_c:'ambientTemp',radiation_temperature_c:'radiationTemp',initial_temperature_c:'initialTemp',initial_condition_mode:'initialCondition',cooling_type:'coolingType',coolant_inlet_temperature_c:'coolantTemp',coolant_flow_rate_lpm:'coolantFlow',external_air_speed_mps:'airSpeed',altitude_m:'altitude',fixed_temperature_c:'fixedTemp'};
   Object.entries(fields).forEach(([k,id])=>{const el=$(`#${id}`);if(el&&s[k]!==undefined&&s[k]!==null)el.value=s[k]});
   updateScenarioHint();
 }
@@ -141,7 +141,7 @@ collectPayload=function(){const p=_collectPayloadV017();p.project_id=state.activ
 
 validateCurrent=async function(){
   const p=collectPayload();
-  const v=await api('/api/validate',{method:'POST',body:JSON.stringify({project_id:p.project_id,design_revision_id:p.design_revision_id,scenario_revision_id:p.scenario_revision_id,template_id:p.template_id,solver_mode:p.solver_mode,analysis:p.analysis,parameters:p.parameters,explicit_parameter_ids:p.explicit_parameter_ids,automation_overrides:p.automation_overrides,materials:p.materials,solver_settings:p.solver_settings,scenario:p.scenario,requested_outputs:p.requested_outputs,experiment:p.experiment})});renderValidation(v);return v
+  const v=await api('/api/validate',{method:'POST',body:JSON.stringify({project_id:p.project_id,design_revision_id:p.design_revision_id,analysis_definition_revision_id:p.analysis_definition_revision_id,scenario_revision_id:p.scenario_revision_id,template_id:p.template_id,solver_mode:p.solver_mode,analysis:p.analysis,parameters:p.parameters,explicit_parameter_ids:p.explicit_parameter_ids,automation_overrides:p.automation_overrides,materials:p.materials,solver_settings:p.solver_settings,scenario:p.scenario,requested_outputs:p.requested_outputs,experiment:p.experiment})});renderValidation(v);return v
 };
 
 const _changeActiveProjectV017=changeActiveProject;

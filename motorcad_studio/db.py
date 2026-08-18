@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 
 class Database:
-    SCHEMA_VERSION = 17
+    SCHEMA_VERSION = 23
 
     def __init__(self, path: Path):
         self.path = path
@@ -146,6 +146,44 @@ class Database:
                     created_at TEXT NOT NULL,
                     UNIQUE(design_id, revision),
                     FOREIGN KEY(design_id) REFERENCES designs(id)
+                );
+                CREATE TABLE IF NOT EXISTS design_drafts (
+                    design_id TEXT PRIMARY KEY,
+                    base_revision_id TEXT NOT NULL,
+                    parameters_json TEXT NOT NULL,
+                    materials_json TEXT NOT NULL,
+                    explicit_parameter_ids_json TEXT NOT NULL DEFAULT '[]',
+                    active_view TEXT NOT NULL DEFAULT 'radial',
+                    notes TEXT NOT NULL DEFAULT '',
+                    version INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(design_id) REFERENCES designs(id),
+                    FOREIGN KEY(base_revision_id) REFERENCES design_revisions(id)
+                );
+                CREATE TABLE IF NOT EXISTS analysis_definitions (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    design_revision_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    module TEXT NOT NULL,
+                    recipe_id TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'READY',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY(project_id) REFERENCES projects(id),
+                    FOREIGN KEY(design_revision_id) REFERENCES design_revisions(id)
+                );
+                CREATE TABLE IF NOT EXISTS analysis_definition_revisions (
+                    id TEXT PRIMARY KEY,
+                    analysis_definition_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    definition_json TEXT NOT NULL,
+                    notes TEXT NOT NULL DEFAULT '',
+                    content_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(analysis_definition_id,revision),
+                    FOREIGN KEY(analysis_definition_id) REFERENCES analysis_definitions(id)
                 );
                 CREATE TABLE IF NOT EXISTS scenarios (
                     id TEXT PRIMARY KEY,
@@ -352,12 +390,48 @@ class Database:
                     updated_at TEXT NOT NULL,
                     UNIQUE(template_id,motorcad_version,result_id)
                 );
+                CREATE TABLE IF NOT EXISTS material_databases (
+                    path TEXT PRIMARY KEY,
+                    kind TEXT NOT NULL DEFAULT 'mixed',
+                    file_hash TEXT NOT NULL DEFAULT '',
+                    material_count INTEGER NOT NULL DEFAULT 0,
+                    source TEXT NOT NULL DEFAULT '',
+                    last_scanned_at TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}'
+                );
+                CREATE TABLE IF NOT EXISTS material_library_records (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    kind TEXT NOT NULL,
+                    material_type TEXT NOT NULL,
+                    source_kind TEXT NOT NULL,
+                    source_database_path TEXT,
+                    source_database_hash TEXT,
+                    motorcad_version TEXT NOT NULL DEFAULT '',
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS native_parity_runs (
+                    id TEXT PRIMARY KEY,
+                    profile_id TEXT NOT NULL,
+                    template_id TEXT NOT NULL,
+                    motorcad_version TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    qualified INTEGER NOT NULL DEFAULT 0,
+                    evidence_json TEXT NOT NULL,
+                    artifact_dir TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_cases_task ON cases(task_id);
                 CREATE INDEX IF NOT EXISTS idx_events_task ON events(task_id, id);
                 CREATE INDEX IF NOT EXISTS idx_artifacts_task ON artifacts(task_id, case_id);
                 CREATE INDEX IF NOT EXISTS idx_stages_case ON case_stages(case_id, id);
                 CREATE INDEX IF NOT EXISTS idx_designs_project ON designs(project_id);
                 CREATE INDEX IF NOT EXISTS idx_design_revisions_design ON design_revisions(design_id, revision);
+                CREATE INDEX IF NOT EXISTS idx_analysis_definitions_project ON analysis_definitions(project_id,updated_at);
+                CREATE INDEX IF NOT EXISTS idx_analysis_definitions_design_revision ON analysis_definitions(design_revision_id,updated_at);
+                CREATE INDEX IF NOT EXISTS idx_analysis_definition_revisions_parent ON analysis_definition_revisions(analysis_definition_id,revision);
                 CREATE INDEX IF NOT EXISTS idx_scenarios_project ON scenarios(project_id);
                 CREATE INDEX IF NOT EXISTS idx_scenario_revisions_scenario ON scenario_revisions(scenario_id, revision);
                 CREATE INDEX IF NOT EXISTS idx_solver_profiles_project ON solver_profiles(project_id,updated_at);
@@ -371,6 +445,9 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_qualification_template ON qualification_records(template_id,motorcad_version,analysis,created_at);
                 CREATE INDEX IF NOT EXISTS idx_material_bindings_template ON material_bindings(template_id,motorcad_version,status);
                 CREATE INDEX IF NOT EXISTS idx_result_calibrations_template ON result_calibrations(template_id,motorcad_version,status);
+                CREATE INDEX IF NOT EXISTS idx_material_library_name ON material_library_records(name,material_type);
+                CREATE INDEX IF NOT EXISTS idx_material_library_source ON material_library_records(source_kind,source_database_path);
+                CREATE INDEX IF NOT EXISTS idx_native_parity_profile ON native_parity_runs(profile_id,motorcad_version,created_at);
                 """
             )
             for name, ddl in {
@@ -423,6 +500,7 @@ class Database:
                 "validation_evidence_hash": "TEXT",
                 "runtime_resource_lease_id": "TEXT",
                 "resource_wait_ms": "REAL",
+                "scenario_json": "TEXT",
             }.items():
                 self._ensure_column(conn, "cases", name, ddl)
             self._ensure_column(conn, "motorcad_sessions", "reuse_effective", "INTEGER NOT NULL DEFAULT 0")
@@ -432,6 +510,33 @@ class Database:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_cases_execution_quality ON cases(execution_status,quality_status,cache_eligible)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_cases_runtime_resource_lease ON cases(runtime_resource_lease_id)")
             self._ensure_column(conn, "design_revisions", "explicit_parameter_ids_json", "TEXT NOT NULL DEFAULT '[]'")
+            for name, ddl in {
+                "motor_type_id": "TEXT NOT NULL DEFAULT ''",
+                "source_kind": "TEXT NOT NULL DEFAULT 'template'",
+                "source_reference": "TEXT NOT NULL DEFAULT ''",
+                "geometry_mode": "TEXT NOT NULL DEFAULT 'dimensions'",
+                "source_mot_path": "TEXT",
+                "capability_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+            }.items():
+                self._ensure_column(conn, "designs", name, ddl)
+            for name, ddl in {
+                "automation_parameters_json": "TEXT NOT NULL DEFAULT '{}'",
+                "capability_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+                "source_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+                "mot_artifact_path": "TEXT",
+                "motor_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+                "motor_snapshot_schema_version": "INTEGER NOT NULL DEFAULT 1",
+                "motor_snapshot_hash": "TEXT NOT NULL DEFAULT ''",
+            }.items():
+                self._ensure_column(conn, "design_revisions", name, ddl)
+            self._ensure_column(conn, "design_drafts", "version", "INTEGER NOT NULL DEFAULT 1")
+            for name, ddl in {
+                "motor_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
+                "motor_snapshot_schema_version": "INTEGER NOT NULL DEFAULT 1",
+                "motor_snapshot_hash": "TEXT NOT NULL DEFAULT ''",
+            }.items():
+                self._ensure_column(conn, "design_drafts", name, ddl)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_design_drafts_base_revision ON design_drafts(base_revision_id)")
             self._ensure_column(conn, "datasets", "project_id", "TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_datasets_project ON datasets(project_id,updated_at)")
             # Backfill legacy dataset ownership when all members resolve to one project.
@@ -463,6 +568,12 @@ class Database:
     @staticmethod
     def now() -> str:
         return datetime.now(timezone.utc).isoformat()
+
+    @contextmanager
+    def locked(self) -> Iterator[None]:
+        """Serialize a multi-call domain operation across nested database helpers."""
+        with self._lock:
+            yield
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:

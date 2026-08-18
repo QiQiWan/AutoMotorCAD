@@ -1,4 +1,4 @@
-version: 1
+version: 2
 modules:
   overview:
     label_zh: 结果总览
@@ -15,6 +15,16 @@ modules:
     label_en: Loss analysis
     description_zh: 铜耗、铁耗、永磁体损耗和总损耗的组成与占比。
     description_en: Copper, iron, magnet and total-loss composition and shares.
+  output_data:
+    label_zh: 输出数据
+    label_en: Output Data
+    description_zh: 按物理域与单位组织的标量、曲线、场和表格；JSON仅保留在开发者审计区。
+    description_en: Scalars, curves, fields and tables organized by physical domain and unit.
+  graphs:
+    label_zh: 图形
+    label_en: Graphs
+    description_zh: 已提取曲线、包络、频谱和二维图的统一工程视图。
+    description_en: Unified engineering view for extracted curves, envelopes, spectra and maps.
   inputs:
     label_zh: 输入与模型快照
     label_en: Inputs & model snapshot
@@ -44,6 +54,16 @@ modules:
     description_zh: 温度、热流、瞬态温升和热网络相关结果。
     description_en: Temperature, heat-flow, transient temperature-rise and thermal-network results.
     official_apis: [get_temperature_graph, get_heatflow_graph, get_power_graph]
+  thermal_schematic:
+    label_zh: 热网络拓扑
+    label_en: Thermal schematic
+    description_zh: 热节点、热阻、热容、损耗和边界条件组成的原生证据拓扑。
+    description_en: Evidence topology of thermal nodes, resistances, capacitances, losses and boundaries.
+  temperatures:
+    label_zh: 温度与热流
+    label_en: Temperatures
+    description_zh: 稳态温度、瞬态温升、热流曲线与空间分布。
+    description_en: Steady temperatures, transients, heat-flow curves and spatial distributions.
   lab:
     label_zh: Lab性能图谱
     label_en: Lab performance maps
@@ -56,6 +76,16 @@ modules:
     description_zh: 应力、力谐波、多力工况与NVH结果。
     description_en: Stress, force harmonics, multiforce operating points and NVH outputs.
     official_apis: [do_mechanical_calculation, export_multi_force_data, export_nvh_results_data, export_force_animation]
+  stress:
+    label_zh: 转子应力
+    label_en: Rotor stress
+    description_zh: 等效应力、位移、材料极限及机械网格场结果。
+    description_en: Equivalent stress, displacement, material limits and mechanical mesh fields.
+  nvh:
+    label_zh: 力与NVH
+    label_en: Forces & NVH
+    description_zh: 电磁力空间/时间阶次、Campbell图与模态结果。
+    description_en: Spatial/temporal force orders, Campbell maps and modal results.
   artifacts:
     label_zh: 原生结果与审计
     label_en: Native results & audit

@@ -11,9 +11,21 @@ DEFAULT_SECTION_PREFERENCES: dict[str, list[str]] = {
     "Stator_Bore": ["Dimensions"],
     "Airgap": ["Dimensions"],
     "Stator_Lam_Length": ["Dimensions"],
+    "Housing_Dia": ["Dimensions"],
+    "Shaft_Dia": ["Dimensions"],
+    "Shaft_Hole_Diameter": ["Dimensions"],
+    "Rotor_Lam_Length": ["Dimensions"],
     "Tooth_Width": ["Dimensions"],
     "Slot_Depth": ["Dimensions"],
+    "Slot_Width": ["Dimensions"],
+    "Slot_Opening": ["Dimensions"],
+    "Slot_Corner_Radius": ["Dimensions"],
+    "Tooth_Tip_Depth": ["Dimensions"],
+    "Tooth_Tip_Angle": ["Dimensions"],
     "Magnet_Thickness": ["Dimensions"],
+    "Magnet_Length": ["Dimensions"],
+    "Sleeve_Thickness": ["Dimensions"],
+    "Banding_Thickness": ["Dimensions"],
     "Magnet_Arc_[ED]": ["Dimensions"],
     "MagTurnsConductor": ["Magnetics"],
     "ParallelPaths": ["Magnetics"],
@@ -38,9 +50,21 @@ DEFAULT_PARAMETER_SOURCES: dict[str, str] = {
     "dc_bus_voltage_v": "DCBusVoltage",
     "phase_advance_deg": "PhaseAdvance",
     "stator_lamination_length": "Stator_Lam_Length",
+    "housing_diameter": "Housing_Dia",
+    "shaft_diameter": "Shaft_Dia",
+    "shaft_hole_diameter": "Shaft_Hole_Diameter",
+    "rotor_lamination_length": "Rotor_Lam_Length",
     "tooth_width": "Tooth_Width",
     "slot_depth": "Slot_Depth",
+    "slot_width": "Slot_Width",
+    "slot_opening": "Slot_Opening",
+    "slot_corner_radius": "Slot_Corner_Radius",
+    "tooth_tip_depth": "Tooth_Tip_Depth",
+    "tooth_tip_angle": "Tooth_Tip_Angle",
     "magnet_thickness": "Magnet_Thickness",
+    "magnet_length": "Magnet_Length",
+    "sleeve_thickness": "Sleeve_Thickness",
+    "banding_thickness": "Banding_Thickness",
     "magnet_arc_deg": "Magnet_Arc_[ED]",
     "turns_per_coil": "MagTurnsConductor",
     "parallel_paths": "ParallelPaths",
@@ -168,3 +192,40 @@ def extract_winding_metadata(path: Path) -> dict[str, Any]:
             "armature_winding_definition": definition_info,
         },
     }
+
+
+DEFAULT_MATERIAL_SOURCES: dict[str, list[str]] = {
+    "Stator Lamination": ["Material_Stator_Lam_Back_Iron", "Material_Stator_Lam_Yoke", "Material_Stator_Lam_Tooth"],
+    "Rotor Lamination": ["Material_Rotor_Lam_Back_Iron", "Material_Rotor_Lam_Tooth"],
+    "Magnet": ["Material_Magnet"],
+    "Conductor": ["Material_Copper_Active", "Material_Copper_-_Active"],
+    "Shaft": ["Material_Shaft_Active", "Material_Shaft_[A]"],
+    "Housing": ["Material_Housing_Active", "Material_Housing_[A]"],
+    "Sleeve": ["Material_Sleeve", "Material_Stator_Bore_Sleeve"],
+}
+
+def extract_material_defaults(path: Path) -> tuple[dict[str, str], dict[str, Any]]:
+    """Extract common component materials from the Motor-CAD template itself.
+
+    Motor-CAD templates can contain many component-specific material keys. Studio
+    keeps the small common design assignment set here and leaves all other native
+    component material definitions inside the source template. Empty keys are not
+    replaced with guessed materials.
+    """
+    sections = parse_mtt(path)
+    material = sections.get("Material") or {}
+    defaults: dict[str, str] = {}
+    metadata: dict[str, Any] = {}
+    for component, keys in DEFAULT_MATERIAL_SOURCES.items():
+        selected_key = next((key for key in keys if str(material.get(key, "")).strip()), None)
+        value = str(material.get(selected_key, "")).strip() if selected_key else ""
+        metadata[component] = {
+            "component": component,
+            "candidate_keys": keys,
+            "selected_key": selected_key,
+            "source_section": "Material",
+            "source": "mtt_template",
+        }
+        if value:
+            defaults[component] = value
+    return defaults, metadata

@@ -73,10 +73,10 @@
 
   async function mountResults(route, ctx) {
     setResultViewerMode('case');
-    await loadResultViewerLanding(ctx); ctx.assertActive();
+    await loadResultViewerLanding(ctx,{autoOpen:!route.taskId}); ctx.assertActive();
     if (!route.taskId) return;
     const taskSelect=document.querySelector('#viewerTaskSelect');if(taskSelect)taskSelect.value=route.taskId;
-    await loadViewerCases(route.taskId, ctx); ctx.assertActive();
+    await loadViewerCases(route.taskId, ctx,{autoOpen:!route.caseId}); ctx.assertActive();
     if (!route.caseId) return;
     const caseSelect=document.querySelector('#viewerCaseSelect');if(caseSelect)caseSelect.value=route.caseId;
     await openCaseViewer(ctx);
@@ -97,6 +97,7 @@
       case 'templates': await mountTemplates(route,ctx); break;
       case 'workspace': await mountWorkspace(route,ctx); break;
       case 'simulationAssets': await mountAssets(route,ctx); break;
+      case 'analysisWorkbench': await window.MCSV040?.mountAnalysisWorkbench?.(ctx); break;
       case 'newTask': await mountTaskSetup(route,ctx); break;
       case 'tasks': await mountTasks(route,ctx); break;
       case 'monitor': await mountMonitor(route,ctx); break;

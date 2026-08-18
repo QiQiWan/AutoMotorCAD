@@ -20,6 +20,15 @@ class AnalysisType(str, Enum):
     MECHANICAL = "mechanical"
     LAB_MAGNETIC = "lab_magnetic"
     LAB_OPERATING_POINT = "lab_operating_point"
+    EMAG_SATURATION_MAP = "emag_saturation_map"
+    EMAG_TORQUE_ENVELOPE = "emag_torque_envelope"
+    EMAG_MULTI_FORCE = "emag_multi_force"
+    EMAG_FORCE_HARMONICS = "emag_force_harmonics"
+    WEIGHT = "weight"
+    LAB_THERMAL = "lab_thermal"
+    LAB_DUTY_CYCLE = "lab_duty_cycle"
+    LAB_GENERATOR = "lab_generator"
+    LAB_TEST_PERFORMANCE = "lab_test_performance"
 
 
 
@@ -79,8 +88,11 @@ class ExperimentDefinition(BaseModel):
     def validate_experiment(self) -> "ExperimentDefinition":
         if self.mode != ExperimentMode.SINGLE and not self.variables:
             raise ValueError("DOE/优化任务至少需要一个试验变量")
-        if self.mode in {ExperimentMode.PARETO_SEARCH, ExperimentMode.NSGA2} and len(self.objectives) < 2:
-            raise ValueError("multi-objective search requires at least two objectives")
+        objective_names = [item.result_id for item in self.objectives]
+        if len(objective_names) != len(set(objective_names)):
+            raise ValueError("优化目标不能重复")
+        if self.mode in {ExperimentMode.PARETO_SEARCH, ExperimentMode.NSGA2} and len(set(objective_names)) < 2:
+            raise ValueError("多目标搜索至少需要两个不同的优化目标")
         names = [item.parameter for item in self.variables]
         if len(names) != len(set(names)):
             raise ValueError("试验变量不能重复")
@@ -162,6 +174,7 @@ class TaskCreate(BaseModel):
     project_name: str = Field(default="default project", min_length=1, max_length=120)
     project_id: str | None = None
     design_revision_id: str | None = None
+    analysis_definition_revision_id: str | None = None
     scenario_revision_id: str | None = None
     solver_profile_revision_id: str | None = None
     output_profile_revision_id: str | None = None
@@ -180,6 +193,7 @@ class TaskCreate(BaseModel):
     materials: MaterialConfiguration = Field(default_factory=MaterialConfiguration)
     solver_settings: dict[str, Any] = Field(default_factory=dict)
     scenario: ScenarioDefinition = Field(default_factory=ScenarioDefinition)
+    scenario_matrix: list[ScenarioDefinition] = Field(default_factory=list, max_length=5000)
     sweep: SweepDefinition = Field(default_factory=SweepDefinition)
     case_matrix: list[dict[str, float | int | str | bool]] = Field(default_factory=list, max_length=5000)
     requested_outputs: list[str] = Field(default_factory=list)
@@ -194,23 +208,27 @@ class TaskCreate(BaseModel):
             raise ValueError("CSV/矩阵批量与一维扫描不能同时启用")
         if self.experiment.mode != ExperimentMode.SINGLE and (self.case_matrix or self.sweep.enabled):
             raise ValueError("DOE/优化任务不能与CSV矩阵或旧版一维扫描同时启用")
+        if self.scenario_matrix and (self.case_matrix or self.sweep.enabled or self.experiment.mode != ExperimentMode.SINGLE):
+            raise ValueError("分析定义多工况不能与参数矩阵、扫描或DOE/优化同时启用")
         return self
 
 
 
 
 class GeometryPrecheckRequest(BaseModel):
-    parameters: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    # Browsers may submit an empty numeric field as null.  The service treats that
+    # as "not overridden" and falls back to the saved/template value.
+    parameters: dict[str, float | int | str | bool | None] = Field(default_factory=dict)
     explicit_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
 
 
 class WorkbenchPrecheckRequest(BaseModel):
-    parameters: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    parameters: dict[str, float | int | str | bool | None] = Field(default_factory=dict)
     changed_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
 
 
 class GeometryRuntimeCheckRequest(BaseModel):
-    parameters: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    parameters: dict[str, float | int | str | bool | None] = Field(default_factory=dict)
     explicit_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
     materials: MaterialConfiguration = Field(default_factory=MaterialConfiguration)
     timeout_s: int = Field(default=120, ge=10, le=600)
@@ -222,6 +240,15 @@ class TemplateQualificationRequest(BaseModel):
     parameters: dict[str, float | int | str | bool] = Field(default_factory=dict)
     materials: MaterialConfiguration = Field(default_factory=MaterialConfiguration)
     run_solver_smoke: bool = False
+
+
+class NativeParityRunRequest(BaseModel):
+    profile_id: str
+
+
+class NativeParitySuiteRequest(BaseModel):
+    profile_ids: list[str] = Field(default_factory=list, max_length=16)
+    stop_on_failure: bool = False
 
 
 
@@ -248,6 +275,7 @@ class MaterialValidationRequest(BaseModel):
 class DesignValidationRequest(BaseModel):
     project_id: str | None = None
     design_revision_id: str | None = None
+    analysis_definition_revision_id: str | None = None
     scenario_revision_id: str | None = None
     template_id: str
     analysis: AnalysisType = AnalysisType.EMAG
@@ -371,6 +399,37 @@ class DesignCreate(BaseModel):
     template_id: str = ""
 
 
+class ModelSourceKind(str, Enum):
+    DEFAULT = "default"
+    MOTOR_TYPE = "motor_type"
+    TEMPLATE = "template"
+    MOT_IMPORT = "mot_import"
+    REVISION_CLONE = "revision_clone"
+    ADAPTIVE_MODEL = "adaptive_model"
+
+
+class ModelCreate(BaseModel):
+    name: str = Field(default="默认电机", min_length=1, max_length=120)
+    source_kind: ModelSourceKind = ModelSourceKind.DEFAULT
+    motor_type_id: str = Field(default="BPM", min_length=1, max_length=40)
+    template_id: str | None = Field(default=None, max_length=200)
+    source_revision_id: str | None = Field(default=None, max_length=80)
+    mot_filename: str | None = Field(default=None, max_length=255)
+    mot_content_base64: str | None = Field(default=None, max_length=70_000_000)
+    geometry_mode: Literal["dimensions", "ratios", "adaptive"] = "dimensions"
+    notes: str = Field(default="", max_length=4000)
+
+    @model_validator(mode="after")
+    def validate_source(self) -> "ModelCreate":
+        if self.source_kind == ModelSourceKind.TEMPLATE and not self.template_id:
+            raise ValueError("从模板创建模型时必须选择模板")
+        if self.source_kind == ModelSourceKind.REVISION_CLONE and not self.source_revision_id:
+            raise ValueError("克隆模型时必须选择源 Revision")
+        if self.source_kind == ModelSourceKind.MOT_IMPORT and not self.mot_content_base64:
+            raise ValueError("导入 MOT 时必须提供文件内容")
+        return self
+
+
 class DesignFromTemplateCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     template_id: str = Field(min_length=1, max_length=200)
@@ -381,6 +440,132 @@ class DesignRevisionCreate(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict)
     materials: dict[str, Any] = Field(default_factory=dict)
     explicit_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
+    automation_parameters: dict[str, dict[str, Any]] | None = None
+    capability_snapshot: dict[str, Any] | None = None
+    notes: str = Field(default="", max_length=4000)
+
+
+class DesignDraftUpdate(BaseModel):
+    base_revision_id: str = Field(min_length=1, max_length=80)
+    expected_version: int | None = Field(default=None, ge=0)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    materials: dict[str, Any] = Field(default_factory=dict)
+    explicit_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
+    active_view: str = Field(default="radial", min_length=1, max_length=64)
+    notes: str = Field(default="", max_length=4000)
+
+
+class DesignDraftCommit(BaseModel):
+    expected_version: int | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=4000)
+    analysis_definition_id: str | None = Field(default=None, min_length=1, max_length=80)
+
+
+class MotorChangePreviewRequest(BaseModel):
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    explicit_parameter_ids: list[str] = Field(default_factory=list, max_length=512)
+
+
+class AnalysisDesignRevisionUpdate(BaseModel):
+    design_revision_id: str = Field(min_length=1, max_length=80)
+
+
+class AnalysisDefinitionCreate(BaseModel):
+    design_revision_id: str
+    name: str = Field(min_length=1, max_length=120)
+    module: Literal["EMag", "Therm", "Coupled", "Lab", "Mechanical"]
+    recipe_id: AnalysisType
+    load_cases: list[dict[str, Any]] = Field(default_factory=lambda: [{}], min_length=1, max_length=5000)
+    solver_settings: dict[str, Any] = Field(default_factory=dict)
+    input_domains: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    requested_outputs: list[str] = Field(default_factory=list, max_length=512)
+    notes: str = Field(default="", max_length=4000)
+
+
+class AnalysisDefinitionRevisionCreate(BaseModel):
+    load_cases: list[dict[str, Any]] = Field(default_factory=lambda: [{}], min_length=1, max_length=5000)
+    solver_settings: dict[str, Any] = Field(default_factory=dict)
+    input_domains: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    requested_outputs: list[str] = Field(default_factory=list, max_length=512)
+    notes: str = Field(default="", max_length=4000)
+
+
+class AnalysisCaseCreate(BaseModel):
+    """One engineer action: create a case from a new or reusable motor Design and its first analysis revision."""
+
+    name: str = Field(min_length=1, max_length=120)
+    motor_name: str | None = Field(default=None, max_length=120)
+    motor_type_id: str = Field(default="BPM", min_length=1, max_length=40)
+    source_kind: Literal["default", "motor_type", "template", "existing"] = "default"
+    design_id: str | None = Field(default=None, max_length=80)
+    template_id: str | None = Field(default=None, max_length=200)
+    geometry_mode: Literal["dimensions", "ratios", "adaptive"] = "dimensions"
+    module: Literal["EMag", "Therm", "Coupled", "Lab", "Mechanical"] = "EMag"
+    recipe_id: AnalysisType = AnalysisType.EMAG
+    load_cases: list[dict[str, Any]] = Field(default_factory=lambda: [{}], min_length=1, max_length=5000)
+    solver_settings: dict[str, Any] = Field(default_factory=dict)
+    input_domains: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    requested_outputs: list[str] = Field(default_factory=list, max_length=512)
+    notes: str = Field(default="", max_length=4000)
+
+    @model_validator(mode="after")
+    def validate_case_source(self) -> "AnalysisCaseCreate":
+        if self.source_kind == "template" and not self.template_id:
+            raise ValueError("选择工程模板时必须指定模板")
+        if self.source_kind == "existing" and not self.design_id:
+            raise ValueError("复用已有电机设计时必须指定 Design")
+        return self
+
+
+class InputDomainUpdate(BaseModel):
+    values: dict[str, Any] = Field(default_factory=dict)
+    notes: str = Field(default="", max_length=4000)
+
+
+class AnalysisCalculationCheckRequest(BaseModel):
+    """Optimistic identity guard for the engineer-facing native precheck."""
+
+    expected_analysis_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+    expected_design_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+
+class AnalysisExecutionRequest(BaseModel):
+    """Engineer-facing execution controls layered on immutable Design/Analysis revisions."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    quality_profile: str = Field(default="standard", min_length=1, max_length=80)
+    reuse_cache: bool = True
+    submission_key: str | None = Field(default=None, min_length=8, max_length=120)
+    precheck_evidence_id: str | None = Field(default=None, min_length=8, max_length=120)
+    run_native_precheck: bool = True
+    expected_analysis_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+    expected_design_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+
+class AnalysisExperimentRequest(BaseModel):
+    """Submit a traceable parameter study/optimization against one immutable Analysis revision."""
+
+    experiment: ExperimentDefinition
+    load_case_index: int = Field(default=0, ge=0, le=4999)
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    quality_profile: str = Field(default="standard", min_length=1, max_length=80)
+    reuse_cache: bool = True
+    submission_key: str | None = Field(default=None, min_length=8, max_length=120)
+    precheck_evidence_id: str | None = Field(default=None, min_length=8, max_length=120)
+    run_native_precheck: bool = True
+    expected_analysis_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+    expected_design_revision_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+    @model_validator(mode="after")
+    def validate_study(self) -> "AnalysisExperimentRequest":
+        if self.experiment.mode == ExperimentMode.SINGLE:
+            raise ValueError("参数扫描/优化必须选择非 single 试验模式")
+        return self
+
+
+class OptimizationCandidatePromotionRequest(BaseModel):
+    expected_design_revision_id: str = Field(min_length=1, max_length=120)
+    update_analysis_definition_id: str | None = Field(default=None, min_length=1, max_length=120)
     notes: str = Field(default="", max_length=4000)
 
 
@@ -459,4 +644,3 @@ class DatasetBuildRequest(BaseModel):
     constraints: list[ConstraintDefinition] = Field(default_factory=list, max_length=32)
     partitions: dict[str, float] = Field(default_factory=lambda: {"development": 0.7, "validation": 0.2, "holdout": 0.1})
     seed: int = 42
-

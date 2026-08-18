@@ -34,21 +34,21 @@
     const box = document.querySelector('#runtimeResourceEvidenceV027');
     if (!box) return;
     if (!lastMonitorCaseId) {
-      box.innerHTML = '<span class="eyebrow">运行时资源租约</span><p class="hint">等待当前 Case 进入 Worker / 许可证 / 内存联合调度。</p>';
+      box.innerHTML = '<span class="eyebrow">计算资源</span><p class="hint">当前工况提交后会自动排队。</p>';
       return;
     }
     const queue = (latestScheduler?.queue || []).find(row => row.case_id === lastMonitorCaseId);
     const active = (latestScheduler?.active_leases || []).find(row => row.case_id === lastMonitorCaseId);
     if (active) {
-      box.innerHTML = `<span class="eyebrow">运行时资源租约</span><div class="lease-head-v026"><b>${esc(active.lease_id)}</b><span class="badge ok">资源已原子授予</span></div><div class="lease-grid-v026"><div><span>Worker Token</span><b>${esc(active.worker_token || '-')}</b></div><div><span>许可证</span><b>${esc((active.licenses || []).join(' + ') || '无需模块许可')}</b></div><div><span>排队等待</span><b>${fmt(active.wait_ms,0)} ms</b></div><div><span>内存预留</span><b>${fmt(active.memory_reservation_mb,0)} MB</b></div></div><small>该租约只表示 Studio 已同时预留本地 Worker、许可证容量和内存预算。真正的许可证 checkout 仍由当前 Motor-CAD 会话内的 get_licence() 结果作为权威证据。</small>`;
+      box.innerHTML = `<span class="eyebrow">计算资源</span><div class="lease-head-v026"><b>Motor-CAD 已开始运行</b><span class="badge ok">资源就绪</span></div><div class="lease-grid-v026"><div><span>排队等待</span><b>${fmt(active.wait_ms,0)} ms</b></div><div><span>当前状态</span><b>正在计算</b></div></div><small>系统已取得所需资源；计算结束前无需重复提交。</small>`;
       return;
     }
     if (queue) {
       const reasons = (queue.blocking_reasons || []).map(reasonLabel);
-      box.innerHTML = `<span class="eyebrow">运行时资源租约</span><div class="lease-head-v026"><b>${esc(queue.request_id || lastMonitorCaseId)}</b><span class="badge warning">等待资源</span></div><div class="lease-grid-v026"><div><span>已等待</span><b>${fmt((queue.wait_ms || 0)/1000,1)} s</b></div><div><span>所需许可证</span><b>${esc((queue.licenses || []).join(' + ') || '-')}</b></div></div><div class="runtime-blockers-v027">${reasons.map(value => `<span>${esc(value)}</span>`).join('')}</div><small>资源释放后会自动进入执行；无需重复点击“提交任务”。</small>`;
+      box.innerHTML = `<span class="eyebrow">计算资源</span><div class="lease-head-v026"><b>正在等待可用资源</b><span class="badge warning">排队中</span></div><div class="lease-grid-v026"><div><span>已等待</span><b>${fmt((queue.wait_ms || 0)/1000,1)} s</b></div><div><span>等待原因</span><b>${esc(reasons[0] || '前序计算尚未结束')}</b></div></div><small>资源可用后会自动开始，无需重复点击。</small>`;
       return;
     }
-    box.innerHTML = '<span class="eyebrow">运行时资源租约</span><p class="hint">当前 Case 尚未排入运行时资源队列，或已经完成资源释放。</p>';
+    box.innerHTML = '<span class="eyebrow">计算资源</span><p class="hint">当前工况尚未排队，或计算已经结束。</p>';
   }
 
   function renderScheduler(payload) {

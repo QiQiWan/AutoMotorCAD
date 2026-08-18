@@ -14,7 +14,10 @@ STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 APP = (STATIC / "app.js").read_text(encoding="utf-8")
 ROUTER = (STATIC / "router.js").read_text(encoding="utf-8")
-V020 = (STATIC / "v020.js").read_text(encoding="utf-8")
+V020 = (STATIC / "workflow/model-gate.js").read_text(encoding="utf-8")
+EDITOR = (STATIC / "design" / "editor.js").read_text(encoding="utf-8")
+PRECHECK = (STATIC / "design" / "precheck.js").read_text(encoding="utf-8")
+DESIGN_GEOMETRY = (STATIC / "design" / "geometry.js").read_text(encoding="utf-8")
 GEOMETRY = (STATIC / "geometry.js").read_text(encoding="utf-8")
 MOTORCAD = (ROOT / "motorcad_studio" / "solvers" / "motorcad.py").read_text(encoding="utf-8")
 MAIN = (ROOT / "motorcad_studio" / "main.py").read_text(encoding="utf-8")
@@ -23,7 +26,7 @@ client = TestClient(app)
 
 def test_v020_assets_and_version_are_enabled():
     assert tuple(map(int, __version__.split("."))) >= (0, 20, 0)
-    for asset in ["dialogs.js", "v020.js", "router.js"]:
+    for asset in ["dialogs.js", "workflow/model-gate.js", "router.js"]:
         assert f"/static/{asset}?v={__version__}" in INDEX
 
 
@@ -35,7 +38,7 @@ def test_every_operator_destination_has_a_durable_route_contract():
         "/app/system",
         "overview",
         "designs/templates",
-        "revisions/${clean(r)}${revisionEditActive?'/edit':''}",
+        "revisions/${clean(r)}/${tail}${revisionEditActive?'/edit':''}",
         "simulation/setup/${stepSlugs",
         "simulation/tasks/${clean(state.selectedTask)}",
         "simulation/monitor/${clean(state.monitorTask)}",
@@ -81,13 +84,15 @@ def test_browser_native_blocking_dialogs_are_not_used():
     assert "StudioDialog.sheet" in V020
 
 
-def test_revision_editor_restores_live_schematic_and_blocks_invalid_revision_save():
-    assert "revisionLiveSchematicV020" in V020
-    assert "motorSchematic(template,true,p)" in V020
-    assert "/geometry-precheck" in V020
-    assert "设计版本不能保存" in V020
-    assert "restoreTemplateDefaultsV020" in V020
-    assert "$('#saveDesignRevisionV020').disabled=Boolean(blocks.length)" in V020
+def test_revision_editor_uses_stable_renderer_and_versioned_design_checks():
+    # V0.65+ physically moved the editor out of the V0.20 runtime layer.
+    assert "MCSDesignRenderer?.renderWorkbenchView" in EDITOR
+    assert "runStudioCheck" in EDITOR
+    assert "MCSDesignEditor" in EDITOR
+    assert "/workbench/precheck" in PRECHECK
+    assert "precheckVersion" in PRECHECK
+    assert "radialMachineAxialView" in DESIGN_GEOMETRY
+    assert "openRevisionEditorV020" not in V020
 
 
 def test_simulation_wizard_has_five_contextual_visual_guides():
@@ -138,7 +143,7 @@ def test_operator_visible_headings_are_chinese_first():
     assert "RECOMMENDED NEXT ACTION" not in (STATIC / "operator-flow.js").read_text(encoding="utf-8")
 
 
-def test_backend_refuses_known_invalid_immutable_design_revision():
+def test_backend_saves_invalid_draft_but_keeps_it_blocked_for_calculation():
     project = client.post('/api/projects', json={'name': 'v020 invalid revision guard'}).json()
     created = client.post(
         f"/api/projects/{project['id']}/designs/from-template",
@@ -154,10 +159,11 @@ def test_backend_refuses_known_invalid_immutable_design_revision():
             'parameters': bad,
             'materials': revision.get('materials', {}),
             'explicit_parameter_ids': ['slot_count'],
-            'notes': 'must be rejected',
+            'notes': 'intermediate engineering draft',
         },
     )
-    assert response.status_code == 422
-    detail = response.json()['detail']
-    assert detail['code'] == 'DESIGN_REVISION_MODEL_INVALID'
-    assert any(row['code'] == 'WINDING_SLOT_PHASE_PATH_NONINTEGER' for row in detail['issues'])
+    assert response.status_code == 201
+    workbench = client.get(f"/api/design-revisions/{response.json()['id']}/workbench")
+    assert workbench.status_code == 200
+    assert workbench.json()['precheck']['valid'] is False
+    assert any(row['code'] == 'WINDING_SLOT_PHASE_PATH_NONINTEGER' for row in workbench.json()['precheck']['issues'])

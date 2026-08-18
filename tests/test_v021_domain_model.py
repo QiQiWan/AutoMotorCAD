@@ -283,7 +283,8 @@ def test_run_configuration_freezes_four_domain_baselines_and_hash():
     run = response.json()
     assert run["content_hash"]
     assert run["traceability_status"] == "FULLY_VERSIONED"
-    assert run["snapshot_schema_version"] == 1
+    assert run["snapshot_schema_version"] == 2
+    assert run["snapshot"]["scenario_matrix"] == []
     contract = run["snapshot"]["domain_contract"]
     assert contract["binding_modes"] == {"design": "revision", "scenario": "revision", "solver": "revision", "output": "revision"}
     assert contract["override_count"] == 0

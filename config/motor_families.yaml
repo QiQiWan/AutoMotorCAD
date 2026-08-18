@@ -57,7 +57,7 @@ families:
     status: missing_template
   claw_thermal:
     label: CLAW热模型
-    motor_types: [CLAW-Therm]
+    motor_types: [CLAW]
     representative_templates: []
     status: missing_template
   coreless_cup:

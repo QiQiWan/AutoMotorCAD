@@ -1,15 +1,20 @@
 <!doctype html>
-<html lang="zh-CN" data-studio-version="0.35.0">
+<html lang="zh-CN" data-studio-version="0.70.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MotorCAD Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.35.0">
+  <link rel="stylesheet" href="/static/styles.css?v=0.70.0">
+  <link rel="stylesheet" href="/static/design-v065.css?v=0.70.0">
+  <link rel="stylesheet" href="/static/design-v066.css?v=0.70.0">
+  <link rel="stylesheet" href="/static/analysis-v067.css?v=0.70.0">
+  <link rel="stylesheet" href="/static/native-parity-v068.css?v=0.70.0">
+  <link rel="stylesheet" href="/static/results-v069.css?v=0.70.0">
 </head>
 <body>
 <header class="app-header operator-header">
   <div class="brand-block">
-    <h1>MotorCAD Studio <span class="version">V0.35.0</span></h1>
+    <h1>MotorCAD Studio <span class="version">V0.70.0</span></h1>
     <p>永磁电机工程仿真工作台</p>
   </div>
   <div class="header-actions">
@@ -37,11 +42,12 @@
   <nav class="project-stage-nav motorcad-flow-nav-v022" aria-label="项目连续工程工作流">
     <button type="button" data-tab="dashboard" data-project-tab data-project-stage="overview"><span>1</span>概览</button>
     <button type="button" data-tab="workspace" data-project-tab data-project-stage="design"><span>2</span>设计电机</button>
-    <button type="button" data-tab="newTask" data-project-tab data-project-stage="simulation"><span>3</span>设置分析</button>
+    <button type="button" data-tab="analysisWorkbench" data-project-tab data-project-stage="simulation"><span>3</span>分析与计算</button>
     <button type="button" data-tab="resultViewer" data-project-tab data-project-stage="results"><span>4</span>分析结果</button>
     <button type="button" data-tab="dataFactory" data-project-tab data-project-stage="data"><span>5</span>数据资产</button>
   </nav>
   <div id="projectSecondaryNav" class="project-secondary-nav hidden" aria-label="项目二级导航"></div>
+  <nav id="motorcadContextNavV046" class="motorcad-context-nav-v046" aria-label="Motor-CAD 工程上下文"></nav>
 </section>
 <main>
   <section id="setup" class="tab active">
@@ -71,7 +77,7 @@
     </article>
     <article class="panel runtime-scheduler-panel-v027">
       <div class="section-head"><div><span class="step">4</span><h2>运行时资源调度与稳定性证据</h2><p>Motor-CAD Case 只有在 Worker、所需模块许可证和内存余量能够同时获得时才进入执行。避免先占住许可证再排队等 Worker，也能明确显示究竟卡在哪类资源。</p></div><div class="actions"><button id="probeWorkerCapabilitiesV027" type="button">Worker能力探测</button><span id="runtimeSchedulerBadgeV027" class="badge">读取中</span></div></div>
-      <div id="runtimeSchedulerSummaryV027" class="runtime-scheduler-summary-v027"><div class="workspace-empty compact"><b>正在读取运行时调度状态</b><span>正式 Motor-CAD Case 使用原子资源租约。</span></div></div>
+      <div id="runtimeSchedulerSummaryV027" class="runtime-scheduler-summary-v027"><div class="workspace-empty compact"><b>正在读取计算资源状态</b><span>计算提交后会自动排队并开始运行。</span></div></div>
       <div class="runtime-contract-strip-v027"><div><span class="eyebrow">持续运行证据</span><b id="runtimeContractStateV027">尚未读取</b><small id="runtimeContractDetailV027">真实 Case 会自动积累 Worker 世代、连续成功次数和许可证 checkout 证据。</small></div><button id="refreshRuntimeSchedulerV027" type="button">刷新</button></div>
     </article>
     <article class="panel startup-next-panel"><div><b>运行环境配置完成后进入项目管理</b><p>项目切换只在“项目管理”完成。进入项目后，任务、监控、结果与数据工厂自动继承该项目上下文。</p></div><button id="setupContinueProjects" class="primary" type="button">进入项目管理</button></article>
@@ -92,7 +98,7 @@
         <div id="projectCreateStatus" class="hint"></div>
       </aside>
       <section class="panel project-list-panel">
-        <div class="section-head"><div><h3>项目列表</h3><p>项目是Design、Scenario、Task、Result和Dataset的一级边界。</p></div><input id="projectManagerSearch" placeholder="搜索项目名称 / ID"></div>
+        <div class="section-head"><div><h3>项目列表</h3><p>每个项目集中管理分析案例、电机方案、计算记录和工程结果。</p></div><input id="projectManagerSearch" placeholder="搜索项目名称 / ID"></div>
         <div id="projectManagerList" class="project-card-grid"></div>
       </section>
       <aside id="projectEditorPanel" class="panel project-editor-panel hidden">
@@ -142,7 +148,7 @@
   <section id="workspace" class="tab">
     <div class="workspace-toolbar panel">
       <div><span class="eyebrow">设计</span><h2 id="currentProjectWorkspaceTitle">设计</h2><p id="currentProjectWorkspaceMeta">Design 与不可变 Revision 在这里维护。完成设计后进入“仿真”配置工况和计算。</p></div>
-      <div class="actions"><button id="workspaceBackProjects" type="button">← 返回项目概览</button><button id="workspaceRefresh" type="button">刷新当前项目</button></div>
+      <div class="actions"><button id="createModelV040" class="primary" type="button">＋ 新建模型</button><button id="workspaceBackProjects" type="button">← 返回项目概览</button><button id="workspaceRefresh" type="button">刷新当前项目</button></div>
     </div>
     <div class="engineering-workspace project-scoped-workspace">
       <aside class="workspace-tree panel">
@@ -157,6 +163,22 @@
         <div class="section-head"><div><h3>设计属性</h3><p>当前 Design / Revision</p></div></div>
         <div id="workspaceInspector" class="muted">尚未选择对象</div>
       </aside>
+    </div>
+  </section>
+
+  <section id="analysisWorkbench" class="tab">
+    <article class="panel analysis-workbench-hero-v040">
+      <div><span class="eyebrow">ANALYSIS WORKBENCH</span><h2>选择分析模块与计算任务</h2><p>同一 Design Revision 可以保存多个分析定义。计算任务按电磁、热、耦合、Lab 和机械模块组织。</p></div>
+      <div class="actions"><button id="analysisAdvancedSetupV040" type="button">高级任务配置</button><button id="analysisRefreshV040" type="button">刷新</button></div>
+    </article>
+    <div class="analysis-context-v040 panel">
+      <label>模型版本<select id="analysisDesignRevisionV040"></select></label>
+      <div id="analysisCapabilityV040" class="analysis-capability-v040"></div>
+    </div>
+    <div id="analysisModuleTabsV040" class="analysis-module-tabs-v040"></div>
+    <div class="analysis-workbench-grid-v040">
+      <section><div id="analysisRecipeGridV040" class="analysis-recipe-grid-v040"></div></section>
+      <aside class="panel"><div class="section-head"><div><h3>已保存的分析定义</h3><p>版本化保存工况矩阵、输出和求解设置。</p></div></div><div id="analysisDefinitionListV040"></div></aside>
     </div>
   </section>
 
@@ -251,6 +273,11 @@
         <div class="section-head"><div><span class="step">3</span><h2>运行场景与边界条件</h2><p>几何设计与工况、环境及冷却条件独立管理；可保存为项目工况版本复用。</p></div></div>
         <div class="scenario-context-bar"><label>项目工况 / Scenario<select id="taskScenarioRevisionSelect"><option value="">临时工况（仅本任务）</option></select></label><label>保存名称<input id="scenarioSaveName" placeholder="例如：25°C 水冷额定工况"></label><div class="actions"><button id="saveScenarioRevision" type="button">保存当前工况</button><button id="clearScenarioRevision" type="button">改为临时工况</button></div><small id="taskScenarioHint">未绑定项目工况版本。</small></div>
         <div class="form-grid">
+          <label>转速 / rpm<input id="shaftSpeed" type="number" min="0" step="1" placeholder="由模型或工况给定"></label>
+          <label>峰值电流 / A<input id="peakCurrent" type="number" min="0" step="0.1" placeholder="可选"></label>
+          <label>RMS 电流 / A<input id="rmsCurrent" type="number" min="0" step="0.1" placeholder="可选"></label>
+          <label>直流母线电压 / V<input id="dcBusVoltage" type="number" min="0" step="0.1" placeholder="可选"></label>
+          <label>相位超前角 / °elec<input id="phaseAdvance" type="number" min="-90" max="90" step="0.1" value="0"></label>
           <label>环境温度 / °C<input id="ambientTemp" type="number" value="25" step="0.1"></label>
           <label>辐射环境温度 / °C<input id="radiationTemp" type="number" step="0.1" placeholder="留空则同环境温度"></label>
           <label>初始条件<select id="initialCondition"></select></label>
@@ -354,7 +381,7 @@
       <article class="panel solver-visual-v022" id="solverVisualPanelV022">
         <div class="section-head">
           <div><h2>Motor-CAD 求解过程可视化</h2><p id="solverVisualSubtitleV022">运行时显示当前 Case 的转子运动与求解阶段；完成后可使用 Motor-CAD 实际曲线结果回放。</p></div>
-          <div class="segmented"><button type="button" class="active" data-fea-mode-v022="live">实时过程</button><button type="button" data-fea-mode-v022="native">原生 FEA</button><button type="button" data-fea-mode-v022="result">结果曲线</button></div>
+          <div class="segmented"><button type="button" class="active" data-fea-mode-v022="live">实时过程</button><button type="button" data-fea-mode-v022="native">有限元场</button><button type="button" data-fea-mode-v022="result">结果曲线</button></div>
         </div>
         <div class="solver-visual-grid-v022">
           <div class="solver-stage-v022">
@@ -377,13 +404,13 @@
             <div id="nativeFEAControlsV023" class="native-fea-controls-v023 hidden">
               <button id="nativeFEAPlayV023" type="button">播放</button>
               <input id="nativeFEASliderV023" type="range" min="0" max="0" value="0" aria-label="原生FEA回放步">
-              <select id="nativeFEAFieldV023" aria-label="有限元场变量"><option value="b">磁密 B</option><option value="pt">矢量势 Pt</option></select>
+              <select id="nativeFEAFieldV023" aria-label="有限元场变量"><option value="b">磁密 B</option><option value="pt">矢量势 Pt</option><option value="current_density">电流密度 J</option><option value="eddy_current_density">涡流密度 Jeddy</option></select>
               <span id="nativeFEAStepV023">0 / 0</span>
             </div>
             <div id="motorcadSessionEvidenceV023" class="motorcad-session-evidence-v023"></div>
-            <div id="runtimeResourceEvidenceV027" class="runtime-resource-evidence-v027"><span class="eyebrow">运行时资源租约</span><p class="hint">等待 Worker / 许可证 / 内存资源调度。</p></div>
+            <div id="runtimeResourceEvidenceV027" class="runtime-resource-evidence-v027"><span class="eyebrow">计算资源</span><p class="hint">等待可用的 Motor-CAD 计算资源。</p></div>
             <div id="executionLeaseEvidenceV026" class="execution-lease-evidence-v026"><span class="eyebrow">Validate-and-Run 执行租约</span><p class="hint">等待当前 Case 建立执行租约。</p></div>
-            <div id="nativeFEAAuthorityV023" class="callout info compact hidden"><b>原生证据</b><br>画面仅来自当前 Case 的 <code>save_fea_data()</code> 原始导出；无法解析时显示“仅原始证据”，不会生成合成云图。</div>
+            <div id="nativeFEAAuthorityV023" class="callout info compact hidden"><b>场数据来源</b><br>空间场来自当前 Case 的 Motor-CAD 有限元导出。坐标或场值不完整时停止绘图，并在任务诊断包中保留原因。</div>
             <div id="solverVisualAuthorityBoxV022" class="callout info compact"><b>显示含义</b><br><span id="solverVisualAuthorityV022">实时过程中的场线为求解状态示意；结果回放只使用当前 Case 实际提取的 Motor-CAD 曲线。</span></div>
           </aside>
         </div>
@@ -409,7 +436,9 @@
 
 
   <section id="resultViewer" class="tab">
-    <div class="analytics-toolbar panel result-viewer-header">
+    <div id="resultsWorkbenchV069" class="results-workbench-v069"></div>
+    <div id="resultsWorkbenchBodyV069" class="results-workbench-body-v069"></div>
+    <div id="resultsLegacyHeaderV069" class="analytics-toolbar panel result-viewer-header">
       <div><h2>工程结果查看器</h2><p>一个入口完成单Case工程结果、批量对比、DOE/Pareto与原生Motor-CAD结果审查。</p></div>
       <div class="actions"><div class="segmented result-mode-switch"><button type="button" class="active" data-viewer-mode="case">单Case结果</button><button type="button" data-viewer-mode="batch">批量/优化分析</button></div><a class="help-link" href="/static/help.html#viewer" target="_blank">? 查看器说明</a></div>
     </div>
@@ -528,6 +557,14 @@
       </details>
     </article>
 
+    <article class="panel expert-only" id="nativeParityPanelV068">
+      <div class="section-head"><div><span class="eyebrow">V0.68 · Target workstation acceptance</span><h2>Motor-CAD 原生一致性资格中心</h2><p>在当前 Windows + Motor-CAD 2026R1 工作站上，对 BPM / SPM / IPM / AFPM 逐项核对几何参数、原生几何有效性、绕组定义、材料、工况输入和 EMag 结果映射。只有全部必需证据通过才标记 NATIVE_QUALIFIED。</p></div><div class="actions"><button id="refreshNativeParityV068" type="button">刷新</button><button id="runNativeParitySuiteV068" type="button" class="primary">运行四模型原生资格套件</button></div></div>
+      <div class="native-parity-overview-v068"><div class="native-parity-score-v068"><span>Native workstation qualification</span><strong id="nativeParityPercentV068">0.0%</strong><span>严格按 Profile 数量计算，不以 Studio 单元测试替代真实 Motor-CAD 证据。</span></div><div><h3>资格判定</h3><p id="nativeParitySummaryV068">正在读取当前工作站证据…</p></div></div>
+      <div id="nativeParityProfilesV068" class="native-parity-profiles-v068"></div>
+      <div id="nativeParityRunStatusV068"></div>
+      <div class="subsection"><h3>BPM / SPM / IPM / AFPM 原生资格矩阵</h3><p class="hint">每次运行都保留 native MOT、Geometry Radial/Axial 截图、Motor-CAD winding pattern、逐项参数/材料/输入回读、原生结果 CSV 与 evidence SHA-256。</p><div id="nativeParityMatrixV068"></div></div>
+    </article>
+
     <article class="panel">
       <div class="section-head"><div><h2 data-i18n-key="qualification.title">模板运行资格检查</h2><p>从“能启动”进一步检查模板加载、参数回读、材料映射、几何有效性，并可选执行一次真实求解Smoke Test。</p></div><a class="help-link" href="/static/help.html#qualification" target="_blank">? 资格检查说明</a></div>
       <div class="form-grid"><label>模板<select id="qualificationTemplate"></select></label><label>分析<select id="qualificationAnalysis"><option value="emag">EMag 电磁</option><option value="thermal_steady">稳态热</option></select></label><label class="check-row"><input id="qualificationSmoke" type="checkbox">执行真实求解Smoke Test</label></div>
@@ -546,29 +583,66 @@
 </main>
 <div id="toastStack" class="toast-stack" aria-live="polite"></div>
 <div id="commandPalette" class="command-palette hidden" role="dialog" aria-modal="true" aria-label="快捷操作"><div class="command-box"><input id="commandSearch" placeholder="输入操作，例如：新建任务、监控、系统诊断"><div id="commandResults"></div><p class="hint">Ctrl/⌘ + K 打开 · Esc 关闭</p></div></div>
-<script src="/static/locale-data.js?v=0.35.0"></script>
-<script src="/static/i18n.js?v=0.35.0"></script>
-<script src="/static/realtime.js?v=0.35.0"></script>
-<script src="/static/frontend-core.js?v=0.35.0"></script>
-<script src="/static/app.js?v=0.35.0"></script>
-<script src="/static/geometry.js?v=0.35.0"></script>
-<script src="/static/production.js?v=0.35.0"></script>
-<script src="/static/workflow.js?v=0.35.0"></script>
-<script src="/static/operator-flow.js?v=0.35.0"></script>
-<script src="/static/dialogs.js?v=0.35.0"></script>
-<script src="/static/v020.js?v=0.35.0"></script>
-<script src="/static/v021.js?v=0.35.0"></script>
-<script src="/static/v022.js?v=0.35.0"></script>
-<script src="/static/v023.js?v=0.35.0"></script>
-<script src="/static/v024.js?v=0.35.0"></script>
-<script src="/static/v025.js?v=0.35.0"></script>
-<script src="/static/v026.js?v=0.35.0"></script>
-<script src="/static/v027.js?v=0.35.0"></script>
-<script src="/static/v028.js?v=0.35.0"></script>
-<script src="/static/v029.js?v=0.35.0"></script>
-<script src="/static/v030.js?v=0.35.0"></script>
-<script src="/static/v031.js?v=0.35.0"></script>
-<script src="/static/v035.js?v=0.35.0"></script>
-<script src="/static/router.js?v=0.35.0"></script>
+<script src="/static/locale-data.js?v=0.70.0"></script>
+<script src="/static/i18n.js?v=0.70.0"></script>
+<script src="/static/realtime.js?v=0.70.0"></script>
+<script src="/static/frontend-core.js?v=0.70.0"></script>
+<script src="/static/app-core-v062.js?v=0.70.0"></script>
+<script src="/static/domain/motor-domain.js?v=0.70.0"></script>
+<script src="/static/design/store.js?v=0.70.0"></script>
+<script src="/static/design/navigation.js?v=0.70.0"></script>
+<script src="/static/design/draft-service.js?v=0.70.0"></script>
+<script src="/static/design/precheck.js?v=0.70.0"></script>
+<script src="/static/design/render-utils.js?v=0.70.0"></script>
+<script src="/static/design/geometry.js?v=0.70.0"></script>
+<script src="/static/design/winding.js?v=0.70.0"></script>
+<script src="/static/design/materials.js?v=0.70.0"></script>
+<script src="/static/design/validation.js?v=0.70.0"></script>
+<script src="/static/design/parameter-inspector.js?v=0.70.0"></script>
+<script src="/static/design/renderer.js?v=0.70.0"></script>
+<script src="/static/app.js?v=0.70.0"></script>
+<script src="/static/results/case-viewer.js?v=0.70.0"></script>
+<script src="/static/materials/library.js?v=0.70.0"></script>
+<!-- Stable design controllers load before historical compatibility layers.
+     This guarantees the Design Viewer compatibility boundary exists before any
+     older runtime wrapper can observe a workspace render. -->
+<script src="/static/design/editor.js?v=0.70.0"></script>
+<script src="/static/design/viewer.js?v=0.70.0"></script>
+<script src="/static/design/workbench.js?v=0.70.0"></script>
+<script src="/static/geometry.js?v=0.70.0"></script>
+<script src="/static/production.js?v=0.70.0"></script>
+<script src="/static/workflow.js?v=0.70.0"></script>
+<script src="/static/operator-flow.js?v=0.70.0"></script>
+<script src="/static/dialogs.js?v=0.70.0"></script>
+<script src="/static/native-parity.js?v=0.70.0"></script>
+<script src="/static/workflow/model-gate.js?v=0.70.0"></script>
+<script src="/static/v021.js?v=0.70.0"></script>
+<script src="/static/v022.js?v=0.70.0"></script>
+<script src="/static/v023.js?v=0.70.0"></script>
+<script src="/static/routing/page-controllers.js?v=0.70.0"></script>
+<script src="/static/runtime/execution-lease.js?v=0.70.0"></script>
+<script src="/static/runtime/resource-scheduler.js?v=0.70.0"></script>
+<script src="/static/workflow/execution-readiness.js?v=0.70.0"></script>
+<script src="/static/v029.js?v=0.70.0"></script>
+<script src="/static/v030.js?v=0.70.0"></script>
+<script src="/static/workflow/flow-rail.js?v=0.70.0"></script>
+<script src="/static/results/fea-thermal.js?v=0.70.0"></script>
+<script src="/static/results/native-evidence.js?v=0.70.0"></script>
+<script src="/static/v040.js?v=0.70.0"></script>
+<script src="/static/v041.js?v=0.70.0"></script>
+<script src="/static/workflow/engineering-contexts.js?v=0.70.0"></script>
+<script src="/static/results/field-viewer.js?v=0.70.0"></script>
+<script src="/static/results/native-tables.js?v=0.70.0"></script>
+<script src="/static/v057.js?v=0.70.0"></script>
+<script src="/static/workflow/usability-closure.js?v=0.70.0"></script>
+<script src="/static/v059.js?v=0.70.0"></script>
+<script src="/static/analysis/workbench.js?v=0.70.0"></script>
+<script src="/static/analysis/execution.js?v=0.70.0"></script>
+<script src="/static/analysis/monitor.js?v=0.70.0"></script>
+<script src="/static/results/revision-compare.js?v=0.70.0"></script>
+<script src="/static/results/case-compare.js?v=0.70.0"></script>
+<script src="/static/results/optimization.js?v=0.70.0"></script>
+<script src="/static/results/workbench.js?v=0.70.0"></script>
+<script src="/static/router.js?v=0.70.0"></script>
 </body>
 </html>

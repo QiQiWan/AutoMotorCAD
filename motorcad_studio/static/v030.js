@@ -84,7 +84,7 @@
   async function fetchProjectGuidance(force=false){
     if(!state.activeProjectId)return null;
     if(state.uiGuidancePromiseV030&&!force)return state.uiGuidancePromiseV030;
-    const promise=(async()=>{try{const r=await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}/ui-guidance`);state.uiGuidanceV030=r;return r}catch(e){console.warn('ui guidance',e);return null}finally{state.uiGuidancePromiseV030=null}})();
+    const promise=(async()=>{try{const r=await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}/ui-guidance`);state.uiGuidanceV030=r;window.MCSAppCoreV062?.emit?.('mcs:guidance-updated',{guidance:r});return r}catch(e){console.warn('ui guidance',e);return null}finally{state.uiGuidancePromiseV030=null}})();
     state.uiGuidancePromiseV030=promise;return promise;
   }
 
@@ -110,8 +110,8 @@
     const running=state.uiGuidanceV030?.status==='RUNNING';
     const rows=[
       ['design','1','设计电机','确定结构、几何和绕组','workspace'],
-      ['analysis','2','设置分析','选择工况、分析类型和结果','newTask'],
-      ['solve','3','计算模型',running?'Motor-CAD 正在计算':'检查通过后开始计算',running?'monitor':'newTask'],
+      ['analysis','2','分析与计算','工况、求解设置、Precheck 与提交','analysisWorkbench'],
+      ['solve','3','运行计算',running?'Motor-CAD 正在计算':'Precheck 通过后提交计算',running?'monitor':'analysisWorkbench'],
       ['result','4','分析结果','查看性能并决定下一轮设计','resultViewer'],
     ];
     bar.innerHTML=`<div class="engineer-flow-label-v030"><b>当前工程流程</b><span>按工程任务理解页面，内部版本与运行对象放到高级信息。</span></div><div class="engineer-flow-steps-v030">${rows.map(([id,n,title,desc,tab])=>`<button type="button" data-flow-step-v030="${id}" data-flow-tab-v030="${tab}" class="${id===current?'active':''}"><span>${n}</span><div><b>${title}</b><small>${desc}</small></div></button>`).join('<i>→</i>')}</div>`;
@@ -121,7 +121,7 @@
   function simplifyGlobalNavigation(){
     const labels={projects:'项目',setup:'运行环境',logs:'问题',system:'高级工具'};
     $$q('.global-nav [data-tab]').forEach(btn=>{if(labels[btn.dataset.tab])btn.textContent=labels[btn.dataset.tab]});
-    const projectLabels={dashboard:'概览',workspace:'设计电机',newTask:'设置分析',resultViewer:'分析结果',dataFactory:'数据资产'};
+    const projectLabels={dashboard:'概览',workspace:'设计电机',analysisWorkbench:'分析与计算',newTask:'高级任务配置',resultViewer:'分析结果',dataFactory:'数据资产'};
     $$q('.project-stage-nav [data-tab]').forEach(btn=>{const span=btn.querySelector('span')?.outerHTML||'';const label=projectLabels[btn.dataset.tab];if(label)btn.innerHTML=`${span}${label}`});
   }
 

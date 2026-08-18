@@ -12,10 +12,10 @@ from motorcad_studio.version import __version__
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "motorcad_studio" / "static"
 APP = (STATIC / "app.js").read_text(encoding="utf-8")
-V020 = (STATIC / "v020.js").read_text(encoding="utf-8")
-V024 = (STATIC / "v024.js").read_text(encoding="utf-8")
+V020 = (STATIC / "workflow/model-gate.js").read_text(encoding="utf-8")
+V024 = "\n".join((STATIC / name).read_text(encoding="utf-8") for name in ("design/editor.js", "design/renderer.js", "design/geometry.js", "design/winding.js", "design/validation.js"))
 WORKFLOW = (STATIC / "workflow.js").read_text(encoding="utf-8")
-V028 = (STATIC / "v028.js").read_text(encoding="utf-8")
+V028 = (STATIC / "workflow/execution-readiness.js").read_text(encoding="utf-8")
 MAIN = (ROOT / "motorcad_studio" / "main.py").read_text(encoding="utf-8")
 TASK_MANAGER = (ROOT / "motorcad_studio" / "task_manager.py").read_text(encoding="utf-8")
 client = TestClient(app)
@@ -35,7 +35,7 @@ def _design(prefix: str) -> dict:
 def test_version_assets_and_v028_contract_features_are_enabled():
     assert tuple(map(int, __version__.split("."))) >= (0, 28, 0)
     html = (STATIC / "index.html").read_text(encoding="utf-8")
-    assert f'/static/v028.js?v={__version__}' in html
+    assert f'/static/workflow/execution-readiness.js?v={__version__}' in html
     features = client.get("/api/client-contract").json()["features"]
     assert features["revision_preview_effective_snapshot"] is True
     assert features["nonlaunching_task_submission_admission"] is True
@@ -73,7 +73,7 @@ def test_workbench_api_returns_canonical_effective_preview_snapshot():
     assert len(payload["preview_signature"]) == 64
     assert payload["effective_parameters"]["slot_count"] == rows["slot_count"]["value"]
     assert "data.effective_parameters" in V024
-    assert "预览参数源" in V024
+    assert "data.effective_parameters" in V024
 
 
 def test_normal_submit_no_longer_launches_independent_deep_motorcad_gate():
@@ -97,8 +97,8 @@ def test_submission_readiness_endpoint_is_nonlaunching_and_operator_visible():
     assert payload["deep"] is False
     assert payload["authority"] == "submission_static_readiness"
     assert payload["native_validation_authority"] == "task_execution_lease"
-    assert "运行环境" in V028
-    assert "同一 Worker / Session" in V028
+    assert "计算环境" in V028
+    assert "模型检查" in V028
 
 
 def test_persistent_transport_fallback_is_narrow_and_does_not_hide_engineering_failures():
@@ -114,12 +114,14 @@ def test_persistent_transport_fallback_is_narrow_and_does_not_hide_engineering_f
 
 def test_execution_flow_visualization_explains_actual_task_authority():
     for token in [
-        "Design 快照",
-        "快速提交检查",
-        "运行环境",
-        "Task + 资源租约",
-        "Motor-CAD 原生校验",
-        "求解与结果",
-        "日常流程不再要求先启动一个独立 Motor-CAD 实例",
+        "当前电机",
+        "参数预检查",
+        "计算环境",
+        "进入计算",
+        "模型检查",
+        "求解与结果验证",
+        "系统会按顺序完成参数预检查",
     ]:
         assert token in V028
+    for internal in ("Design 快照", "Task + 资源租约", "Motor-CAD 原生校验"):
+        assert internal not in V028

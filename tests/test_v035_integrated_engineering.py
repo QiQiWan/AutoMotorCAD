@@ -12,14 +12,14 @@ from motorcad_studio.winding_definition import build_winding_definition_evidence
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = (ROOT / "motorcad_studio" / "static" / "index.html").read_text(encoding="utf-8")
-V035 = (ROOT / "motorcad_studio" / "static" / "v035.js").read_text(encoding="utf-8")
+V035 = (ROOT / "motorcad_studio" / "static" / "results/native-evidence.js").read_text(encoding="utf-8")
 
 
 def test_v035_version_and_asset_order():
-    assert __version__ == "0.35.0"
-    assert 'data-studio-version="0.35.0"' in INDEX
-    assert '/static/v035.js?v=0.35.0' in INDEX
-    assert INDEX.index("/static/v031.js") < INDEX.index("/static/v035.js") < INDEX.index("/static/router.js")
+    assert __version__ == "0.70.0"
+    assert 'data-studio-version="0.70.0"' in INDEX
+    assert '/static/results/native-evidence.js?v=0.70.0' in INDEX
+    assert INDEX.index("/static/results/fea-thermal.js") < INDEX.index("/static/results/native-evidence.js") < INDEX.index("/static/router.js")
 
 
 def test_winding_pattern_becomes_structured_native_evidence(tmp_path: Path):

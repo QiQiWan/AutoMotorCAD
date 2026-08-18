@@ -16,7 +16,7 @@ STATIC = ROOT / "motorcad_studio" / "static"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 APP_JS = (STATIC / "app.js").read_text(encoding="utf-8")
 GEOMETRY_JS = (STATIC / "geometry.js").read_text(encoding="utf-8")
-V020 = (STATIC / "v020.js").read_text(encoding="utf-8")
+V020 = (STATIC / "workflow/model-gate.js").read_text(encoding="utf-8")
 V021 = (STATIC / "v021.js").read_text(encoding="utf-8")
 V022 = (STATIC / "v022.js").read_text(encoding="utf-8")
 client = TestClient(app)
@@ -38,7 +38,7 @@ def test_v022_assets_version_and_solver_visualization_are_enabled():
     assert 'data-project-stage="solve"' not in INDEX
     assert "['monitor', '实时求解']" in (STATIC / 'operator-flow.js').read_text(encoding='utf-8')
     assert '<span>2</span>设计电机' in INDEX
-    assert '<span>3</span>设置分析' in INDEX
+    assert '<span>3</span>分析与计算' in INDEX
     assert '<span>4</span>分析结果' in INDEX
     assert '<span>5</span>数据资产' in INDEX
 
@@ -232,16 +232,18 @@ def test_successful_real_task_evidence_can_promote_capability_once():
     from motorcad_studio.main import calibration
     template_id = f"v022-evidence-{time.time_ns()}"
     result = {
-        "warnings": ["optional result unavailable"],
+        "warnings": [],
         "raw": {
             "model_validation": {"geometry_api_succeeded": True, "winding_validation": {"valid": True}},
             "model_load": {"type": "registered_template", "verified": False},
             "motorcad_target_version": "2026R1", "pymotorcad_version": "0.8.6",
+            "result_extraction_contract": {"qualification_eligible": True},
+            "fea_contract": {"qualification_eligible": True, "status": "COMPLETE"},
         },
     }
     record_id = calibration.promote_from_task_success(
         template_id=template_id, analysis="emag_thermal", task_id="TASK-EVIDENCE", case_id="CASE-EVIDENCE",
-        result=result, quality_status="WARNING",
+        result=result, quality_status="VALID",
     )
     assert isinstance(record_id, int)
     latest = calibration.latest_qualification(template_id, "emag_thermal")

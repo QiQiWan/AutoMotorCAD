@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .mtt_parser import extract_defaults_with_metadata, extract_winding_metadata, template_name_from_filename
+from .mtt_parser import extract_defaults_with_metadata, extract_material_defaults, extract_winding_metadata, template_name_from_filename
 from .registry import Registry
 
 
@@ -31,6 +31,8 @@ class TemplateService:
         all_mock = {name: "supported" for name in [
             "emag", "thermal_steady", "thermal_transient", "emag_thermal", "emag_thermal_coupled",
             "mechanical", "lab_magnetic", "lab_operating_point",
+            "emag_saturation_map", "emag_torque_envelope", "emag_multi_force", "emag_force_harmonics",
+            "weight", "lab_thermal", "lab_duty_cycle", "lab_generator", "lab_test_performance",
         ]}
         return {
             "mock": all_mock,
@@ -43,6 +45,15 @@ class TemplateService:
                 "mechanical": "verification_required",
                 "lab_magnetic": "verification_required",
                 "lab_operating_point": "verification_required",
+                "emag_saturation_map": emag,
+                "emag_torque_envelope": emag,
+                "emag_multi_force": emag,
+                "emag_force_harmonics": emag,
+                "weight": "verification_required",
+                "lab_thermal": "verification_required",
+                "lab_duty_cycle": "verification_required",
+                "lab_generator": "verification_required",
+                "lab_test_performance": "verification_required",
             },
             "maxwell": {"emag_3d": "planned"},
         }
@@ -116,6 +127,7 @@ class TemplateService:
             profile = profiles.get(template_id, {})
             defaults, default_metadata = extract_defaults_with_metadata(path, profile.get("mtt_sources"))
             winding = extract_winding_metadata(path)
+            material_defaults, material_default_metadata = extract_material_defaults(path)
             winding_profile = profile.get("winding_constraints") or {}
             if winding_profile.get("phase_count") is not None:
                 winding["phase_count"] = winding_profile.get("phase_count")
@@ -151,6 +163,8 @@ class TemplateService:
                     "path": str(path),
                     "defaults": defaults,
                     "default_metadata": default_metadata,
+                    "material_defaults": material_defaults,
+                    "material_default_metadata": material_default_metadata,
                     "winding": winding,
                     "model_source": model_source,
                     "parameter_ids": parameter_ids,
@@ -175,15 +189,17 @@ class TemplateService:
     @staticmethod
     def _parameter_ids_for_template(item: dict[str, Any]) -> list[str]:
         base = [
-            "pole_count", "slot_count", "stator_outer_diameter", "stator_inner_diameter", "air_gap",
+            "pole_count", "slot_count", "housing_diameter", "stator_outer_diameter",
+            "stator_inner_diameter", "shaft_diameter", "shaft_hole_diameter", "air_gap",
         ]
         engineering = [
-            "stator_lamination_length", "tooth_width", "slot_depth", "slot_opening", "turns_per_coil",
-            "parallel_paths", "slot_fill_factor",
+            "stator_lamination_length", "rotor_lamination_length", "tooth_width", "slot_depth",
+            "slot_width", "slot_opening", "slot_corner_radius", "tooth_tip_depth", "tooth_tip_angle",
+            "sleeve_thickness", "banding_thickness", "turns_per_coil", "parallel_paths", "slot_fill_factor",
         ]
         if str(item.get("motor_type")) in {"BPM", "BPMOR"}:
-            engineering.extend(["magnet_thickness", "magnet_arc_deg"])
-        return base + engineering
+            engineering.extend(["magnet_thickness", "magnet_length", "magnet_arc_deg"])
+        return list(dict.fromkeys(base + engineering))
 
     def list_templates(self) -> list[dict[str, Any]]:
         return self._templates

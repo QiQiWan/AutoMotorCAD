@@ -13,11 +13,11 @@ STATIC = ROOT / "motorcad_studio" / "static"
 
 def test_v030_version_and_frontend_layer_are_shipped():
     html = (STATIC / "index.html").read_text(encoding="utf-8")
-    assert 'data-studio-version="0.35.0"' in html
-    assert 'V0.35.0' in html
-    assert '/static/v030.js?v=0.35.0' in html
+    assert 'data-studio-version="0.70.0"' in html
+    assert 'V0.70.0' in html
+    assert '/static/v030.js?v=0.70.0' in html
     assert '>设计电机</button>' in html
-    assert '>设置分析</button>' in html
+    assert '>分析与计算</button>' in html
     assert '>分析结果</button>' in html
     assert '>高级工具</button>' in html
 
@@ -27,8 +27,8 @@ def test_v030_engineering_flow_and_single_state_language_are_present():
     css = (STATIC / "styles.css").read_text(encoding="utf-8")
     for token in (
         "设计电机",
-        "设置分析",
-        "计算模型",
+        "分析与计算",
+        "运行计算",
         "分析结果",
         "可以计算",
         "需要检查",
@@ -102,9 +102,15 @@ def test_v030_ui_guidance_service_maps_engineering_next_action(tmp_path):
     assert running["action"]["label"] == "查看计算进度"
 
     db.execute("UPDATE tasks SET status='COMPLETED' WHERE id='T1'")
+    db.execute(
+        """INSERT INTO cases(id,task_id,case_index,status,progress,parameters_json,result_json,
+                              execution_status,quality_status,cache_eligible)
+           VALUES(?,?,?,?,?,?,?,?,?,?)""",
+        ("C1", "T1", 0, "COMPLETED", 1.0, "{}", "{}", "SUCCEEDED", "VALID", 1),
+    )
     completed = service.project_guidance("P1", runtime_ready=True)
     assert completed["status"] == "COMPLETED"
-    assert completed["action"]["label"] == "分析最新结果"
+    assert completed["action"]["label"] == "分析可用结果"
 
 
 def test_v030_ui_guidance_endpoint_and_client_contract(monkeypatch):
