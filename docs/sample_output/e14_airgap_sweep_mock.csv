@@ -1,6 +1,0 @@
-﻿case_id,status,param.air_gap,param.ambient_temperature_c,param.dc_bus_voltage_v,param.peak_current_a,param.phase_advance_deg,param.pole_count,param.shaft_speed_rpm,param.slot_count,param.stator_inner_diameter,param.stator_outer_diameter,result.copper_loss_w,result.efficiency_percent,result.magnet_loss_w,result.magnet_temperature_c,result.peak_line_voltage_v,result.shaft_torque_nm,result.stator_iron_loss_w,result.total_loss_w,result.winding_max_temperature_c
-TASK-0783DAA298-C0001,COMPLETED,0.8,40,250,102.552650872141,0,10,3200,12,132,204,262.9262,90.5594,0.8204,38.7687,56.2042,9.923815,82.9285,346.6751,57.5339
-TASK-0783DAA298-C0002,COMPLETED,1.0,40,250,102.552650872141,0,10,3200,12,132,204,262.9262,89.1566,0.8204,38.7687,56.2042,8.506127,82.9285,346.6751,57.5339
-TASK-0783DAA298-C0003,COMPLETED,1.2000000000000002,40,250,102.552650872141,0,10,3200,12,132,204,262.9262,87.7966,0.8204,38.7687,56.2042,7.442861,82.9285,346.6751,57.5339
-TASK-0783DAA298-C0004,COMPLETED,1.4000000000000001,40,250,102.552650872141,0,10,3200,12,132,204,262.9262,86.4774,0.8204,38.7687,56.2042,6.615877,82.9285,346.6751,57.5339
-TASK-0783DAA298-C0005,COMPLETED,1.6,40,250,102.552650872141,0,10,3200,12,132,204,262.9262,85.1973,0.8204,38.7687,56.2042,5.954289,82.9285,346.6751,57.5339

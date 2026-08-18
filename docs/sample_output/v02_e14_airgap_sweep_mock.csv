@@ -1,6 +1,0 @@
-﻿case_id,status,quality_blocking,quality_warning,param.air_gap,param.ambient_temperature_c,param.dc_bus_voltage_v,param.magnet_arc_deg,param.magnet_thickness,param.parallel_paths,param.peak_current_a,param.phase_advance_deg,param.pole_count,param.rms_current_a,param.shaft_speed_rpm,param.slot_count,param.slot_depth,param.slot_fill_factor,param.stator_inner_diameter,param.stator_lamination_length,param.stator_outer_diameter,param.tooth_width,param.turns_per_coil,result.efficiency_percent,result.shaft_torque_nm,result.winding_max_temperature_c
-TASK-10ACCE2253-C0001,COMPLETED,0,1,0.8,40,250,140,30,2,102.552650872141,0,10,72.5156748603475,3200,12,18,0.694180065081047,132,35,204,7,37,91.1972,10.71772,35.8163
-TASK-10ACCE2253-C0002,COMPLETED,0,1,0.9,40,250,140,30,2,102.552650872141,0,10,72.5156748603475,3200,12,18,0.694180065081047,132,35,204,7,37,90.533,9.89328,35.8163
-TASK-10ACCE2253-C0003,COMPLETED,0,1,1.0,40,250,140,30,2,102.552650872141,0,10,72.5156748603475,3200,12,18,0.694180065081047,132,35,204,7,37,89.8785,9.186617,35.8163
-TASK-10ACCE2253-C0004,COMPLETED,0,1,1.1,40,250,140,30,2,102.552650872141,0,10,72.5156748603475,3200,12,18,0.694180065081047,132,35,204,7,37,89.2334,8.574176,35.8163
-TASK-10ACCE2253-C0005,COMPLETED,0,1,1.2,40,250,140,30,2,102.552650872141,0,10,72.5156748603475,3200,12,18,0.694180065081047,132,35,204,7,37,88.5975,8.03829,35.8163
