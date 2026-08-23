@@ -1,0 +1,51 @@
+version: 2
+default_motor_type: BPM
+motor_types:
+  BPM:
+    label: 永磁无刷电机
+    description: 径向或轴向磁通永磁同步电机；Studio 默认启动模型。
+    default_template: i5_Industrial_SPM_Servo_Tooth_Wound
+    modules: [Geometry, Winding, EMag, Therm, Lab, Mechanical]
+  BPMOR:
+    label: 外转子永磁电机
+    description: 外转子永磁无刷电机。
+    default_template: e4_eMobility_BPMOR_hairpin
+    modules: [Geometry, Winding, EMag, Therm, Lab, Mechanical]
+  IM:
+    label: 三相感应电机
+    description: 三相异步/感应电机。
+    default_template: i4_Industrial_IM
+    modules: [Geometry, Winding, EMag, Therm, Lab, Mechanical]
+  IM1PH:
+    label: 单相感应电机
+    description: 单相感应电机与压缩机类模型。
+    default_template: i11_Industrial_IM1PH_Compressor
+    modules: [Geometry, Winding, EMag, Therm]
+  SYNC:
+    label: 绕线同步电机
+    description: 电励磁同步电机。
+    default_template: i9_SYNC_HV_325kW_Generator
+    modules: [Geometry, Winding, EMag, Therm, Lab, Mechanical]
+  SYNCREL:
+    label: 同步磁阻电机
+    description: 同步磁阻与自适应转子障碍模型。
+    default_template: i3_Industrial_SyncRel
+    modules: [Geometry, Winding, EMag, Therm, Lab, Mechanical]
+  SRM:
+    label: 开关磁阻电机
+    description: 开关磁阻电机。
+    default_template: e6_emobility_SRM_100kW
+    modules: [Geometry, Winding, EMag, Therm, Mechanical]
+  PMDC:
+    label: 永磁直流电机
+    description: 永磁直流换向电机；需要目标安装中的注册默认模型。
+    default_template: null
+    registered_template: PMDC
+    modules: [Geometry, Winding, EMag, Therm]
+  CLAW:
+    label: 爪极电机
+    description: 爪极热模型；能力以目标 Motor-CAD 安装为准。
+    default_template: null
+    registered_template: CLAW
+    modules: [Geometry, Therm]
+

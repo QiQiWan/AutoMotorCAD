@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-CN" data-studio-version="0.88.1">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MotorCAD Studio</title>
+  <link rel="stylesheet" href="/static/styles.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/design-workbench.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/analysis-workbench.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/native-closure.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/results-workbench.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/canonical-project-flow.css?v=0.88.1">
+  <link rel="stylesheet" href="/static/engineering-workflow.css?v=0.88.1">
+</head>
+<body>
+<header class="app-header operator-header">
+  <div class="brand-block">
+    <h1>MotorCAD Studio <span class="version">0.88.1</span></h1>
+    <p>永磁电机工程仿真工作台</p>
+  </div>
+  <div class="header-actions">
+    <button id="activeProjectBadge" class="project-context-badge" type="button" title="返回项目管理">未进入项目</button>
+    <select id="userMode" class="header-select" title="界面复杂度 / UI complexity"><option value="operator" selected>设计工程师 / Guided</option><option value="engineering">工程模式 / Engineering</option><option value="expert">专家模式 / Expert</option><option value="developer">开发者模式 / Developer</option></select>
+    <button id="languageToggle" class="icon-button language-button" type="button" title="切换中文/English">EN</button>
+    <span id="solverBadge" class="badge">Motor-CAD检查中</span>
+    <span id="healthBadge" class="badge">服务检查中</span>
+    <span id="liveBadge" class="badge compact-status">实时通道连接中</span>
+    <button id="themeToggle" class="icon-button" type="button" title="切换显示主题">◐</button>
+  </div>
+</header>
+<div id="compatBanner" class="compat-banner hidden" role="alert"></div>
+<nav class="nav-tabs global-nav" aria-label="全局导航">
+  <button data-tab="projects" class="active">项目</button>
+  <button data-tab="setup">运行环境</button>
+  <button data-tab="logs">问题</button>
+  <button data-tab="system">高级工具</button>
+</nav>
+<section id="projectShell" class="project-shell hidden" aria-label="当前项目导航">
+  <div class="project-shell-context">
+    <button type="button" class="back-to-projects" data-tab="projects">← 项目管理</button>
+    <div class="project-shell-title"><span>当前项目</span><b id="projectShellName">未进入项目</b><small id="projectShellMeta">请从项目管理进入项目</small></div>
+  </div>
+  <nav class="project-stage-nav canonical-project-flow engineer-journey-nav-v086r" aria-label="工程师工作流程">
+    <button type="button" data-tab="workspace" data-project-tab data-engineer-stage="design"><span>1</span><b>设计</b></button>
+    <button type="button" data-tab="analysisConfig" data-project-tab data-engineer-stage="validate"><span>2</span><b>验证</b></button>
+    <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="decide"><span>3</span><b>决策</b></button>
+  </nav>
+  <div id="engineerJourneyCueV086R" class="engineer-journey-cue-v086r hidden" aria-live="polite"></div>
+</section>
+<main>
+  <section id="setup" class="tab active">
+    <div class="startup-hero panel">
+      <div><span class="eyebrow">运行环境</span><h2>先确认 Motor-CAD 运行环境</h2><p>启动路径属于软件级配置，只需在这里完成。项目内部不再重复选择或切换 Motor-CAD 可执行文件。</p></div>
+      <div class="startup-status-stack">
+        <div class="startup-state" id="setupRuntimeState"><span class="status UNVERIFIED">待检查</span><b>正在读取安装状态…</b></div>
+        <div id="setupAutoCheckProgress" class="auto-check-progress" data-state="idle" aria-live="polite" aria-label="自动环境自检进度">
+          <div class="auto-check-progress-head"><span id="setupAutoCheckLabel">自动浅自检准备中</span><b id="setupAutoCheckPercent">0%</b></div>
+          <div class="auto-check-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="setupAutoCheckLabel"><span id="setupAutoCheckBar"></span></div>
+          <small id="setupAutoCheckDetail">启动时自动读取安装配置并执行浅检查；深度 Motor-CAD 检查仍由工程师手动触发。</small>
+        </div>
+      </div>
+    </div>
+    <div class="startup-grid">
+      <article class="panel startup-install-panel">
+        <div class="section-head"><div><span class="step">1</span><h2>Motor-CAD 安装与启动路径</h2><p>优先自动发现；未识别时浏览本机或填写 Motor-CAD.exe 完整路径。手动绑定优先于环境变量。</p></div><button id="scanInstallations" type="button">重新扫描</button></div>
+        <div id="installationList"></div>
+        <div class="manual-exe-panel">
+          <div><b>手动绑定 Motor-CAD.exe</b><p>“浏览本机…”由Studio后端调起 Windows 原生文件选择器，并将窗口置于前台；如系统策略阻止弹窗，可直接粘贴路径。</p></div>
+          <div class="manual-exe-row"><input id="manualMotorcadExe" placeholder="例如 C:\Program Files\ANSYS Inc\...\Motor-CAD.exe"><button id="browseMotorcadExe" class="primary" type="button">浏览本机…</button><button id="selectManualMotorcadExe" type="button">绑定此EXE</button><button id="clearMotorcadExe" type="button">清除绑定</button></div>
+          <div id="manualMotorcadExeStatus" class="hint"></div>
+        </div>
+      </article>
+      <article class="panel startup-check-panel">
+        <div class="section-head"><div><span class="step">2</span><h2>运行环境检查</h2><p>浅检查不启动 Motor-CAD；深度检查会实际启动独立进程并验证 PyMotorCAD / RPC 链路。</p></div><a class="help-link" href="/static/help.html#preflight" target="_blank">? 检查说明</a></div>
+        <div class="actions startup-check-actions"><button id="shallowPreflight" type="button">浅检查</button><button id="deepPreflight" class="primary" type="button">Motor-CAD 深度检查</button></div>
+        <div id="preflightResults"><div class="workspace-empty compact"><b>建议先绑定可执行文件</b><span>随后运行浅检查；首次正式计算前再执行深度检查。</span></div></div>
+      </article>
+    </div>
+    <article class="panel worker-pool-panel-v026 expert-only">
+      <div class="section-head"><div><span class="step">3</span><h2>Motor-CAD 持久 Worker 池</h2><p>正式 Case 由长期存活的 Python Worker 持有 Motor-CAD 会话。模型校验、参数回读和正式求解在同一执行租约内连续完成；Worker 达到任务数或内存阈值后自动回收重建。</p></div><div class="actions"><button id="recycleWorkerPoolV026" type="button">回收空闲 Worker</button><span id="workerPoolBadgeV026" class="badge">未启动</span></div></div>
+      <div id="workerPoolSummaryV026" class="worker-pool-summary-v026"><div class="workspace-empty compact"><b>按需启动</b><span>仅在提交真实 Motor-CAD Case 后启动，不会因打开 Studio 就占用 Motor-CAD。</span></div></div>
+    </article>
+    <article class="panel runtime-scheduler-panel-v027 expert-only">
+      <div class="section-head"><div><span class="step">4</span><h2>运行时资源调度与稳定性证据</h2><p>Motor-CAD Case 只有在 Worker、所需模块许可证和内存余量能够同时获得时才进入执行。避免先占住许可证再排队等 Worker，也能明确显示究竟卡在哪类资源。</p></div><div class="actions"><button id="probeWorkerCapabilitiesV027" type="button">Worker能力探测</button><span id="runtimeSchedulerBadgeV027" class="badge">读取中</span></div></div>
+      <div id="runtimeSchedulerSummaryV027" class="runtime-scheduler-summary-v027"><div class="workspace-empty compact"><b>正在读取计算资源状态</b><span>计算提交后会自动排队并开始运行。</span></div></div>
+      <div class="runtime-contract-strip-v027"><div><span class="eyebrow">持续运行证据</span><b id="runtimeContractStateV027">尚未读取</b><small id="runtimeContractDetailV027">真实 Case 会自动积累 Worker 世代、连续成功次数和许可证 checkout 证据。</small></div><button id="refreshRuntimeSchedulerV027" type="button">刷新</button></div>
+    </article>
+    <article class="panel runtime-lifecycle-panel-v087fa expert-only" id="runtimeLifecyclePanelV087FA">
+      <div class="section-head"><div><span class="step">5</span><h2>运行生命周期资格</h2><p>检查任务线程、Case线程、资源租约、Worker进程和SQLite连接是否能够在启动、关闭和重启边界正确释放。该检查只证明Studio本地生命周期，不替代Windows Motor-CAD实机资格。</p></div><div class="actions"><span id="runtimeLifecycleBadgeV087FA" class="badge">读取中</span><button id="refreshRuntimeLifecycleV087FA" type="button">刷新生命周期</button></div></div>
+      <div id="runtimeLifecycleSummaryV087FA"><div class="workspace-empty compact"><b>正在读取生命周期证据</b><span>正常运行时允许存在活动任务；关闭态要求线程、租约、Worker和数据库连接全部归零。</span></div></div>
+    </article>
+    <article class="panel workstation-acceptance-panel expert-only" id="workstationAcceptancePanel">
+      <div class="section-head"><div><span class="step">6</span><h2>Windows Motor-CAD 生产资格矩阵</h2><p>当前生产资格固定检查 SPM / IPM / AFPM / IM 四类 Native 主流程、17 类故障恢复证据、Runtime 生命周期与重启可恢复性。源码/单元测试通过不会自动提升 Native 工作站资格。</p></div><div class="actions"><span id="workstationAcceptanceBadge" class="badge">未验收</span><button id="refreshWorkstationAcceptance" type="button">刷新资格</button></div></div>
+      <div id="workstationAcceptanceSummary" class="workstation-acceptance-summary"><div class="workspace-empty compact"><b>正在读取正式工作站证据</b><span>正式 PASS 必须来自 licensed Windows 工作站的完整 evidence package。</span></div></div>
+    </article>
+    <article class="panel workstation-acceptance-panel expert-only" id="productionSoakPanelV087FC">
+      <div class="section-head"><div><span class="step">7</span><h2>100 / 500 Case Soak 与生产加固</h2><p>当前生产加固检查长时间 Native Case 的 ResultBundle 完整性、Studio RSS 增长、Motor-CAD Worker 自动回收、SQLite/线程/进程释放，以及 Cancel/Retry、Crash/Restart 和资格证据保持。</p></div><div class="actions"><span id="productionSoakBadgeV087FC" class="badge">待Soak</span><button id="refreshProductionSoakV087FC" type="button">刷新Soak资格</button></div></div>
+      <div id="productionSoakSummaryV087FC" class="workstation-acceptance-summary"><div class="workspace-empty compact"><b>正在读取生产加固证据</b><span>本地控制面 Soak 与 Windows Native 100/500 Case 资格严格分开显示。</span></div></div>
+    </article>
+    <article class="panel startup-next-panel"><div><b>运行环境配置完成后进入项目管理</b><p>项目切换只在“项目管理”完成。进入项目后，任务、监控、结果与数据工厂自动继承该项目上下文。</p></div><button id="setupContinueProjects" class="primary" type="button">进入项目管理</button></article>
+  </section>
+
+  <section id="projects" class="tab">
+    <div class="project-manager-toolbar panel">
+      <div><span class="eyebrow">项目管理</span><h2>项目管理</h2><p>在这里新建、编辑、进入或删除项目。进入项目后，各工程控制面板固定使用该项目上下文；需要切换时返回本页面。</p></div>
+      <div class="actions"><span id="projectManagerRuntimeBadge" class="status-chip">Motor-CAD状态读取中</span><button type="button" data-go="setup">运行环境</button><button id="projectManagerTrash" type="button">回收站</button><button id="projectManagerRefresh" type="button">刷新</button></div>
+    </div>
+    <div id="projectManagerMetrics" class="metrics-grid"></div>
+    <div class="project-manager-layout">
+      <aside class="panel project-create-panel">
+        <div class="section-head"><div><h3>新建项目</h3><p>只填写基本信息即可开始。</p></div></div>
+        <label>项目名称<input id="projectCreateName" maxlength="120" placeholder="例如：AFPM-01 轴向电机方案"></label>
+        <label>项目说明<textarea id="projectCreateDescription" rows="5" maxlength="4000" placeholder="研究目标、边界条件、车型/功率等级等"></textarea></label>
+        <button id="projectCreate" class="primary wide-button" type="button">新建并进入项目</button>
+        <div id="projectCreateStatus" class="hint"></div>
+      </aside>
+      <section class="panel project-list-panel">
+        <div class="section-head"><div><h3>项目列表</h3><p>每个项目集中管理分析案例、电机方案、计算记录和工程结果。</p></div><input id="projectManagerSearch" placeholder="搜索项目名称 / ID"></div>
+        <div id="projectManagerList" class="project-card-grid"></div>
+      </section>
+      <aside id="projectEditorPanel" class="panel project-editor-panel hidden">
+        <div class="section-head"><div><h3>项目基本信息</h3><p id="projectEditorId">-</p></div><button id="projectEditorClose" class="icon-button" type="button">×</button></div>
+        <label>项目名称<input id="projectEditorName" maxlength="120"></label>
+        <label>项目说明<textarea id="projectEditorDescription" rows="7" maxlength="4000"></textarea></label>
+        <div id="projectEditorCounts" class="definition-grid"></div>
+        <div class="actions"><button id="projectEditorSave" class="primary" type="button">保存基本信息</button><button id="projectEditorDelete" class="danger-ghost" type="button">移入回收站</button></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="dashboard" class="tab">
+    <article class="panel project-overview-hero">
+      <div><span class="eyebrow">项目概览</span><h2 id="overviewProjectName">项目概览</h2><p id="overviewProjectMeta">进入项目后，系统会根据当前工程状态给出下一步操作。</p></div>
+      <div id="overviewPrimaryAction" class="overview-primary-action"></div>
+    </article>
+    <div id="dashboardMetrics" class="metrics-grid project-metrics"></div>
+    <div class="two-col workflow-overview-row-v081a">
+      <article class="panel workflow-completion-panel-v081a"><div class="section-head"><div><h2>工程流程</h2><p>设计、验证、决策三个阶段只保留一个当前状态，并给出可直接执行的下一步。</p></div></div><div id="engineeringWorkflowOverviewV081A"><div class="workflow-empty-v081a"><b>正在读取工程状态…</b></div></div></article>
+      <article class="panel run-center-panel-v081a"><div class="section-head"><div><h2>运行中心</h2><p>集中查看正在计算、需要恢复和最近完成的任务。</p></div><button type="button" data-go="tasks">全部任务</button></div><div id="runCenterV081A"><div class="workflow-empty-v081a"><b>正在读取运行状态…</b></div></div></article>
+      <article class="panel failure-center-panel"><div class="section-head"><div><h2>失败处理中心</h2><p>按根因聚合失败与无效 Case，直接给出证据、修复入口和恢复动作。</p></div><button type="button" data-go="logs">问题与诊断</button></div><div id="failureCenter"><div class="workflow-empty-v081a"><b>正在读取失败诊断…</b></div></div></article>
+    </div>
+    <div class="operator-overview-grid canonical-overview-grid">
+      <article class="panel next-action-panel">
+        <div class="section-head"><div><h2>下一步</h2><p>项目页只负责目标、状态和下一步入口；方案、电机与分析配置分别在后续阶段完成。</p></div></div>
+        <div id="projectNextActionCard"></div>
+      </article>
+      <article class="panel project-boundary-panel">
+        <div class="section-head"><div><h2>项目边界</h2><p>一个项目可包含多个方案。方案内部维护电机版本，分析配置引用明确的电机版本。</p></div></div>
+        <div class="canonical-object-chain" aria-label="项目对象关系"><span>项目</span><i>→</i><span>方案</span><i>→</i><span>电机版本</span><i>→</i><span>分析配置</span><i>→</i><span>结果</span></div>
+      </article>
+    </div>
+    <div class="two-col project-overview-lower">
+      <article class="panel">
+        <div class="section-head"><div><h2>方案概况</h2><p>查看项目内的方案、电机版本与分析准备情况。</p></div><button data-go="solutions">管理方案</button></div>
+        <div id="projectObjectSummary"></div>
+      </article>
+      <article class="panel">
+        <div class="section-head"><div><h2>最近仿真</h2><p>只展示当前项目的最近任务；运行中任务可直接进入监控。</p></div><button data-go="tasks">查看全部任务</button></div>
+        <div id="recentTasks"></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="solutions" class="tab">
+    <article class="panel canonical-stage-hero">
+      <div><span class="eyebrow">方案</span><h2>方案管理</h2><p>在当前项目中维护不同技术路线。每个方案拥有独立的电机配置版本，并可被多个分析配置复用。</p></div>
+      <div class="actions"><button id="createSolutionCanonical" class="primary" type="button">＋ 新建方案</button><button id="refreshSolutionsCanonical" type="button">刷新</button></div>
+    </article>
+    <div id="solutionMetricsCanonical" class="metrics-grid canonical-solution-metrics"></div>
+    <section id="solutionListCanonical" class="canonical-solution-list" aria-live="polite"></section>
+  </section>
+
+  <section id="workspace" class="tab">
+    <div class="workspace-toolbar panel canonical-stage-hero">
+      <div><span class="eyebrow">电机配置</span><h2 id="currentProjectWorkspaceTitle">电机配置</h2><p id="currentProjectWorkspaceMeta">编辑当前方案的几何、绕组、材料和不可变 Revision。方案身份在上一阶段维护。</p></div>
+      <div class="actions"><button id="workspaceBackProjects" type="button">← 返回方案</button><button id="workspaceRefresh" type="button">刷新电机配置</button><button id="workspaceToAnalysisCanonical" class="primary" type="button">进入分析配置 →</button></div>
+    </div>
+    <div class="engineering-workspace project-scoped-workspace">
+      <aside class="workspace-tree panel">
+        <div class="section-head"><div><h3>当前方案</h3><p>选择方案与电机配置版本</p></div></div>
+        <div id="workspaceProjectTree" class="project-tree"></div>
+      </aside>
+      <section class="workspace-canvas panel">
+        <div id="workspaceCanvasEmpty" class="workspace-empty"><b>请先从“方案”阶段选择一个方案</b><span>这里集中维护几何、绕组、材料和 Revision；运行工况与求解设置位于“分析配置”。</span></div>
+        <div id="workspaceCanvas" class="hidden"></div>
+      </section>
+      <aside class="workspace-inspector panel">
+        <div class="section-head"><div><h3>配置属性</h3><p>当前方案 / Revision</p></div></div>
+        <div id="workspaceInspector" class="muted">尚未选择对象</div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="analysisConfig" class="tab canonical-analysis-stage-v076">
+    <article class="panel canonical-stage-hero analysis-unified-hero-v076">
+      <div><span class="eyebrow">分析配置</span><h2>分析配置与计算</h2><p>在一个页面完成电机版本选择、分析类型、工况与物理输入、求解与输出、计算前检查和 Motor-CAD 提交。</p></div>
+      <div class="actions"><div class="segmented analysis-hmi-mode-v081a" aria-label="分析配置复杂度"><button id="analysisCommonModeV081A" type="button">常用</button><button id="analysisAdvancedModeV081A" type="button">高级</button></div><button id="analysisBackToMotorV076" type="button">← 电机配置</button><button id="analysisRefreshV076" type="button">刷新</button><button id="analysisCreateV076" class="primary" type="button">＋ 新建分析配置</button></div>
+    </article>
+
+    <div id="analysisContextV076" class="panel analysis-context-v076" aria-live="polite"></div>
+    <article id="standardValidationPackageV087D" class="panel standard-validation-v087d hidden" aria-live="polite"></article>
+
+    <div class="analysis-unified-layout-v076">
+      <aside class="panel analysis-config-list-v076">
+        <div class="section-head"><div><h3>分析配置</h3><p>每条配置固定引用一个电机 Revision，可生成新的 Analysis Revision。</p></div></div>
+        <div id="analysisListV076" class="analysis-list-v076"></div>
+      </aside>
+
+      <main class="panel analysis-editor-v076">
+        <div id="analysisEmptyV076" class="analysis-empty-v076">
+          <span class="eyebrow">分析配置</span><h3>请选择或新建分析配置</h3><p>分析配置只引用已经保存的方案和电机 Revision。几何、绕组、材料的长期修改请回到“电机配置”。</p>
+        </div>
+        <div id="analysisEditorV076" class="hidden">
+          <nav id="analysisStepsV076" class="analysis-steps-v076" aria-label="分析配置步骤">
+            <button type="button" data-analysis-step-v076="definition"><i>1</i><span>分析定义</span></button>
+            <button type="button" data-analysis-step-v076="operating"><i>2</i><span>工况</span></button>
+            <button type="button" data-analysis-step-v076="inputs"><i>3</i><span>物理输入</span></button>
+            <button type="button" data-analysis-step-v076="solver"><i>4</i><span>求解与输出</span></button>
+            <button type="button" data-analysis-step-v076="check"><i>5</i><span>检查并计算</span></button>
+          </nav>
+          <section id="analysisEditorBodyV076" class="analysis-editor-body-v076"></section>
+        </div>
+      </main>
+
+      <aside class="panel analysis-summary-v076">
+        <div class="section-head"><div><h3>工程上下文</h3><p>唯一对象链与执行准备状态</p></div></div>
+        <div id="analysisSummaryV076"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="templates" class="tab">
+    <article class="panel template-stage-header"><div><span class="eyebrow">设计 · 工程预制</span><h2>选择预制电机开始设计</h2><p>设计工程师优先使用 SPM、IPM、AFPM 三个工程预制入口。系统保留底层 Motor-CAD 模板、Revision 与 Native Binding 作为计算依据。</p></div><button type="button" data-go="workspace">返回当前设计</button></article>
+    <section class="golden-starter-section-v087" aria-labelledby="goldenStarterTitleV087">
+      <div class="section-head"><div><span class="eyebrow">GOLDEN MOTOR STARTERS</span><h2 id="goldenStarterTitleV087">预制电机设计</h2><p>只填写少量关键工况即可创建 Rev.1；详细几何、绕组、材料和优化变量在创建设计后继续调整。</p></div><span id="goldenStarterStatusV087" class="status-chip">读取中</span></div>
+      <div id="goldenStarterGridV087" class="golden-starter-grid-v087"></div>
+      <div id="goldenStarterCreateV087" class="panel golden-starter-create-v087 hidden" aria-live="polite"></div>
+    </section>
+    <div class="engineering-catalog-only">
+    <div class="toolbar wrap">
+      <input id="templateSearch" placeholder="搜索拓扑、行业、应用或模板编号">
+      <select id="templateFilter"><option value="">全部领域</option></select>
+      <select id="templateMaturity"><option value="">全部成熟度</option><option value="verified_candidate">首批验证候选</option><option value="research_candidate">研究候选</option><option value="result_reference">结果参考</option><option value="adaptive_reference">自适应参考</option><option value="raw_reference">原始参考</option></select>
+      <label class="check-row"><input id="axialOnly" type="checkbox">仅轴向磁通</label>
+    </div>
+    <div id="templateCompareBar" class="compare-tray hidden"><span>模板比较：<b id="templateCompareCount">0</b>/3</span><div id="templateCompareNames"></div><div class="actions"><button id="openTemplateCompare" type="button">比较</button><button id="clearTemplateCompare" type="button">清空</button></div></div>
+    <div class="template-layout">
+      <div id="templateGrid" class="grid"></div>
+      <aside id="templateDetail" class="panel detail-panel hidden"></aside>
+    </div>
+    </div>
+  </section>
+
+  
+
+  
+
+
+  <section id="monitor" class="tab">
+    <div class="monitor-toolbar panel">
+      <div><h2>实时运行监控</h2><p>事件驱动刷新，不依赖固定轮询；支持 Worker、阶段、ETA 和异常反馈。</p></div>
+      <div class="actions"><select id="monitorTaskSelect"></select><button id="monitorReconnect" type="button">重连实时流</button></div>
+    </div>
+    <div id="monitorEmpty" class="panel muted">选择运行任务后显示实时状态。</div>
+    <div id="monitorContent" class="hidden">
+      <div class="monitor-metrics" id="monitorMetrics"></div>
+      <div class="two-col">
+        <article class="panel"><div class="section-head"><div><h2>任务进度</h2><p id="monitorStageText">-</p></div><span id="monitorConnection" class="badge">连接中</span></div><div class="hero-progress"><span id="monitorProgressBar"></span></div><div id="stagePipeline" class="stage-pipeline"></div></article>
+        <article class="panel"><div class="section-head"><div><h2>活动 Worker</h2><p>PID、心跳、内存和当前 Case</p></div></div><div id="activeWorkerTable"></div></article>
+      </div>
+      <article class="panel solver-visual-v022" id="solverVisualPanelV022">
+        <div class="section-head">
+          <div><h2>Motor-CAD 求解过程可视化</h2><p id="solverVisualSubtitleV022">运行时显示当前 Case 的转子运动与求解阶段；完成后可使用 Motor-CAD 实际曲线结果回放。</p></div>
+          <div class="segmented"><button type="button" class="active" data-fea-mode-v022="live">实时过程</button><button type="button" data-fea-mode-v022="native">有限元场</button><button type="button" data-fea-mode-v022="result">结果曲线</button></div>
+        </div>
+        <div class="solver-visual-grid-v022">
+          <div class="solver-stage-v022">
+            <svg id="solverAnimationV022" viewBox="0 0 720 400" role="img" aria-label="Motor-CAD 求解过程电机动画"></svg>
+            <div id="nativeFEAStageV023" class="native-fea-stage-v023 hidden">
+              <canvas id="nativeFEACanvasV023" width="960" height="560" aria-label="Motor-CAD 原生有限元场回放"></canvas>
+              <div id="nativeFEAEmptyV023" class="native-fea-empty-v023 hidden"></div>
+              <div id="nativeFEAStatusV023" class="native-fea-status-v023"></div>
+            </div>
+            <div id="solverVisualLegendV022" class="solver-visual-legend-v022"></div>
+          </div>
+          <aside class="solver-visual-inspector-v022">
+            <span class="eyebrow">当前求解证据</span>
+            <div id="solverVisualMetricsV022" class="solver-visual-metrics-v022"></div>
+            <div id="solverPlaybackControlsV022" class="solver-playback-v022 hidden">
+              <button id="solverPlaybackToggleV022" type="button">播放</button>
+              <input id="solverPlaybackSliderV022" type="range" min="0" max="0" value="0" aria-label="结果回放步">
+              <span id="solverPlaybackStepV022">0 / 0</span>
+            </div>
+            <div id="nativeFEAControlsV023" class="native-fea-controls-v023 hidden">
+              <button id="nativeFEAPlayV023" type="button">播放</button>
+              <input id="nativeFEASliderV023" type="range" min="0" max="0" value="0" aria-label="原生FEA回放步">
+              <select id="nativeFEAFieldV023" aria-label="有限元场变量"><option value="b">磁密 B</option><option value="pt">矢量势 Pt</option><option value="current_density">电流密度 J</option><option value="eddy_current_density">涡流密度 Jeddy</option></select>
+              <span id="nativeFEAStepV023">0 / 0</span>
+            </div>
+            <div id="motorcadSessionEvidenceV023" class="motorcad-session-evidence-v023"></div>
+            <div id="runtimeResourceEvidenceV027" class="runtime-resource-evidence-v027"><span class="eyebrow">计算资源</span><p class="hint">等待可用的 Motor-CAD 计算资源。</p></div>
+            <div id="executionLeaseEvidenceV026" class="execution-lease-evidence-v026"><span class="eyebrow">Validate-and-Run 执行租约</span><p class="hint">等待当前 Case 建立执行租约。</p></div>
+            <div id="nativeFEAAuthorityV023" class="callout info compact hidden"><b>场数据来源</b><br>空间场来自当前 Case 的 Motor-CAD 有限元导出。坐标或场值不完整时停止绘图，并在任务诊断包中保留原因。</div>
+            <div id="solverVisualAuthorityBoxV022" class="callout info compact"><b>显示含义</b><br><span id="solverVisualAuthorityV022">实时过程中的场线为求解状态示意；结果回放只使用当前 Case 实际提取的 Motor-CAD 曲线。</span></div>
+          </aside>
+        </div>
+      </article>
+      <div class="two-col">
+        <article class="panel"><div class="section-head"><div><h2>Case 状态矩阵</h2><p>点击色块可跳转到任务详情</p></div></div><div id="caseMatrix" class="case-matrix"></div></article>
+        <article class="panel"><div class="section-head"><div><h2>实时事件流</h2><p>Motor-CAD / Worker / 平台统一事件</p></div><div class="segmented"><button type="button" data-event-filter="ALL" class="active">全部</button><button type="button" data-event-filter="WARNING">警告</button><button type="button" data-event-filter="ERROR">错误</button></div></div><div id="liveEventConsole" class="event-console"></div></article>
+      </div>
+      <div class="two-col">
+        <article class="panel"><div class="section-head"><div><h2>阶段耗时基线</h2><p>已完成Case的平均 / P95阶段耗时，用于识别求解瓶颈。</p></div><button id="refreshTimeline" type="button">刷新</button></div><div id="stagePerformanceTable"></div></article>
+        <article class="panel"><div class="section-head"><div><h2>等待队列解释</h2><p>直接说明Case为何尚未执行。</p></div></div><div id="waitingCaseTable"></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="tasks" class="tab">
+    <div class="toolbar"><button id="refreshTasks">刷新</button><span id="taskSummary"></span></div>
+    <div class="task-layout">
+      <div id="taskList"></div>
+      <div id="taskDetail" class="panel detail-panel hidden"></div>
+    </div>
+  </section>
+
+
+  <section id="resultViewer" class="tab">
+    <article id="engineeringDecisionCockpitV086R" class="panel engineering-decision-cockpit-v086r"><div class="workspace-empty compact"><b>正在形成工程决策摘要…</b><span>系统会先判断结果是否足以支持当前设计决策。</span></div></article>
+    <article id="engineeringScorecardV087D" class="panel engineering-scorecard-v087d hidden" aria-live="polite"></article>
+    <details id="engineeringEvidenceAdvancedV086R" class="panel engineering-evidence-advanced-v086r"><summary><b>工程证据与高级设置</b><span>制造鲁棒性、概率资格及详细证据按需展开</span></summary><div id="manufacturingRobustnessV086R"></div></details>
+    <div id="resultsWorkbenchV069" class="results-workbench-v069"></div>
+    <div id="resultsWorkbenchBodyV069" class="results-workbench-body-v069"></div>
+    <div id="resultsLegacyHeaderV069" class="analytics-toolbar panel result-viewer-header">
+      <div><h2>工程结果查看器</h2><p>一个入口完成单Case工程结果、批量对比、DOE/Pareto与原生Motor-CAD结果审查。</p></div>
+      <div class="actions"><div class="segmented result-mode-switch"><button type="button" class="active" data-viewer-mode="case">单Case结果</button><button type="button" data-viewer-mode="batch">批量/优化分析</button></div><a class="help-link" href="/static/help.html#viewer" target="_blank">? 查看器说明</a></div>
+    </div>
+    <div id="viewerCaseMode">
+      <div class="panel viewer-case-toolbar"><div class="actions"><label>任务<select id="viewerTaskSelect"></select></label><label>Case<select id="viewerCaseSelect"></select></label><button id="loadCaseViewer" class="primary" type="button">打开结果</button></div></div>
+<div id="viewerEmpty" class="panel muted">选择一个已完成Case。查看器会只启用当前Case实际拥有的数据模块。</div>
+    <div id="viewerContent" class="hidden result-viewer-layout"><aside class="panel viewer-nav" id="viewerModuleNav"></aside><section class="panel viewer-main"><div id="viewerCaseHeader"></div><div id="viewerCanvas"></div></section><aside class="panel viewer-inspector"><h3>当前选择</h3><div id="viewerInspector" class="muted">选择图形、指标或数据点查看详情。</div></aside></div>
+    </div>
+    <div id="viewerBatchMode" class="hidden">
+    <div class="analytics-toolbar panel">
+      <div><h2>批量与优化分析</h2><p>在结果查看器内统一完成参数扫描、DOE、Pareto、敏感性和多Case曲线比较。</p></div>
+      <div class="actions"><select id="analyticsTaskSelect"></select><button id="loadAnalytics" type="button" class="primary">加载结果</button></div>
+    </div>
+    <div id="analyticsEmpty" class="panel muted">选择一个已有结果的任务。</div>
+    <div id="analyticsContent" class="hidden">
+      <div id="analyticsStats" class="metrics-grid"></div>
+      <div class="two-col">
+        <article class="panel"><div class="section-head"><div><h2>参数—结果关系</h2><p>快速识别趋势、单调性和异常点</p></div></div><div class="form-grid compact"><label>X参数<select id="analyticsX"></select></label><label>Y结果<select id="analyticsY"></select></label><label>图形<select id="analyticsChartType"><option value="scatter">散点</option><option value="line">折线</option></select></label></div><svg id="analyticsChart" class="analysis-chart" role="img" aria-label="参数与结果关系图"></svg><div id="analyticsPointInfo" class="hint">点击数据点查看 Case。</div></article>
+        <article class="panel"><div class="section-head"><div><h2>敏感性快照</h2><p>Pearson 相关系数，仅用于快速筛查</p></div></div><div id="sensitivityBars"></div></article>
+      </div>
+      <div class="two-col">
+        <article class="panel"><div class="section-head"><div><h2>Pareto 前沿</h2><p>读取任务中定义的多目标方向，自动计算非支配解。</p></div><span id="paretoCount" class="badge">未加载</span></div><svg id="paretoChart" class="analysis-chart" role="img" aria-label="Pareto前沿图"></svg><div id="paretoInfo" class="hint">仅 Pareto Search 或定义了优化目标的任务显示。</div></article>
+        <article class="panel"><div class="section-head"><div><h2>平行坐标</h2><p>同时观察设计变量与优化目标，Pareto方案使用高亮线。</p></div></div><svg id="parallelChart" class="analysis-chart" role="img" aria-label="平行坐标图"></svg></article>
+      </div>
+      <article class="panel"><div class="section-head"><div><h2>多 Case 曲线叠加</h2><p>用于比较转矩波形、温升曲线、气隙磁密等时序/角度结果。</p></div><div class="actions"><select id="overlaySeries"></select><button id="loadOverlay" type="button">加载曲线</button></div></div><svg id="overlayChart" class="analysis-chart" role="img" aria-label="多Case曲线叠加图"></svg><div id="overlayInfo" class="hint">最多显示40个Case，避免浏览器过载。</div></article>
+      <article class="panel"><div class="section-head"><div><h2>结果数据表</h2><p>支持质量状态筛选、关键字过滤和2–8个Case工程对比。</p></div><div class="actions"><span id="compareSelectionCount" class="badge">0 已选</span><button id="compareSelectedCases" type="button" disabled>比较选中</button><button id="clearCaseCompare" type="button">清空选择</button><select id="analyticsQuality"><option value="">全部质量</option><option value="VALID">VALID</option><option value="WARNING">WARNING</option><option value="INVALID">INVALID</option><option value="UNVERIFIED">UNVERIFIED</option></select><input id="analyticsSearch" placeholder="搜索 Case"></div></div><div id="analyticsCompare" class="hidden comparison-workspace"></div><div id="analyticsTable" class="table-wrap"></div></article>
+    </div>
+    </div>
+  </section>
+
+  <section id="dataFactory" class="tab">
+    <div class="analytics-toolbar panel">
+      <div><h2>仿真数据工厂</h2><p>原始索引 → 标准化数据 → 派生特征 → 不可变数据集版本。</p></div>
+      <div class="actions"><a class="help-link" href="/static/help.html#data-factory" target="_blank">? 数据工厂说明</a><button id="refreshDataFactory" type="button">刷新</button></div>
+    </div>
+    <div id="factoryMetrics" class="metrics-grid"></div>
+    <div class="factory-flow panel">
+      <div class="factory-zone"><b>原始索引</b><span>MOT / CSV / 日志 / 曲线等原生文件</span></div>
+      <div class="factory-arrow">-></div>
+      <div class="factory-zone"><b>标准化</b><span>统一输入、工况、结果和来源血缘</span></div>
+      <div class="factory-arrow">-></div>
+      <div class="factory-zone"><b>派生特征</b><span>派生指标、约束与可行性</span></div>
+      <div class="factory-arrow">-></div>
+      <div class="factory-zone"><b>数据集</b><span>版本化 CSV / JSONL / 可选 Parquet</span></div>
+    </div>
+    <div class="two-col">
+      <article class="panel">
+        <div class="section-head"><div><h2>构建数据集版本</h2><p>选择已完成仿真任务并应用质量门禁。</p></div></div>
+        <div class="form-grid">
+          <label>数据集名称<input id="factoryDatasetName" value="motor-design-dataset"></label>
+          <label>已有数据集<select id="factoryDatasetExisting"><option value="">新建数据集</option></select></label>
+          <label>质量门禁<select id="factoryQuality" multiple size="4"><option value="VALID" selected>VALID</option><option value="WARNING" selected>WARNING</option><option value="UNVERIFIED">UNVERIFIED</option><option value="INVALID">INVALID</option></select></label>
+          <label>来源任务<select id="factoryTasks" multiple size="8"></select></label>
+          <label class="check-row"><input id="factoryDeduplicate" type="checkbox" checked>按输入指纹去重</label>
+        </div>
+        <h3>稳定数据分区</h3>
+        <div class="form-grid compact"><label>开发集<input id="factorySplitDev" type="number" step="0.05" min="0" value="0.7"></label><label>验证集<input id="factorySplitVal" type="number" step="0.05" min="0" value="0.2"></label><label>留出集<input id="factorySplitHold" type="number" step="0.05" min="0" value="0.1"></label><label>随机种子<input id="factorySeed" type="number" value="42"></label></div>
+        <div class="actions"><button id="buildDataset" class="primary" type="button">构建不可变版本</button></div>
+        <div id="factoryBuildStatus" class="hint"></div>
+      </article>
+      <article class="panel">
+        <div class="section-head"><div><h2>工厂状态</h2><p>任务摄取和数据血缘摘要。</p></div></div>
+        <div id="factoryStatus"></div>
+      </article>
+    </div>
+    <article class="panel">
+      <div class="section-head"><div><h2>数据集注册表</h2><p>每次构建都会生成新的不可变版本，并记录字段结构哈希与内容哈希，便于追溯和复现。</p></div></div>
+      <div id="datasetRegistry"></div>
+    </article>
+    <article id="datasetDetailPanel" class="panel hidden">
+      <div class="section-head"><div><h2>数据集版本详情</h2><p>查看来源血缘、数据分区、质量统计与导出文件。</p></div></div>
+      <div id="datasetDetail"></div>
+    </article>
+  </section>
+
+  <section id="logs" class="tab">
+    <div class="analytics-toolbar panel">
+      <div><h2>日志与问题中心</h2><p>统一关联接口请求、任务、计算Case、Worker、Motor-CAD、数据工厂与系统运行状态。</p></div>
+      <div class="actions"><a class="help-link" href="/static/help.html#logs" target="_blank">? 日志说明</a><button id="refreshLogs" type="button">刷新</button><label class="check-row"><input id="logCurrentSession" type="checkbox" checked>仅本次启动</label><label class="check-row"><input id="logAutoRefresh" type="checkbox" checked>实时</label><button id="downloadDiagnostics" class="button-link" type="button" data-export-url="/api/logs/export.zip">导出诊断包</button></div>
+    </div>
+    <div id="logMetrics" class="metrics-grid"></div>
+    <div class="two-col log-top-grid">
+      <article class="panel"><div class="section-head"><div><h2>问题诊断</h2><p>按错误签名聚合，并给出下一步排查建议。</p></div></div><div id="problemCenter"></div></article>
+      <article class="panel"><div class="section-head"><div><h2>日志过滤器</h2><p>可按组件和计算血缘快速定位。</p></div></div><div class="form-grid compact"><label>最低级别<select id="logLevel"><option value="">全部</option><option>INFO</option><option>WARNING</option><option>ERROR</option><option>CRITICAL</option></select></label><label>组件<select id="logComponent"><option value="">全部组件</option></select></label><label>Task<input id="logTaskFilter" placeholder="TASK-..."></label><label>Case<input id="logCaseFilter" placeholder="TASK-...-C..."></label><label>Stage<input id="logStageFilter" placeholder="EMAG_SOLVING"></label><label>关键词<input id="logSearch" placeholder="timeout / license / parameter"></label></div></article>
+    </div>
+    <article class="panel">
+      <div class="section-head"><div><h2>结构化运行日志</h2><p>每条记录包含 Trace、组件、Stage、PID 和关联工程对象；点击 Task/Case 可跳转。</p></div><span id="logConnection" class="badge">未连接</span></div>
+      <div id="structuredLogTable" class="log-table-wrap"></div>
+    </article>
+  </section>
+
+  <section id="system" class="tab">
+    <article class="panel">
+      <div class="section-head"><div><h2>系统诊断与高级配置</h2><p>Motor-CAD 安装路径和启动检查已移到首屏“启动配置”。本页保留版本能力、资格校准和开发者诊断。</p></div><button data-go="setup" class="primary" type="button">打开启动配置</button></div>
+      <div id="systemInfo" class="definition-grid"></div>
+    </article>
+    <article class="panel developer-panel developer-only">
+      <details class="advanced-fold"><summary><b>开发者诊断：PyMotorCAD API 能力</b><span>普通用户无需操作</span></summary>
+      <div class="section-head"><div><p>用于开发/兼容性检查：核对内置官方 stable API 目录与当前 Python 环境可用方法。</p></div><button id="refreshApiCapabilities">刷新能力</button></div>
+      <div id="apiCapabilitySummary"></div>
+      </details>
+    </article>
+    <article class="panel developer-panel developer-only">
+      <details class="advanced-fold"><summary><b>开发者诊断：Automation 参数注册表</b><span>仅在升级Motor-CAD版本或补充专家参数时使用</span></summary>
+      <div class="section-head"><div><p>导入 Motor-CAD Help → Automation Parameter Names 导出文件，建立版本 × 电机类型 × 分析上下文的高级参数库。</p></div><button id="refreshAutomationRegistry">刷新覆盖率</button></div>
+      <div class="form-grid">
+        <label>Motor-CAD版本<input id="automationVersion" value="2026R1"></label>
+        <label>电机类型<select id="automationMachineType"></select></label>
+        <label>上下文<select id="automationContext"><option>EMag</option><option>Therm</option><option>Lab</option><option>Mechanical</option></select></label>
+        <label>来源文件名<input id="automationSourceName" placeholder="BPM_EMag.txt"></label>
+        <label>选择导出文件<input id="automationFile" type="file" accept=".txt,.csv,.tsv"></label>
+      </div>
+      <label>参数列表文本<textarea id="automationText" rows="8" placeholder="Automation Name    Value    Unit    Description"></textarea></label>
+      <div class="actions"><button id="importAutomationRegistry" class="primary">导入注册表</button></div>
+      <div id="automationRegistryStatus"></div>
+      </details>
+    </article>
+
+    <article class="panel expert-only" id="nativeClosurePanel">
+      <div class="section-head"><div><span class="eyebrow">NATIVE CLOSURE</span><h2>Motor-CAD 原生资格闭环</h2><p>在当前 Windows + Motor-CAD 2026R1 工作站上，对 BPM / SPM / IPM / AFPM 逐项核对几何参数、原生几何有效性、绕组定义、材料、工况输入和 EMag 结果映射。资格证据绑定当前 topology、BindingPlan、Motor-CAD/PyMotorCAD 与合同版本；旧版本 PASS 自动标记为 STALE。只有当前 scope 全部通过才标记 NATIVE_QUALIFIED。</p></div><div class="actions"><button id="refreshNativeParityClosure" type="button">刷新</button><button id="runNativeParitySuiteClosure" type="button" class="primary">运行四模型原生资格套件</button></div></div>
+      <div class="native-parity-overview-closure"><div class="native-parity-score-closure"><span>Native workstation qualification</span><strong id="nativeParityPercentClosure">0.0%</strong><span>严格按 Profile 数量计算，不以 Studio 单元测试替代真实 Motor-CAD 证据。</span></div><div><h3>资格判定</h3><p id="nativeParitySummaryClosure">正在读取当前工作站证据…</p></div></div>
+      <div id="nativeParityProfilesClosure" class="native-parity-profiles-closure"></div>
+      <div id="nativeParityRunStatusClosure"></div>
+      <div class="subsection"><h3>BPM / SPM / IPM / AFPM 原生资格矩阵</h3><p class="hint">每次运行都保留 native MOT、Geometry Radial/Axial 截图、Motor-CAD winding pattern、逐项参数/材料/输入回读、原生结果 CSV 与 evidence SHA-256。</p><div id="nativeParityMatrixClosure"></div></div>
+    </article>
+
+    <article class="panel">
+      <div class="section-head"><div><h2 data-i18n-key="qualification.title">模板运行资格检查</h2><p>从“能启动”进一步检查模板加载、参数回读、材料映射、几何有效性，并可选执行一次真实求解Smoke Test。</p></div><a class="help-link" href="/static/help.html#qualification" target="_blank">? 资格检查说明</a></div>
+      <div class="form-grid"><label>模板<select id="qualificationTemplate"></select></label><label>分析<select id="qualificationAnalysis"><option value="emag">EMag 电磁</option><option value="thermal_steady">稳态热</option></select></label><label class="check-row"><input id="qualificationSmoke" type="checkbox">执行真实求解Smoke Test</label></div>
+      <div class="actions"><button id="runQualification" class="primary" type="button" data-i18n-key="qualification.run">运行资格检查</button><button id="refreshQualificationMatrix" type="button" data-i18n-key="qualification.refresh">刷新资格矩阵</button></div><div id="qualificationResults"></div>
+      <div class="subsection"><h3 data-i18n-key="qualification.matrix">资格矩阵</h3><p class="hint">保存每个模板/分析在当前 Motor-CAD 版本上的最新资格证据；Level 4 表示执行过真实求解 Smoke Test。</p><div id="qualificationMatrix"></div></div>
+    </article>
+
+    <article class="panel developer-panel expert-only">
+      <div class="section-head"><div><h2 data-i18n-key="result_calibration.title">结果校准与 Graph 探测</h2><p>PyMotorCAD Graph API 需要明确的 Graph Viewer 名称。这里使用版本化候选名在目标模板上探测，并把成功结果固化为校准映射。</p></div><a class="help-link" href="/static/help.html#result-calibration" target="_blank">? 校准说明</a></div>
+      <div class="form-grid"><label>模板<select id="resultCalibrationTemplate"></select></label><label>分析<select id="resultCalibrationAnalysis"><option value="emag">EMag 电磁</option><option value="thermal_steady">稳态热</option></select></label><label class="check-row"><input id="resultCalibrationRun" type="checkbox">探测前先执行一次真实计算</label></div>
+      <div class="actions"><button id="loadRecommendedProbes" type="button" data-i18n-key="result_calibration.load">载入推荐 Graph</button><button id="probeResults" type="button" class="primary" data-i18n-key="result_calibration.probe">执行探测</button></div>
+      <div id="resultProbeList"></div><div id="resultCalibrationStatus"></div>
+    </article>
+
+  </section>
+</main>
+<div id="toastStack" class="toast-stack" aria-live="polite"></div>
+<div id="commandPalette" class="command-palette hidden" role="dialog" aria-modal="true" aria-label="快捷操作"><div class="command-box"><input id="commandSearch" placeholder="输入操作，例如：新建任务、监控、系统诊断"><div id="commandResults"></div><p class="hint">Ctrl/⌘ + K 打开 · Esc 关闭</p></div></div>
+<script src="/static/locale-data.js?v=0.88.1"></script>
+<script src="/static/i18n.js?v=0.88.1"></script>
+<script src="/static/realtime.js?v=0.88.1"></script>
+<script src="/static/frontend-core.js?v=0.88.1"></script>
+<script src="/static/app-core.js?v=0.88.1"></script>
+<script src="/static/domain/motor-domain.js?v=0.88.1"></script>
+<script src="/static/domain/motor-object.js?v=0.88.1"></script>
+<script src="/static/domain/pm-motor-object.js?v=0.88.1"></script>
+<script src="/static/domain/induction-motor-object.js?v=0.88.1"></script>
+<script src="/static/design/store.js?v=0.88.1"></script>
+<script src="/static/design/navigation.js?v=0.88.1"></script>
+<script src="/static/design/draft-service.js?v=0.88.1"></script>
+<script src="/static/design/precheck.js?v=0.88.1"></script>
+<script src="/static/design/render-utils.js?v=0.88.1"></script>
+<script src="/static/design/geometry.js?v=0.88.1"></script>
+<script src="/static/design/winding.js?v=0.88.1"></script>
+<script src="/static/design/materials.js?v=0.88.1"></script>
+<script src="/static/design/validation.js?v=0.88.1"></script>
+<script src="/static/design/parameter-inspector.js?v=0.88.1"></script>
+<script src="/static/design/renderer.js?v=0.88.1"></script>
+<script src="/static/analysis/labels.js?v=0.88.1"></script>
+<script src="/static/runtime/workstation-acceptance.js?v=0.88.1"></script>
+<script src="/static/runtime/production-soak.js?v=0.88.1"></script>
+<script src="/static/design/design-starters.js?v=0.88.1"></script>
+<script src="/static/app.js?v=0.88.1"></script>
+<script src="/static/routing/engineering-context-store.js?v=0.88.1"></script>
+<script src="/static/routing/result-context.js?v=0.88.1"></script>
+<script src="/static/results/aggregate-client.js?v=0.88.1"></script>
+<script src="/static/results/result-set-client.js?v=0.88.1"></script>
+<script src="/static/results/result-data-client.js?v=0.88.1"></script>
+<script src="/static/results/case-viewer.js?v=0.88.1"></script>
+<script src="/static/materials/library.js?v=0.88.1"></script>
+<!-- Stable design controllers load before historical compatibility layers.
+     This guarantees the Design Viewer compatibility boundary exists before any
+     older runtime wrapper can observe a workspace render. -->
+<script src="/static/design/editor.js?v=0.88.1"></script>
+<script src="/static/design/parameter-catalog.js?v=0.88.1"></script>
+<script src="/static/design/viewer.js?v=0.88.1"></script>
+<script src="/static/design/workbench.js?v=0.88.1"></script>
+<script src="/static/geometry.js?v=0.88.1"></script>
+<script src="/static/production.js?v=0.88.1"></script>
+<script src="/static/operator-flow.js?v=0.88.1"></script>
+<script src="/static/dialogs.js?v=0.88.1"></script>
+<script src="/static/native-parity.js?v=0.88.1"></script>
+<script src="/static/workflow/native-context.js?v=0.88.1"></script>
+<script src="/static/runtime/native-fea-session.js?v=0.88.1"></script>
+<script src="/static/routing/page-controllers.js?v=0.88.1"></script>
+<script src="/static/workflow/engineering-workflow.js?v=0.88.1"></script>
+<script src="/static/runtime/execution-lease.js?v=0.88.1"></script>
+<script src="/static/runtime/resource-scheduler.js?v=0.88.1"></script>
+<script src="/static/runtime/lifecycle-qualification.js?v=0.88.1"></script>
+<script src="/static/results/fea-thermal.js?v=0.88.1"></script>
+<script src="/static/results/native-evidence.js?v=0.88.1"></script>
+<script src="/static/results/field-viewer.js?v=0.88.1"></script>
+<script src="/static/results/native-tables.js?v=0.88.1"></script>
+<script src="/static/runtime/solver-evidence.js?v=0.88.1"></script>
+<script src="/static/workflow/usability-closure.js?v=0.88.1"></script>
+<script src="/static/analysis/monitor.js?v=0.88.1"></script>
+<script src="/static/results/trust-ui.js?v=0.88.1"></script>
+<script src="/static/results/revision-compare.js?v=0.88.1"></script>
+<script src="/static/results/case-compare.js?v=0.88.1"></script>
+<script src="/static/results/optimization.js?v=0.88.1"></script>
+<script src="/static/results/optimization-decision.js?v=0.88.1"></script>
+<script src="/static/results/requirements.js?v=0.88.1"></script>
+<script src="/static/results/qualification-campaign.js?v=0.88.1"></script>
+<script src="/static/results/interpretation.js?v=0.88.1"></script>
+<script src="/static/results/workbench.js?v=0.88.1"></script>
+<script src="/static/runtime/experiment-lifecycle.js?v=0.88.1"></script>
+<script src="/static/runtime/runtime-ownership.js?v=0.88.1"></script>
+<script src="/static/analysis/guidance.js?v=0.88.1"></script>
+<script src="/static/analysis/standard-validation.js?v=0.88.1"></script>
+<script src="/static/analysis/unified-configuration.js?v=0.88.1"></script>
+<script src="/static/workflow/engineer-journey.js?v=0.88.1"></script>
+<script src="/static/results/decision-cockpit.js?v=0.88.1"></script>
+<script src="/static/results/engineering-scorecard.js?v=0.88.1"></script>
+<script src="/static/results/manufacturing-robustness.js?v=0.88.1"></script>
+<script src="/static/router.js?v=0.88.1"></script>
+<script src="/static/canonical-project-flow.js?v=0.88.1"></script>
+</body>
+</html>

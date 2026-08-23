@@ -1,0 +1,74 @@
+version: 1
+domains:
+  cooling:
+    label: 冷却
+    purpose: 定义电机如何把热量带走，直接影响绕组、磁钢和机壳温度。
+    analysis: [Therm, Coupled, Lab]
+    fields:
+      - {id: cooling_type, label: 冷却方式, type: enum, default: natural_convection, required: true, options: [{value: natural_convection, label: 自然冷却}, {value: forced_air, label: 强迫风冷}, {value: water_jacket, label: 水套冷却}, {value: oil_spray, label: 喷油冷却}, {value: wet_rotor, label: 湿转子}, {value: immersion, label: 浸没冷却}], help: 选择与实际样机一致的主要散热路径。}
+      - {id: coolant_inlet_temperature_c, label: 冷却介质入口温度, type: number, unit: °C, default: 25, minimum: -80, maximum: 250, help: 水套、油路或浸没冷却的入口温度。}
+      - {id: coolant_flow_rate_lpm, label: 冷却介质体积流量, type: number, unit: L/min, default: 0, minimum: 0, maximum: 10000, help: 液冷时必须大于零；自然冷却和风冷可保持为零。}
+      - {id: external_air_speed_mps, label: 外部空气速度, type: number, unit: m/s, default: 0, minimum: 0, maximum: 200, help: 强迫风冷时填写机壳外表面的有效来流速度。}
+  losses:
+    label: 损耗
+    purpose: 指定热分析使用的铜耗、铁耗、磁钢损耗和机械损耗来源。
+    analysis: [Therm, Coupled, Lab]
+    fields:
+      - {id: loss_source, label: 损耗来源, type: enum, default: emag, required: true, options: [{value: emag, label: 本案例电磁计算}, {value: model, label: 模型当前损耗}, {value: measured, label: 试验测量}, {value: table, label: 转速—损耗表}], help: 耦合分析优先使用本案例电磁计算。}
+      - {id: copper_loss_temperature_model, label: 铜阻温度修正, type: enum, default: enabled, options: [{value: enabled, label: 按温度修正}, {value: disabled, label: 使用固定铜阻}], help: 启用后铜耗随绕组温度迭代更新。}
+      - {id: mechanical_loss_w, label: 机械损耗, type: number, unit: W, default: 0, minimum: 0, maximum: 10000000, help: 轴承、风阻等未由电磁模型给出的损耗。}
+      - {id: loss_table_reference, label: 损耗表名称, type: text, default: '', help: 当损耗来源选择转速—损耗表时填写已导入表名。}
+  materials:
+    label: 材料
+    purpose: 为主要部件选择工程材料；材料属性参与电磁、热、质量和机械计算。
+    analysis: [EMag, Therm, Coupled, Lab, Mechanical]
+    fields:
+      - {id: stator_material, label: 定子铁心材料, type: text, default: M350-50A, required: true, help: 应与目标 Motor-CAD 材料库名称一致。}
+      - {id: rotor_material, label: 转子铁心材料, type: text, default: M350-50A, required: true, help: 同步磁阻或感应电机也需要明确转子材料。}
+      - {id: magnet_material, label: 永磁体材料, type: text, default: N30UH, help: 无永磁体机型可以留空。}
+      - {id: conductor_material, label: 导体材料, type: text, default: Copper (Pure), required: true, help: 常用为铜或铝。}
+      - {id: housing_material, label: 机壳材料, type: text, default: Aluminium (Cast), required: true, help: 影响质量、导热和热容量。}
+      - {id: coolant_fluid, label: 冷却介质, type: text, default: Air, help: 液冷时填写水乙二醇、油等实际介质。}
+  interfaces:
+    label: 接触界面
+    purpose: 定义部件接触面、装配间隙和轴承处的等效热阻。
+    analysis: [Therm, Coupled]
+    fields:
+      - {id: contact_resistance_model, label: 接触热阻模型, type: enum, default: standard, options: [{value: standard, label: 标准装配}, {value: bonded, label: 完全贴合}, {value: measured, label: 试验标定}], help: 标准装配适用于早期方案；试验标定需配套数据。}
+      - {id: interface_gap_multiplier, label: 界面间隙系数, type: number, unit: ratio, default: 1, minimum: 0.01, maximum: 100, help: 大于 1 表示接触更差、热阻更大。}
+      - {id: bearing_model, label: 轴承传热模型, type: enum, default: standard, options: [{value: standard, label: 标准轴承}, {value: insulated, label: 绝缘轴承}, {value: custom, label: 自定义热阻}], help: 影响转轴至端盖的传热路径。}
+  radiation:
+    label: 辐射
+    purpose: 定义机壳和端部与环境之间的辐射换热。
+    analysis: [Therm, Coupled]
+    fields:
+      - {id: radiation_enabled, label: 启用辐射换热, type: boolean, default: false, help: 高温、低风速或自然冷却工况建议启用。}
+      - {id: radiation_temperature_c, label: 辐射环境温度, type: number, unit: °C, default: 25, minimum: -273.15, maximum: 1000, help: 电机所看到的周围表面等效温度。}
+      - {id: emissivity, label: 表面发射率, type: number, unit: ratio, default: 0.85, minimum: 0, maximum: 1, help: 喷涂机壳通常高于裸金属。}
+  convection:
+    label: 对流
+    purpose: 定义外表面与环境空气之间的对流换热边界。
+    analysis: [Therm, Coupled]
+    fields:
+      - {id: convection_model, label: 对流关联式, type: enum, default: automatic, options: [{value: automatic, label: 自动选择}, {value: natural, label: 自然对流}, {value: forced, label: 强迫对流}, {value: custom_htc, label: 自定义换热系数}], help: 自动选择会根据冷却方式和空气速度判断。}
+      - {id: altitude_m, label: 海拔高度, type: number, unit: m, default: 0, minimum: -500, maximum: 10000, help: 海拔影响空气密度和对流能力。}
+      - {id: external_air_speed_mps, label: 外部空气速度, type: number, unit: m/s, default: 0, minimum: 0, maximum: 200, help: 与冷却页相同字段会同步用于边界条件。}
+      - {id: custom_htc_w_m2k, label: 自定义换热系数, type: number, unit: W/(m²·K), default: 10, minimum: 0.01, maximum: 100000, help: 仅在选择自定义换热系数时使用。}
+  end_space:
+    label: 端部空间
+    purpose: 定义端部绕组、端盖和内部空气区的换热与旋转增强。
+    analysis: [Therm, Coupled]
+    fields:
+      - {id: endspace_correlation, label: 端部换热关联式, type: enum, default: automatic, options: [{value: automatic, label: 自动}, {value: enclosed, label: 封闭端部}, {value: ventilated, label: 通风端部}, {value: custom, label: 自定义}], help: 按端盖开口和内部通风结构选择。}
+      - {id: endcap_vents, label: 端盖通风口数量, type: integer, unit: 个, default: 0, minimum: 0, maximum: 1000, help: 封闭机壳保持为零。}
+      - {id: rotational_effects, label: 考虑旋转增强, type: boolean, default: true, help: 运行电机通常应启用。}
+  flow_circuit:
+    label: 流动回路
+    purpose: 定义冷却介质从入口、泵和水套到出口的流量、温度与压降。
+    analysis: [Therm, Coupled]
+    fields:
+      - {id: fluid, label: 流体, type: text, default: Water Glycol 50/50, required: true, help: 应与材料页的冷却介质一致。}
+      - {id: inlet_temperature_c, label: 入口温度, type: number, unit: °C, default: 25, minimum: -80, maximum: 250, help: 将同步到热工况入口温度。}
+      - {id: volume_flow_rate_lpm, label: 体积流量, type: number, unit: L/min, default: 5, minimum: 0, maximum: 10000, help: 水套或油路分析时必须大于零。}
+      - {id: pressure_drop_pa, label: 允许压降, type: number, unit: Pa, default: 20000, minimum: 0, maximum: 100000000, help: 用于判断泵和流道匹配。}
+      - {id: flow_direction, label: 流动方向, type: enum, default: front_to_rear, options: [{value: front_to_rear, label: 前端至后端}, {value: rear_to_front, label: 后端至前端}, {value: parallel, label: 并联分流}], help: 应与实际管路连接一致。}

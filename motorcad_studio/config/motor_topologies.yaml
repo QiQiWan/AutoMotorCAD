@@ -1,0 +1,145 @@
+version: 1
+topologies:
+  rfpm_spm:
+    label: 径向内转子表贴式永磁电机
+    native_motor_type: BPM
+    family_id: rfpm
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+    pm_object:
+      rotor_kind: surface_pm
+      rotor_position: inner
+      flux_direction: radial
+      radial_provider: rfpm_spm_radial
+      longitudinal_provider: rfpm_longitudinal
+      preferred_view: radial
+  rfpm_ipm:
+    label: 径向内转子内置式永磁电机
+    native_motor_type: BPM
+    family_id: rfpm
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+    pm_object:
+      rotor_kind: interior_pm
+      rotor_position: inner
+      flux_direction: radial
+      radial_provider: rfpm_ipm_radial
+      longitudinal_provider: rfpm_longitudinal
+      preferred_view: radial
+  rfpm_spoke:
+    label: 径向辐条式永磁电机
+    native_motor_type: BPM
+    family_id: rfpm
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  afpm:
+    label: 轴向磁通永磁电机
+    native_motor_type: BPM
+    family_id: afpm
+    views:
+    - axial
+    - longitudinal
+    - winding
+    - slot
+    pm_object:
+      rotor_kind: axial_pm
+      rotor_position: dual_disc
+      flux_direction: axial
+      radial_provider: afpm_face
+      longitudinal_provider: afpm_stack
+      preferred_view: axial
+  outer_rotor_pm:
+    label: 外转子永磁电机
+    native_motor_type: BPMOR
+    family_id: rfpm
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+    pm_object:
+      rotor_kind: outer_rotor_pm
+      rotor_position: outer
+      flux_direction: radial
+      radial_provider: outer_rotor_pm_radial
+      longitudinal_provider: outer_rotor_pm_longitudinal
+      preferred_view: radial
+  induction:
+    label: 三相感应电机
+    native_motor_type: IM
+    family_id: induction
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  induction_1ph:
+    label: 单相感应电机
+    native_motor_type: IM1PH
+    family_id: induction
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  synchronous_wound:
+    label: 绕线同步电机
+    native_motor_type: SYNC
+    family_id: synchronous
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  synchronous_reluctance:
+    label: 同步磁阻电机
+    native_motor_type: SYNCREL
+    family_id: reluctance
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  switched_reluctance:
+    label: 开关磁阻电机
+    native_motor_type: SRM
+    family_id: reluctance
+    views:
+    - radial
+    - longitudinal
+    - winding
+    - slot
+  pmdc:
+    label: 永磁直流电机
+    native_motor_type: PMDC
+    family_id: pmdc
+    views:
+    - radial
+    - longitudinal
+    - winding
+  claw_thermal:
+    label: 爪极热模型
+    native_motor_type: CLAW
+    family_id: claw
+    views:
+    - longitudinal
+  coreless_cup:
+    label: 空心杯/无铁心电机
+    native_motor_type: BPM
+    family_id: coreless
+    views:
+    - radial
+    - longitudinal
+template_overrides:
+  e14_eMobility_AFM: afpm
+  a4: afpm
+  r2: afpm

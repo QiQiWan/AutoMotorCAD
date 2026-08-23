@@ -1,0 +1,29 @@
+{
+  "authority": "ProductionSoakQualificationV1",
+  "contract_version": "0.87-F-C",
+  "tiers": [
+    {
+      "id": "SOAK_100",
+      "required_cases": 100,
+      "max_studio_rss_growth_mb": 512.0,
+      "max_studio_rss_growth_mb_per_100_cases": 384.0,
+      "min_worker_recycles": 1,
+      "min_monitor_samples": 5
+    },
+    {
+      "id": "SOAK_500",
+      "required_cases": 500,
+      "max_studio_rss_growth_mb": 1024.0,
+      "max_studio_rss_growth_mb_per_100_cases": 256.0,
+      "min_worker_recycles": 5,
+      "min_monitor_samples": 20
+    }
+  ],
+  "required_recovery_probes": [
+    "cancel_retry_pass",
+    "crash_restart_pass",
+    "restart_reopen_pass",
+    "qualification_retention_pass"
+  ],
+  "formal_predecessor": "WindowsMotorCADProductionQualificationV2"
+}

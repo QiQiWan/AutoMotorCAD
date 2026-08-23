@@ -1,0 +1,765 @@
+version: 1
+contract_version: 0.87-C
+coverage_policy: all_canonical_parameters
+parameters:
+  pole_count:
+    description: 磁极总数，决定电磁周期、基波频率及槽极配合。
+    engineering_role: 拓扑定义
+    engineering_group: 拓扑
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - torque_ripple_percent
+    - efficiency_percent
+    dependencies:
+    - slot_count
+    engineering_note: 离散拓扑变量；修改后应重新检查槽极配合、绕组和机械频率。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: guided
+    native_mapping_required_for_golden: true
+    recommended_step: 1
+  slot_count:
+    description: 定子槽总数，影响绕组布局、齿槽转矩、谐波与制造复杂度。
+    engineering_role: 拓扑定义
+    engineering_group: 拓扑
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - torque_ripple_percent
+    - efficiency_percent
+    - stator_iron_loss_w
+    dependencies:
+    - pole_count
+    - tooth_width
+    - slot_depth
+    engineering_note: 离散拓扑变量；修改后必须重新生成或验证绕组。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: guided
+    native_mapping_required_for_golden: true
+    recommended_step: 1
+  stator_outer_diameter:
+    description: 定子外包络直径，是电机径向尺寸、转矩能力和热容量的主要尺度。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - output_power_w
+    - total_weight_kg
+    dependencies:
+    - stator_inner_diameter
+    - tooth_width
+    - slot_depth
+    engineering_note: 受整机包络、机壳及冷却结构约束。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: guided
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  stator_inner_diameter:
+    description: 定子内孔直径，直接影响气隙半径、齿根空间和转子包络。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - airgap_flux_density_curve
+    - total_weight_kg
+    dependencies:
+    - stator_outer_diameter
+    - air_gap
+    - rotor_diameter
+    engineering_note: 必须与转子直径和气隙共同校核。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: guided
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  air_gap:
+    description: 定转子之间的有效气隙，是磁密、转矩、功率因数和制造公差的高敏感参数。
+    engineering_role: 电磁间隙
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - efficiency_percent
+    - airgap_flux_density_curve
+    - torque_ripple_percent
+    dependencies:
+    - stator_inner_diameter
+    - rotor_diameter
+    engineering_note: 减小气隙通常提高磁耦合，同时增加装配、偏心和机械公差风险。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: guided
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  stator_lamination_length:
+    description: 定子铁心有效轴向长度，决定有效电磁体积并影响铜耗与铁耗。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - output_power_w
+    - stator_iron_loss_w
+    - total_weight_kg
+    dependencies:
+    - rotor_lamination_length
+    - magnet_length
+    engineering_note: 应与转子叠长和磁钢有效长度协调。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  tooth_width:
+    description: 定子齿宽，控制齿部磁密、饱和水平以及槽内可用铜面积。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - emag_saturation_map
+    - stator_iron_loss_w
+    - copper_loss_w
+    dependencies:
+    - slot_width
+    - slot_depth
+    - slot_count
+    engineering_note: 过小易饱和，过大会压缩槽面积。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  slot_depth:
+    description: 定子槽深，决定绕组容纳空间并影响轭部厚度和热路径。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - copper_loss_w
+    - winding_max_temperature_c
+    - stator_iron_loss_w
+    dependencies:
+    - slot_width
+    - tooth_width
+    - stator_outer_diameter
+    engineering_note: 需同时检查槽满率、轭厚及绕组可制造性。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  slot_opening:
+    description: 定子槽口开度，影响齿槽转矩、漏磁、绕组嵌线和局部饱和。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - torque_ripple_percent
+    - airgap_flux_density_curve
+    - stator_iron_loss_w
+    dependencies:
+    - tooth_width
+    - slot_width
+    engineering_note: 修改后应检查几何合法性和齿顶尺寸。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_thickness:
+    description: 永磁体沿磁化主方向的厚度，影响工作点、气隙磁密、退磁裕度和磁钢用量。
+    engineering_role: 永磁体
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - magnet_loss_w
+    - magnet_temperature_c
+    - airgap_flux_density_curve
+    dependencies:
+    - air_gap
+    - magnet_arc_deg
+    engineering_note: 增加厚度会增加磁钢用量和转子质量，应结合退磁与成本综合确定。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_arc_deg:
+    description: 单极永磁体的极弧覆盖角，影响基波磁密、谐波、齿槽转矩和磁钢利用率。
+    engineering_role: 永磁体
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - torque_ripple_percent
+    - airgap_flux_density_curve
+    - magnet_loss_w
+    dependencies:
+    - pole_count
+    - magnet_thickness
+    engineering_note: 属于常用形状优化变量，需保持相邻磁极机械间隔。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  turns_per_coil:
+    description: 每线圈串联匝数，决定反电动势、电压利用率、电流需求及铜耗。
+    engineering_role: 绕组
+    engineering_group: 绕组
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - peak_line_voltage_v
+    - shaft_torque_nm
+    - copper_loss_w
+    - winding_max_temperature_c
+    dependencies:
+    - parallel_paths
+    - slot_fill_factor
+    - dc_bus_voltage_v
+    engineering_note: 修改后应同步检查导体截面、槽满率和母线电压裕度。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: 1
+  parallel_paths:
+    description: 绕组并联支路数，影响支路电流、导体截面、电阻和端部连接。
+    engineering_role: 绕组
+    engineering_group: 绕组
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - copper_loss_w
+    - winding_max_temperature_c
+    - peak_line_voltage_v
+    dependencies:
+    - turns_per_coil
+    - slot_fill_factor
+    engineering_note: 必须与绕组连接方式和相数保持一致。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: 1
+  slot_fill_factor:
+    description: 槽内有效导体面积占可用槽面积的比例，用于约束绕组可制造性和铜损。
+    engineering_role: 绕组
+    engineering_group: 绕组
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - copper_loss_w
+    - winding_max_temperature_c
+    - total_weight_kg
+    dependencies:
+    - slot_depth
+    - slot_width
+    - turns_per_coil
+    engineering_note: 高槽满率需考虑绝缘、工艺及浸漆空间，不能只按几何极限取值。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: 0.05
+  shaft_speed_rpm:
+    description: 机械转速，是电磁频率、反电动势、机械应力、损耗和冷却边界的核心工况量。
+    engineering_role: 运行工况
+    engineering_group: 工况
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - output_power_w
+    - peak_line_voltage_v
+    - stator_iron_loss_w
+    - max_von_mises_stress_mpa
+    dependencies:
+    - pole_count
+    engineering_note: 属于分析工况参数；设计版本中不应将其当作永久几何属性。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: guided
+    native_mapping_required_for_golden: false
+  peak_current_a:
+    description: 相电流峰值，直接控制电磁负荷、转矩、铜耗和热负荷。
+    engineering_role: 运行工况
+    engineering_group: 工况
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - shaft_torque_nm
+    - copper_loss_w
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    dependencies:
+    - rms_current_a
+    - phase_advance_deg
+    engineering_note: 属于分析工况参数，应与逆变器电流能力和热约束共同确定。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: guided
+    native_mapping_required_for_golden: false
+  rms_current_a:
+    description: 相电流 RMS 值，用于铜耗、热分析和额定电流表征。
+    engineering_role: 运行工况
+    engineering_group: 工况
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - copper_loss_w
+    - winding_max_temperature_c
+    dependencies:
+    - peak_current_a
+    engineering_note: 正弦电流下可由峰值电流换算，非正弦工况应使用真实 RMS。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: engineering
+    native_mapping_required_for_golden: false
+  dc_bus_voltage_v:
+    description: 直流母线电压，用于约束反电动势、电压利用率和高速弱磁能力。
+    engineering_role: 运行工况
+    engineering_group: 工况
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - peak_line_voltage_v
+    - output_power_w
+    - efficiency_percent
+    dependencies:
+    - turns_per_coil
+    - shaft_speed_rpm
+    - phase_advance_deg
+    engineering_note: 属于工况/系统边界，应与逆变器调制策略共同解释。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: guided
+    native_mapping_required_for_golden: false
+  phase_advance_deg:
+    description: 电流相位超前角，影响 d/q 轴电流分配、转矩、电压需求和退磁风险。
+    engineering_role: 控制工况
+    engineering_group: 工况
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - shaft_torque_nm
+    - peak_line_voltage_v
+    - magnet_loss_w
+    dependencies:
+    - peak_current_a
+    - shaft_speed_rpm
+    engineering_note: 高负载或弱磁区应重点检查永磁体退磁裕度。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: guided
+    native_mapping_required_for_golden: false
+    recommended_step: topology_specific
+  ambient_temperature_c:
+    description: 环境空气温度，是热网络和散热边界的基础输入。
+    engineering_role: 热边界
+    engineering_group: 环境
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    - housing_temperature_c
+    dependencies: []
+    engineering_note: 应使用目标环境等级或试验实测值。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: guided
+    native_mapping_required_for_golden: false
+  initial_temperature_c:
+    description: 瞬态计算起始温度，用于定义热状态初值。
+    engineering_role: 热边界
+    engineering_group: 环境
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - winding_temperature_time
+    - housing_temperature_time
+    dependencies:
+    - ambient_temperature_c
+    engineering_note: 稳态分析通常影响有限，瞬态分析必须与初始状态一致。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: engineering
+    native_mapping_required_for_golden: false
+  coolant_inlet_temperature_c:
+    description: 冷却介质入口温度，直接决定液冷系统可用温差。
+    engineering_role: 冷却
+    engineering_group: 冷却
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    - housing_temperature_c
+    dependencies:
+    - coolant_flow_rate_lpm
+    engineering_note: 应与车辆/台架冷却回路真实供液温度一致。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: engineering
+    native_mapping_required_for_golden: false
+  coolant_flow_rate_lpm:
+    description: 冷却介质体积流量，影响对流换热能力和泵功需求。
+    engineering_role: 冷却
+    engineering_group: 冷却
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    - housing_temperature_c
+    dependencies:
+    - coolant_inlet_temperature_c
+    engineering_note: 提高流量的收益受流道、压降和换热系数共同限制。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: engineering
+    native_mapping_required_for_golden: false
+  external_air_speed_mps:
+    description: 机壳外部来流速度，用于表征风冷或车辆行驶条件下的外部对流。
+    engineering_role: 冷却
+    engineering_group: 冷却
+    lifecycle_scope: analysis_input
+    affects_metrics:
+    - housing_temperature_c
+    - winding_max_temperature_c
+    dependencies:
+    - ambient_temperature_c
+    engineering_note: 应根据风道或车辆工况定义，静止环境不宜使用人为高风速。
+    optimization_eligible: false
+    recommended_range_policy: scenario_or_analysis_specific
+    visibility: engineering
+    native_mapping_required_for_golden: false
+  housing_diameter:
+    description: 机壳外径，影响整机包络、机械安装及外部散热面积。
+    engineering_role: 结构尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - housing_temperature_c
+    - total_weight_kg
+    dependencies:
+    - stator_outer_diameter
+    engineering_note: 应与定子外径、冷却夹套和装配间隙共同定义。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  shaft_diameter:
+    description: 主轴直径，影响转子支撑刚度、临界转速和轴系质量。
+    engineering_role: 机械结构
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - max_von_mises_stress_mpa
+    - max_displacement_mm
+    - total_weight_kg
+    dependencies:
+    - shaft_hole_diameter
+    - rotor_diameter
+    engineering_note: 高速设计应结合强度、模态和轴承接口确定。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  shaft_hole_diameter:
+    description: 空心轴内孔直径，影响轴系质量与截面强度。
+    engineering_role: 机械结构
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - max_von_mises_stress_mpa
+    - total_weight_kg
+    dependencies:
+    - shaft_diameter
+    engineering_note: 必须保持足够壁厚并结合工艺、公差和临界转速检查。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  rotor_lamination_length:
+    description: 转子铁心有效轴向长度，影响转矩能力、转子损耗和有效叠长匹配。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - total_weight_kg
+    dependencies:
+    - stator_lamination_length
+    - magnet_length
+    engineering_note: 通常应与定子有效长度和磁钢长度相协调。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  slot_width:
+    description: 槽主体宽度，决定可用铜面积并影响齿宽和局部磁密。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - copper_loss_w
+    - winding_max_temperature_c
+    - stator_iron_loss_w
+    dependencies:
+    - tooth_width
+    - slot_depth
+    - slot_opening
+    engineering_note: 与齿宽存在直接几何竞争，应通过几何检查。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  slot_corner_radius:
+    description: 槽底圆角半径，用于描述槽型细节并影响局部磁场、应力和制造刀具半径。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - stator_iron_loss_w
+    dependencies:
+    - slot_width
+    - slot_depth
+    engineering_note: 应满足槽宽/槽深几何限制及冲片工艺。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  tooth_tip_depth:
+    description: 齿顶深度，影响槽口漏磁、齿顶饱和和齿槽转矩。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - torque_ripple_percent
+    - stator_iron_loss_w
+    - airgap_flux_density_curve
+    dependencies:
+    - slot_opening
+    - tooth_tip_angle
+    engineering_note: 适合在齿槽转矩与漏磁优化阶段细化。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  tooth_tip_angle:
+    description: 齿顶角度，用于定义齿顶/槽口形状并影响局部磁场分布。
+    engineering_role: 定子槽型
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - torque_ripple_percent
+    - airgap_flux_density_curve
+    dependencies:
+    - tooth_tip_depth
+    - slot_opening
+    engineering_note: 应避免形成不可制造的尖角或与槽口相交。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  sleeve_thickness:
+    description: 转子套筒厚度，用于高速永磁转子的机械约束，同时增加等效气隙。
+    engineering_role: 机械结构
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - max_von_mises_stress_mpa
+    - shaft_torque_nm
+    - airgap_flux_density_curve
+    dependencies:
+    - air_gap
+    - magnet_thickness
+    engineering_note: 高速设计需在机械强度与电磁气隙惩罚之间权衡。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  banding_thickness:
+    description: 转子绑带厚度，用于约束永磁体离心载荷并影响气隙磁路。
+    engineering_role: 机械结构
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - max_von_mises_stress_mpa
+    - shaft_torque_nm
+    dependencies:
+    - air_gap
+    - magnet_thickness
+    engineering_note: 材料、电导率及厚度还可能影响转子附加损耗。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_length:
+    description: 永磁体轴向有效长度，用于匹配叠长并控制有效磁体积。
+    engineering_role: 永磁体
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - magnet_loss_w
+    - total_weight_kg
+    dependencies:
+    - stator_lamination_length
+    - rotor_lamination_length
+    engineering_note: 端部超出有效铁心时应检查端部漏磁和机械固定。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  rotor_diameter:
+    description: 内转子外包络直径，连同定子孔径和气隙定义主要气隙半径。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - airgap_flux_density_curve
+    - total_weight_kg
+    dependencies:
+    - stator_inner_diameter
+    - air_gap
+    engineering_note: 必须与定子内径及气隙保持一致。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  rotor_outer_diameter:
+    description: 外转子结构的外包络直径，决定外转子机械尺寸与有效转矩半径。
+    engineering_role: 主要尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - total_weight_kg
+    dependencies:
+    - stator_outer_diameter
+    - air_gap
+    engineering_note: 仅适用于外转子拓扑，应使用拓扑专属几何规则。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  axial_rotor_diameter:
+    description: 轴向磁通转子盘外径，是 AFPM 转矩半径、磁体面积和离心载荷的核心尺度。
+    engineering_role: AFPM 总体尺寸
+    engineering_group: 几何
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - output_power_w
+    - magnet_loss_w
+    - total_weight_kg
+    dependencies:
+    - air_gap
+    - magnet_thickness
+    engineering_note: 轴向电机应同时约束内外径比、盘厚和最高转速。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_width:
+    description: IPM 磁钢横向宽度，影响磁通量、磁桥宽度、凸极效应和转子强度。
+    engineering_role: IPM 转子
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - magnet_loss_w
+    - max_von_mises_stress_mpa
+    dependencies:
+    - magnet_embed_depth
+    - pole_v_angle_deg
+    engineering_note: 需结合磁桥、隔磁槽及高速应力约束。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_embed_depth:
+    description: IPM 磁钢埋入转子表面的深度，影响磁桥厚度、漏磁和机械强度。
+    engineering_role: IPM 转子
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - magnet_loss_w
+    - max_von_mises_stress_mpa
+    dependencies:
+    - magnet_width
+    - pole_v_angle_deg
+    engineering_note: 埋深增大通常改善机械保护，同时会改变漏磁和凸极性。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  pole_v_angle_deg:
+    description: V 型 IPM 磁钢两翼夹角，控制磁阻转矩、磁通聚集和磁桥受力。
+    engineering_role: IPM 转子
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - torque_ripple_percent
+    - max_von_mises_stress_mpa
+    dependencies:
+    - magnet_width
+    - magnet_embed_depth
+    - magnet_separation
+    engineering_note: 属于 IPM 关键几何优化变量。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_separation:
+    description: 同一磁极内磁钢之间的间隔，用于定义磁桥/隔磁区域。
+    engineering_role: IPM 转子
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - magnet_loss_w
+    - max_von_mises_stress_mpa
+    dependencies:
+    - magnet_width
+    - pole_v_angle_deg
+    engineering_note: 过小可能降低机械余量，过大会增加漏磁。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: topology_specific
+  magnet_layers:
+    description: IPM 多层磁钢的层数，决定转子磁路复杂度、凸极性和制造成本。
+    engineering_role: IPM 拓扑
+    engineering_group: 永磁体
+    lifecycle_scope: motor_design
+    affects_metrics:
+    - shaft_torque_nm
+    - efficiency_percent
+    - max_von_mises_stress_mpa
+    dependencies:
+    - magnet_width
+    - magnet_embed_depth
+    engineering_note: 离散拓扑变量；变更层数后需要重新验证转子几何和磁桥。
+    optimization_eligible: true
+    recommended_range_policy: starter_or_topology_specific
+    visibility: engineering
+    native_mapping_required_for_golden: true
+    recommended_step: 1

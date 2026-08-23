@@ -1,0 +1,11 @@
+MotorCAD Studio current clean source release
+Version: 0.88.1
+Schema: 44
+Iteration: V0.88-A Native Semantic Binding Authority
+Source basis: V0.88.0 Engineering Closure clean release
+Native target: Motor-CAD 2026R1 / PyMotorCAD 0.8.8
+Native binding contract: motorcad-2026R1-v2
+Windows production qualification contract: 0.88-A
+Authority chain: canonical semantic ID -> reviewed candidates -> live read/same-value-write/readback -> source-scoped profile -> frozen BindingPlan -> native readback evidence
+Regression evidence: 70/70 non-E2E PASS; 9/9 Chromium HMI E2E PASS; 75/75 JavaScript syntax PASS; Python compileall PASS
+Formal Windows + licensed Motor-CAD 2026R1 semantic/workstation qualification: pending target-workstation live evidence

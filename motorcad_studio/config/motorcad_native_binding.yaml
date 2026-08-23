@@ -1,0 +1,179 @@
+version: 2
+binding_version: motorcad-2026R1-v2
+target_motorcad_version: 2026R1
+required_pymotorcad_version: 0.8.8
+source_policy: >-
+  Versioned Motor-CAD native binding metadata. Parameter names remain owned by
+  solver_versions/2026R1/parameter_mapping.yaml. Configured aliases are discovery
+  candidates only; a template/version/source-fingerprint scoped live semantic profile
+  becomes authoritative after Motor-CAD read/write/readback qualification.
+
+semantic_authority:
+  authority: NativeSemanticBindingAuthorityV1
+  cache_scope: target_version+binding_version+template_id+model_source_fingerprint
+  discovery_policy: configured_candidates_plus_datastore_and_geometry_evidence
+  qualification_probe: idempotent_same_value_read_write_readback
+  planner_policy: live_profile_exact_names_then_versioned_config_candidates
+  inherited_material_policy: readback_only_no_template_rewrite
+  production_requirement: all_golden_templates_qualified
+  golden_templates:
+    - i5_Industrial_SPM_Servo_Tooth_Wound
+    - e9_eMobility_IPM
+    - e14_eMobility_AFM
+
+parameter_order:
+  topology: 10
+  geometry: 20
+  magnet: 30
+  winding: 40
+  operating: 60
+  environment: 70
+  cooling: 80
+  advanced: 90
+
+material_component_candidates:
+  Stator Lamination:
+    - Stator Lam (Back Iron)
+    - Stator Lam (Tooth)
+    - Stator Lamination
+  Rotor Lamination:
+    - Rotor Lam (Back Iron)
+    - Rotor Lam (Tooth)
+    - Rotor Lamination
+  Magnet:
+    - Magnet
+  Conductor:
+    - Copper - Active
+    - Copper (Active)
+    - Winding Conductor
+    - Stator Winding
+    - Conductor
+  Shaft:
+    - Shaft
+    - Shaft (Active)
+  Housing:
+    - Housing
+    - Housing (Active)
+  Sleeve:
+    - Sleeve
+    - Rotor Sleeve
+  Rotor Bar:
+    - Rotor Bar
+    - Rotor Bars
+    - Rotor Conductor
+    - Rotor Cage
+    - Rotor Cage Top
+    - Rotor Cage Bottom
+    - Rotor Cage Top Opening
+    - Rotor Cage Bottom Opening
+  End Ring:
+    - End Ring
+    - End Rings
+    - Rotor End Ring
+    - Rotor Cage End F
+    - Rotor Cage End R
+
+winding:
+  custom_mode:
+    candidates: [MagneticWindingType, MagWindingType]
+    value: 2
+  path_types:
+    upper_lower:
+      variable: MagPathType
+      value: 1
+    left_right:
+      variable: MagPathType
+      value: 0
+  high_level:
+    phase_count:
+      candidates: [MagPhases]
+      context: EMag
+      order: 41
+    parallel_paths:
+      candidates: [ParallelPaths, Parallel_Paths]
+      context: EMag
+      order: 42
+    layers:
+      candidates: [WindingLayers]
+      context: EMag
+      order: 43
+
+analysis_bindings:
+  emag:
+    context: EMag
+    command: do_magnetic_calculation
+    solution_type: EMagnetic
+    license_context: EMag
+  thermal_steady:
+    context: Therm
+    command: do_steady_state_analysis
+    solution_type: SteadyState
+    license_context: Therm
+  thermal_transient:
+    context: Therm
+    command: do_transient_analysis
+    solution_type: Transient
+    license_context: Therm
+  emag_thermal:
+    context: Therm
+    command: do_magnetic_thermal_calculation
+    solution_type: SteadyState
+    license_context: Therm
+  emag_thermal_coupled:
+    context: Therm
+    command: do_magnetic_thermal_calculation
+    solution_type: SteadyState
+    license_context: Therm
+  mechanical:
+    context: Mechanical
+    command: do_mechanical_calculation
+    solution_type: null
+    license_context: Mechanical
+  weight:
+    context: Mechanical
+    command: do_weight_calculation
+    solution_type: null
+    license_context: Mechanical
+  lab_magnetic:
+    context: Lab
+    command: calculate_magnetic_lab
+    solution_type: Lab
+    license_context: Lab
+  lab_operating_point:
+    context: Lab
+    command: calculate_operating_point_lab
+    solution_type: Lab
+    license_context: Lab
+
+# Derived native writes are topology-specific and never become canonical design
+# parameters. They are included in the binding plan so the reason/source is auditable.
+topologies:
+  rfpm_spm:
+    native_motor_type: BPM
+    derived_bindings: []
+  rfpm_ipm:
+    native_motor_type: BPM
+    derived_bindings: []
+  outer_rotor_pm:
+    native_motor_type: BPMOR
+    derived_bindings: []
+  induction:
+    native_motor_type: IM
+    derived_bindings: []
+  afpm:
+    native_motor_type: BPM
+    derived_bindings:
+      - id: afpm_stator_poles_from_slot_count
+        source_parameter: slot_count
+        strategy: identity
+        candidates: [Stator_Poles]
+        context: EMag
+        order: 25
+        required: true
+      - id: afpm_stator_pole_angle_from_slot_count
+        source_parameter: slot_count
+        strategy: angle_pitch_deg
+        candidates: [Stator_Pole_Angle]
+        context: EMag
+        order: 26
+        required: true

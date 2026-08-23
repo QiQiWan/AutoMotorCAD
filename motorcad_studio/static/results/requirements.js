@@ -1,0 +1,59 @@
+/* V0.83 Engineering Requirements & Decision Policy Authority. */
+(() => {
+  const safe=v=>typeof esc==='function'?esc(v??''):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
+  const defaultCatalog=[
+    ['shaft_torque_nm','轴端转矩','Nm','GE','HARD_CONSTRAINT'],['efficiency_percent','效率','%','GE','HARD_CONSTRAINT'],
+    ['torque_ripple_percent','转矩脉动','%','LE','WARNING'],['output_power_w','输出功率','W','GE','OBJECTIVE'],
+    ['total_loss_w','总损耗','W','LE','OBJECTIVE'],['copper_loss_w','铜耗','W','LE','WARNING'],
+    ['stator_iron_loss_w','定子铁耗','W','LE','WARNING'],['magnet_loss_w','磁体损耗','W','LE','WARNING'],
+    ['winding_max_temperature_c','绕组最高温度','°C','LE','HARD_CONSTRAINT'],['magnet_temperature_c','磁体温度','°C','LE','HARD_CONSTRAINT']
+  ];
+  let catalog=[...defaultCatalog];
+  const fallbackHint=id=>defaultCatalog.find(row=>row[0]===id)||[id,id,'','LE','MONITOR'];
+  const metricMeta=id=>catalog.find(row=>row[0]===id)||fallbackHint(id);
+  const kindLabel=v=>({HARD_CONSTRAINT:'硬约束',OBJECTIVE:'优化目标',WARNING:'预警',MONITOR:'观察'}[v]||v||'—');
+  const evalStatus=v=>({QUALIFIED:'满足要求',QUALIFIED_WITH_WARNING:'满足硬约束 · 有预警',BLOCKED:'要求阻断',NOT_CONFIGURED:'未配置'}[v]||v||'—');
+
+  function render(requirementSet,evaluation){
+    if(!requirementSet)return `<article class="panel requirements-authority-card empty"><div class="section-head"><div><span class="eyebrow">ENGINEERING REQUIREMENTS</span><h3>尚未定义项目工程要求</h3><p>定义硬约束、优化目标和预警边界后，Results 与 Optimization 才会输出正式“是否满足要求”的判断。</p></div><button type="button" class="primary" data-edit-engineering-requirements>定义工程要求</button></div></article>`;
+    const summary=evaluation?.summary||{},rows=(requirementSet.requirements||[]).filter(r=>r.enabled!==false),policy=requirementSet.decision_policy||{};
+    const status=evaluation?.status||'CONFIGURED';
+    return `<article class="panel requirements-authority-card ${String(status).toLowerCase()}"><div class="section-head"><div><span class="eyebrow">ENGINEERING REQUIREMENTS · REV.${safe(requirementSet.revision)}</span><h3>${safe(requirementSet.name||'项目工程要求')}</h3><p>${evaluation?`${evalStatus(status)} · 当前 ResultBundle 适用 ${summary.applicable_count||0}/${summary.configured_count||rows.length} 项 · 硬约束失败 ${summary.hard_fail_count||0} · 预警 ${summary.warning_count||0}`:`已定义 ${rows.length} 项工程规则；等待 ResultBundle 后自动评价。`}</p></div><div class="actions"><span class="status ${evaluation?.formal_requirement_qualified?'formal':evaluation?.status==='BLOCKED'?'blocked':'review'}">${safe(evalStatus(status))}</span><button type="button" data-edit-engineering-requirements>管理要求</button></div></div><div class="requirements-rule-strip">${rows.slice(0,8).map(r=>`<span class="${String(r.kind||'monitor').toLowerCase()}"><b>${safe(r.label)}</b><small>${kindLabel(r.kind)} · ${safe(r.operator||r.direction||'观察')} ${r.limit!=null?safe(r.limit):r.lower!=null?`${safe(r.lower)}–${safe(r.upper)}`:''} ${safe(r.unit||'')}</small></span>`).join('')}</div><footer><small>Decision Policy · 正式结果 ${policy.formal_result_required===false?'非必需':'必需'} · Promotion ${policy.promotion_requires_requirement_qualification===false?'允许人工复核':'要求通过 Requirement Gate'} · Revision ${safe(String(requirementSet.content_hash||'').slice(0,12))}</small></footer></article>`;
+  }
+
+  function rowHtml(row={}){
+    const id=row.metric_id||'shaft_torque_nm',meta=metricMeta(id),kind=row.kind||meta[4],op=row.operator||meta[3];
+    return `<div class="requirements-editor-row" data-requirement-row><label>结果指标<select data-req-metric>${catalog.map(m=>`<option value="${safe(m[0])}" ${m[0]===id?'selected':''}>${safe(m[1])} · ${safe(m[0])}</option>`).join('')}</select></label><label>用途<select data-req-kind><option ${kind==='HARD_CONSTRAINT'?'selected':''} value="HARD_CONSTRAINT">硬约束</option><option ${kind==='OBJECTIVE'?'selected':''} value="OBJECTIVE">优化目标</option><option ${kind==='WARNING'?'selected':''} value="WARNING">预警</option><option ${kind==='MONITOR'?'selected':''} value="MONITOR">观察</option></select></label><label>规则<select data-req-op><option value="GE" ${op==='GE'?'selected':''}>≥</option><option value="LE" ${op==='LE'?'selected':''}>≤</option><option value="BETWEEN" ${op==='BETWEEN'?'selected':''}>区间</option></select></label><label>阈值<input data-req-limit type="number" step="any" value="${row.limit??''}" placeholder="工程阈值"></label><label>下限<input data-req-lower type="number" step="any" value="${row.lower??''}"></label><label>上限<input data-req-upper type="number" step="any" value="${row.upper??''}"></label><label>单位<input data-req-unit value="${safe(row.unit??meta[2])}" readonly title="单位来自 Result Registry"></label><label>预警带 %<input data-req-warning type="number" min="0" max="100" step="0.1" value="${row.warning_band_percent??5}"></label><button type="button" data-remove-requirement aria-label="删除要求">删除</button></div>`;
+  }
+
+  async function openEditor(projectId,onRefresh){
+    const [payload,catalogPayload]=await Promise.all([
+      api(`/api/projects/${encodeURIComponent(projectId)}/requirements`),
+      api(`/api/projects/${encodeURIComponent(projectId)}/requirements/metric-catalog`).catch(()=>({items:[]}))
+    ]),current=payload.requirements||null;
+    const dynamic=(catalogPayload.items||[]).map(item=>{const hint=fallbackHint(item.metric_id);return [item.metric_id,item.label||hint[1],item.unit??hint[2],hint[3],hint[4]]});
+    const existing=(current?.requirements||[]).map(item=>[item.metric_id,item.label||item.metric_id,item.unit||'',item.operator||'LE',item.kind||'MONITOR']);
+    const byId=new Map([...dynamic,...existing,...defaultCatalog].map(row=>[row[0],row]));
+    catalog=[...byId.values()];
+    q('#engineeringRequirementsEditor')?.remove();
+    const overlay=document.createElement('div');overlay.id='engineeringRequirementsEditor';overlay.className='requirements-editor-overlay';
+    const requirements=current?.requirements||[];const policy=current?.decision_policy||{};
+    overlay.innerHTML=`<section class="requirements-editor-dialog" role="dialog" aria-modal="true"><header><div><span class="eyebrow">REQUIREMENT AUTHORITY</span><h2>项目工程要求与决策策略</h2><p>保存会生成新的不可变 Requirement Revision。阈值由工程师明确给定，系统不根据 Baseline 自动猜测验收要求。</p></div><button type="button" data-close-requirements>关闭</button></header><div class="requirements-editor-meta"><label>要求集名称<input data-req-name value="${safe(current?.name||'Project engineering requirements')}"></label><label>Revision<b>Rev.${safe(current?.revision||0)} → Rev.${safe((current?.revision||0)+1)}</b></label><label>当前 Hash<b>${safe(String(current?.content_hash||'尚未建立').slice(0,16))}</b></label></div><div class="requirements-editor-policy"><label><input type="checkbox" data-policy-formal ${policy.formal_result_required!==false?'checked':''}> 正式 Result Trust 才允许正式验收</label><label><input type="checkbox" data-policy-missing ${policy.missing_hard_constraint_blocks!==false?'checked':''}> 硬约束指标缺失时阻断</label><label><input type="checkbox" data-policy-unit ${policy.unit_mismatch_blocks!==false?'checked':''}> 单位冲突时阻断</label><label><input type="checkbox" data-policy-promotion ${policy.promotion_requires_requirement_qualification!==false?'checked':''}> Promotion 必须通过 Requirement Gate</label><label><input type="checkbox" data-policy-warning ${policy.warning_blocks_promotion===true?'checked':''}> Warning 也阻断 Promotion</label><label><input type="checkbox" data-policy-uncovered ${policy.uncovered_hard_constraint_blocks!==false?'checked':''}> 未被候选证据覆盖的硬约束阻断 Promotion</label></div><div class="requirements-editor-head"><div><h3>要求指标</h3><p>硬约束用于正式 Gate；优化目标提供方向；预警用于裕度管理；观察项只展示。</p></div><button type="button" data-add-requirement>添加指标</button></div><div class="requirements-editor-rows" data-requirement-rows>${requirements.map(rowHtml).join('')||rowHtml()}</div><label class="requirements-editor-notes">Revision 说明<textarea data-req-notes rows="2" placeholder="记录本次阈值调整原因"></textarea></label><footer><div data-requirements-save-status></div><button type="button" data-close-requirements>取消</button><button type="button" class="primary" data-save-requirements>保存为新 Revision</button></footer></section>`;
+    document.body.appendChild(overlay);
+    const rowsBox=q('[data-requirement-rows]',overlay);
+    const bindRows=()=>{qa('[data-remove-requirement]',rowsBox).forEach(b=>b.onclick=()=>{b.closest('[data-requirement-row]')?.remove();if(!q('[data-requirement-row]',rowsBox))rowsBox.insertAdjacentHTML('beforeend',rowHtml());bindRows()});qa('[data-req-metric]',rowsBox).forEach(select=>{select.onchange=()=>{const row=select.closest('[data-requirement-row]'),meta=metricMeta(select.value),unit=q('[data-req-unit]',row);if(unit)unit.value=meta[2]||''}})};
+    bindRows();q('[data-add-requirement]',overlay).onclick=()=>{rowsBox.insertAdjacentHTML('beforeend',rowHtml());bindRows()};qa('[data-close-requirements]',overlay).forEach(b=>b.onclick=()=>overlay.remove());
+    q('[data-save-requirements]',overlay).onclick=async()=>{
+      const status=q('[data-requirements-save-status]',overlay),button=q('[data-save-requirements]',overlay);button.disabled=true;status.textContent='正在冻结 Requirement Revision…';
+      try{
+        const rules=qa('[data-requirement-row]',rowsBox).map((r,i)=>{const metric=q('[data-req-metric]',r).value,meta=metricMeta(metric),kind=q('[data-req-kind]',r).value,operator=q('[data-req-op]',r).value,limit=q('[data-req-limit]',r).value,lower=q('[data-req-lower]',r).value,upper=q('[data-req-upper]',r).value,direction=kind==='OBJECTIVE'?(operator==='GE'?'MAXIMIZE':operator==='LE'?'MINIMIZE':'TARGET'):'NONE';return {requirement_id:`REQ-${metric}-${i+1}`,metric_id:metric,label:meta[1],kind,operator:['HARD_CONSTRAINT','WARNING'].includes(kind)?operator:null,limit:((['HARD_CONSTRAINT','WARNING'].includes(kind)&&operator!=='BETWEEN')||(kind==='OBJECTIVE'&&direction==='TARGET'))&&limit!==''?Number(limit):null,lower:['HARD_CONSTRAINT','WARNING'].includes(kind)&&operator==='BETWEEN'&&lower!==''?Number(lower):null,upper:['HARD_CONSTRAINT','WARNING'].includes(kind)&&operator==='BETWEEN'&&upper!==''?Number(upper):null,unit:meta[2]||q('[data-req-unit]',r).value.trim(),direction,warning_band_percent:Number(q('[data-req-warning]',r).value||5),enabled:true,scope:{aggregation:'EACH'}}});
+        const body={name:q('[data-req-name]',overlay).value.trim()||'Project engineering requirements',requirements:rules,decision_policy:{formal_result_required:q('[data-policy-formal]',overlay).checked,hard_constraints_must_all_pass:true,missing_hard_constraint_blocks:q('[data-policy-missing]',overlay).checked,unit_mismatch_blocks:q('[data-policy-unit]',overlay).checked,warning_blocks_promotion:q('[data-policy-warning]',overlay).checked,uncovered_hard_constraint_blocks:q('[data-policy-uncovered]',overlay).checked,promotion_requires_requirement_qualification:q('[data-policy-promotion]',overlay).checked,baseline_claims_require_formal_comparability:true,objective_policy:'INFORMATIVE'},notes:q('[data-req-notes]',overlay).value.trim(),expected_revision:current?.revision||0};
+        await api(`/api/projects/${encodeURIComponent(projectId)}/requirements`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});status.textContent='Requirement Revision 已保存';if(typeof notify==='function')notify('项目工程要求已创建新 Revision','SUCCESS');overlay.remove();await onRefresh?.();
+      }catch(error){button.disabled=false;status.textContent=`保存失败：${error.message||error}`;if(typeof notify==='function')notify(error.message||String(error),'ERROR',9000)}
+    };
+  }
+
+  function bind(host,{projectId,onRefresh}){qa('[data-edit-engineering-requirements]',host).forEach(b=>b.addEventListener('click',()=>openEditor(projectId,onRefresh)))}
+  window.MCSEngineeringRequirements=Object.freeze({render,bind,openEditor,kindLabel,evalStatus});
+})();

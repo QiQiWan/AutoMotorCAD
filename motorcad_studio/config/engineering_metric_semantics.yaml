@@ -1,0 +1,493 @@
+version: 1
+contract_version: 0.87-C
+coverage_policy: all_canonical_outputs
+metrics:
+  shaft_torque_nm:
+    description: 输出轴平均转矩，是电机负载能力的核心性能指标。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: Nm
+  torque_ripple_percent:
+    description: 转矩周期波动比例，用于评价平顺性和电磁激振风险。
+    engineering_group: 性能
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: '%'
+  efficiency_percent:
+    description: 输入能量转换为机械输出的效率。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: '%'
+  peak_line_voltage_v:
+    description: 线电压峰值，用于检查母线电压与逆变器调制裕度。
+    engineering_group: 电气约束
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: V
+  output_power_w:
+    description: 轴端机械输出功率。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: kW
+    display_scale: 0.001
+  total_loss_w:
+    description: 电机主要损耗分量的总和。
+    engineering_group: 损耗
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: sum
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: W
+    display_scale: 1.0
+  copper_loss_w:
+    description: 绕组电阻产生的铜损，是热负荷的主要来源之一。
+    engineering_group: 损耗
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: sum
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: W
+    display_scale: 1.0
+  stator_iron_loss_w:
+    description: 定子铁心磁滞与涡流损耗。
+    engineering_group: 损耗
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: sum
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: W
+    display_scale: 1.0
+  magnet_loss_w:
+    description: 永磁体内涡流等附加损耗，直接关联磁钢温升与退磁风险。
+    engineering_group: 损耗
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: sum
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: W
+    display_scale: 1.0
+  winding_max_temperature_c:
+    description: 绕组计算域内最高温度，用于绝缘寿命和热安全判断。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: degC
+  winding_average_temperature_c:
+    description: 绕组平均温度，用于整体热状态和热网络校核。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: degC
+  magnet_temperature_c:
+    description: 永磁体温度，用于磁性能衰减和退磁裕度判断。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: degC
+  housing_temperature_c:
+    description: 机壳代表性温度，用于散热路径和外表面热状态判断。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: degC
+  torque_angle_curve:
+    description: 转矩随机械角变化的波形，用于识别平均转矩、脉动和谐波来源。
+    engineering_group: 波形
+    favorable_direction: target
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: Nm
+  winding_temperature_time:
+    description: 绕组温度随时间的演化曲线。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: degC
+  lab_shaft_torque_nm:
+    description: Motor-CAD Lab 工况下的轴转矩。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: Nm
+  lab_efficiency_percent:
+    description: Motor-CAD Lab 工作点效率。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: scalar
+    aggregation_rule: mean
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: '%'
+  airgap_flux_density_curve:
+    description: 气隙磁密随机械角的分布，用于评价基波幅值、谐波和局部畸变。
+    engineering_group: 电磁场
+    favorable_direction: target
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: T
+  torque_harmonics:
+    description: 转矩波形的谐波幅值谱。
+    engineering_group: NVH/谐波
+    favorable_direction: minimize
+    recommended_view: spectrum
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: Nm
+  back_emf_curve:
+    description: 反电动势波形，用于电压匹配、谐波和绕组设计验证。
+    engineering_group: 电气约束
+    favorable_direction: target
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: V
+  housing_temperature_time:
+    description: 机壳温度随时间的变化。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: degC
+  heat_flow_time:
+    description: 热流随时间变化，用于识别冷却路径与瞬态换热过程。
+    engineering_group: 热
+    favorable_direction: target
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: W
+  torque_speed_envelope:
+    description: 转矩-转速能力包络，用于评价基速、高速弱磁和功率区间。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: line
+    aggregation_rule: envelope
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: Nm
+  force_spatial_harmonics:
+    description: 电磁力的空间阶次谱，是结构激励分析的重要输入。
+    engineering_group: NVH/谐波
+    favorable_direction: minimize
+    recommended_view: spectrum
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: N
+  force_temporal_harmonics:
+    description: 电磁力的时间频率谱，用于识别主要激振频率。
+    engineering_group: NVH/谐波
+    favorable_direction: minimize
+    recommended_view: spectrum
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: N
+  lab_thermal_envelope:
+    description: Lab 工况下温度或热限制包络。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: line
+    aggregation_rule: envelope
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: Nm
+  duty_cycle_temperature_time:
+    description: 任务循环下关键温度随时间演化。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: line
+    aggregation_rule: series
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: degC
+  max_von_mises_stress_mpa:
+    description: 结构域内最大 Von Mises 等效应力，用于强度与安全裕度判断。
+    engineering_group: 机械
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: MPa
+  max_displacement_mm:
+    description: 结构域内最大位移，用于气隙、转子变形和装配风险判断。
+    engineering_group: 机械
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: max
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: mm
+  total_weight_kg:
+    description: 电机总质量，用于功率密度、成本和机械载荷评价。
+    engineering_group: 质量
+    favorable_direction: minimize
+    recommended_view: scalar
+    aggregation_rule: sum
+    comparison_rule: absolute_and_relative
+    requirement_eligible: true
+    optimization_eligible: true
+    scorecard_eligible: true
+    display_unit: kg
+  emag_saturation_map:
+    description: 电磁饱和和损耗的二维空间分布。
+    engineering_group: 电磁场
+    favorable_direction: target
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '-'
+  lab_efficiency_map:
+    description: 转矩-转速工作域内的效率分布图。
+    engineering_group: 性能
+    favorable_direction: maximize
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '%'
+  lab_loss_map:
+    description: 工作域内的损耗分布图。
+    engineering_group: 损耗
+    favorable_direction: minimize
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: W
+  lab_thermal_map:
+    description: 工作域内的热状态分布图。
+    engineering_group: 热
+    favorable_direction: minimize
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: degC
+  lab_generator_map:
+    description: 发电工况工作域内的性能分布。
+    engineering_group: 性能
+    favorable_direction: target
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '%'
+  nvh_campbell_map:
+    description: 频率随转速变化的 Campbell 图，用于识别阶次与模态交叉。
+    engineering_group: NVH/谐波
+    favorable_direction: minimize
+    recommended_view: map2d
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: dB
+  stress_field:
+    description: 结构有限元应力场，用于定位高应力区域。
+    engineering_group: 机械
+    favorable_direction: minimize
+    recommended_view: field
+    aggregation_rule: field
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: MPa
+  thermal_node_table:
+    description: 热网络各节点温度与热状态表。
+    engineering_group: 热
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '-'
+  force_position_table:
+    description: 多个空间位置的电磁力结果表。
+    engineering_group: NVH/谐波
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: N
+  component_weight_table:
+    description: 电机各部件质量分解表。
+    engineering_group: 质量
+    favorable_direction: minimize
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: kg
+  modal_frequency_table:
+    description: 主要结构模态频率表，用于避开电磁激励频率。
+    engineering_group: 机械
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: Hz
+  lab_operating_point_table:
+    description: Lab 工作点性能结果表。
+    engineering_group: 性能
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '-'
+  duty_cycle_performance_table:
+    description: 任务循环各阶段性能与热状态表。
+    engineering_group: 性能
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '-'
+  lab_test_performance_table:
+    description: Lab 测试/仿真性能汇总表。
+    engineering_group: 性能
+    favorable_direction: target
+    recommended_view: table
+    aggregation_rule: table
+    comparison_rule: shape_and_key_features
+    requirement_eligible: false
+    optimization_eligible: false
+    scorecard_eligible: false
+    display_unit: '-'

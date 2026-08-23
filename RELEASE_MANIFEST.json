@@ -1,0 +1,99 @@
+{
+  "version": "0.88.1",
+  "schema_version": 44,
+  "release_track": "current_clean_release",
+  "iteration": "V0.88-A Native Semantic Binding Authority",
+  "source_distribution": "latest_only_clean",
+  "source_file_count": 358,
+  "source_tree_sha256_excluding_manifest": "2557e3b91b4dcec2079abd8ab43613697230ce748a317c4f3eebc7bb5fd5e30d",
+  "source_tree_hash_algorithm": "sha256(sorted(relative_path + NUL + file_sha256_bytes + LF))",
+  "component_counts": {
+    "docs": 8,
+    "scripts": 22,
+    "tests": 21,
+    "javascript": 75,
+    "css": 7,
+    "yaml": 32,
+    "mtt": 33
+  },
+  "canonical_source_authorities": {
+    "config": "motorcad_studio/config",
+    "seed_data": "motorcad_studio/seed_data",
+    "working_data": "data (materialized at runtime)"
+  },
+  "engineer_workflow": [
+    "Design",
+    "Validate",
+    "Decide"
+  ],
+  "golden_motor_starters": [
+    "SPM",
+    "IPM",
+    "AFPM"
+  ],
+  "startup_self_check": {
+    "automatic": "shallow only",
+    "progress": "0-100% visible",
+    "deep_motorcad_check": "manual"
+  },
+  "interaction_integrity": {
+    "full_shell_all_js_browser_gate": true,
+    "stale_project_context_auto_invalidation": true,
+    "retired_dom_bootstrap_dependency_count": 0
+  },
+  "native_semantic_binding_authority": {
+    "authority": "NativeSemanticBindingAuthorityV1",
+    "binding_version": "motorcad-2026R1-v2",
+    "target_motorcad_version": "2026R1",
+    "required_pymotorcad_version": "0.8.8",
+    "profile_scope": "target+binding+template+model_source_fingerprint",
+    "write_qualification": "read -> idempotent same-value write -> readback",
+    "read_only_downgrade_guard": true,
+    "template_inherited_material_policy": "readback_only_no_rewrite",
+    "one_to_many_material_components": true,
+    "golden_templates": [
+      "i5_Industrial_SPM_Servo_Tooth_Wound",
+      "e9_eMobility_IPM",
+      "e14_eMobility_AFM"
+    ],
+    "local_live_qualified_count": 0,
+    "windows_live_evidence": "pending"
+  },
+  "native_motorcad_workstation_qualification_percent": 0,
+  "production_qualification": {
+    "windows_contract": "0.88-A",
+    "runtime_lifecycle": "locally qualified",
+    "windows_motorcad": "pending live Windows + licensed Motor-CAD 2026R1 semantic/workstation evidence",
+    "native_semantic_authority_gate": "required for every representative SPM/IPM/AFPM/IM scenario",
+    "native_soak_100_500": "pending real qualified Windows workstation"
+  },
+  "current_test_summary": {
+    "non_e2e": "70/70 PASS",
+    "browser_hmi": "9/9 PASS",
+    "javascript_syntax": "75/75 PASS",
+    "python_compileall": "PASS",
+    "pytest_collection": "79/79; 0 collection errors",
+    "v088a_semantic_authority": "10/10 PASS",
+    "windows_production_contract": "10/10 PASS"
+  },
+  "cleanup": {
+    "historical_docs_removed": true,
+    "historical_tests_removed": true,
+    "legacy_runners_removed": true,
+    "duplicate_root_config_removed": true,
+    "duplicate_root_templates_removed": true,
+    "generated_runtime_state_removed": true,
+    "python_cache_removed": true
+  },
+  "field_diagnostic_closure": {
+    "undefined_workflow_helper": "fixed",
+    "longitudinal_rz_section": "rebuilt",
+    "design_save_return": "fixed",
+    "winding_marker_legend": "added",
+    "material_dialog_resizable": "80vw x 80vh default",
+    "magnet_curves": "raw when available; derived reference clearly labeled otherwise",
+    "material_assignment": "explicit button + double-click; does not mutate source DB",
+    "native_validation_fault_tree": "material/geometry/winding/roundtrip stages",
+    "uploaded_runtime_material_binding_root_cause": "source-contract fix applied; Windows native rerun pending"
+  }
+}

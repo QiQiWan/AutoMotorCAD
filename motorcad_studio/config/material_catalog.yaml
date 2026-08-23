@@ -1,0 +1,130 @@
+version: 2026-08
+notes:
+  zh: >-
+    内置目录用于快速选型和常用牌号检索。磁体/电工钢的精确BH、退磁、损耗及温度曲线仍以供应商数据和实际Motor-CAD材料数据库为准；同名牌号在不同供应商之间可能存在差异。
+  en: >-
+    The built-in catalog is intended for rapid engineering selection. Exact B-H, demagnetization, loss and temperature-dependent curves must still come from the supplier and the active Motor-CAD materials database; nominally identical grades can differ by supplier.
+sources:
+  - id: tdk_neorec
+    title: TDK NEOREC neodymium magnet catalog
+    url: https://product.tdk.com/en/search/magnet/magnet/neodymium/catalog
+  - id: arnold_ndfeb
+    title: Arnold Magnetic Technologies NdFeB grades
+    url: https://www.arnoldmagnetics.com/products/neodymium-iron-boron-magnets/
+  - id: thyssenkrupp_powercore
+    title: thyssenkrupp powercore A non-grain-oriented electrical steel
+    url: https://www.thyssenkrupp-steel.com/en/products/electrical-steel/electrical-steel-non-grain-oriented/powercore-a/powercore-a.html
+categories:
+  magnet:
+    label_zh: 永磁体
+    label_en: Permanent magnets
+  electrical_steel:
+    label_zh: 电工钢/叠片
+    label_en: Electrical steel / laminations
+  conductor:
+    label_zh: 导体
+    label_en: Conductors
+  structural:
+    label_zh: 结构材料
+    label_en: Structural materials
+  fluid:
+    label_zh: 冷却介质
+    label_en: Cooling fluids
+materials:
+  # Common generic NdFeB grade families. Grade-class temperatures are engineering selection guidance;
+  # exact supplier curves and usable temperatures must be verified before production use.
+  - {id: N35, category: magnet, motorcad_name: N35, label_zh: "NdFeB N35（通用）", label_en: "NdFeB N35 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N38, category: magnet, motorcad_name: N38, label_zh: "NdFeB N38（通用）", label_en: "NdFeB N38 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N40, category: magnet, motorcad_name: N40, label_zh: "NdFeB N40（通用）", label_en: "NdFeB N40 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N42, category: magnet, motorcad_name: N42, label_zh: "NdFeB N42（通用）", label_en: "NdFeB N42 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N45, category: magnet, motorcad_name: N45, label_zh: "NdFeB N45（通用）", label_en: "NdFeB N45 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N48, category: magnet, motorcad_name: N48, label_zh: "NdFeB N48（通用）", label_en: "NdFeB N48 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N50, category: magnet, motorcad_name: N50, label_zh: "NdFeB N50（通用）", label_en: "NdFeB N50 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N52, category: magnet, motorcad_name: N52, label_zh: "NdFeB N52（通用）", label_en: "NdFeB N52 (general)", grade_family: N, temperature_class_c: 80, status: generic}
+  - {id: N35H, category: magnet, motorcad_name: N35H, label_zh: "NdFeB N35H（高温）", label_en: "NdFeB N35H (high temperature)", grade_family: H, temperature_class_c: 120, status: generic}
+  - {id: N40H, category: magnet, motorcad_name: N40H, label_zh: "NdFeB N40H（高温）", label_en: "NdFeB N40H (high temperature)", grade_family: H, temperature_class_c: 120, status: generic}
+  - {id: N42H, category: magnet, motorcad_name: N42H, label_zh: "NdFeB N42H（高温）", label_en: "NdFeB N42H (high temperature)", grade_family: H, temperature_class_c: 120, status: generic}
+  - {id: N45H, category: magnet, motorcad_name: N45H, label_zh: "NdFeB N45H（高温）", label_en: "NdFeB N45H (high temperature)", grade_family: H, temperature_class_c: 120, status: generic}
+  - id: N48H
+    category: magnet
+    motorcad_name: N48H
+    label_zh: NdFeB N48H（高温）
+    label_en: NdFeB N48H (high temperature)
+    grade_family: H
+    temperature_class_c: 120
+    status: public_reference
+    properties: {br_mT_typ: 1390, hcj_kApm_min: 1353, bhmax_kJpm3_typ: 378, alpha_br_pct_per_c: -0.12}
+    source: arnold_ndfeb
+  - {id: N30SH, category: magnet, motorcad_name: N30SH, label_zh: "NdFeB N30SH（耐高温）", label_en: "NdFeB N30SH", grade_family: SH, temperature_class_c: 150, status: generic}
+  - {id: N35SH, category: magnet, motorcad_name: N35SH, label_zh: "NdFeB N35SH（耐高温）", label_en: "NdFeB N35SH", grade_family: SH, temperature_class_c: 150, status: generic}
+  - {id: N38SH, category: magnet, motorcad_name: N38SH, label_zh: "NdFeB N38SH（耐高温）", label_en: "NdFeB N38SH", grade_family: SH, temperature_class_c: 150, status: generic}
+  - {id: N40SH, category: magnet, motorcad_name: N40SH, label_zh: "NdFeB N40SH（耐高温）", label_en: "NdFeB N40SH", grade_family: SH, temperature_class_c: 150, status: generic}
+  - id: N42SH
+    category: magnet
+    motorcad_name: N42SH
+    label_zh: NdFeB N42SH（耐高温）
+    label_en: NdFeB N42SH
+    grade_family: SH
+    temperature_class_c: 150
+    status: public_reference
+    properties: {br_mT_typ: 1310, hcj_kApm_min: 1592, bhmax_kJpm3_typ: 330, alpha_br_pct_per_c: -0.12, density_kgpm3_typ: 7600}
+    source: arnold_ndfeb
+  - {id: N45SH, category: magnet, motorcad_name: N45SH, label_zh: "NdFeB N45SH（耐高温）", label_en: "NdFeB N45SH", grade_family: SH, temperature_class_c: 150, status: generic}
+  - {id: N30UH, category: magnet, motorcad_name: N30UH, label_zh: "NdFeB N30UH（超高矫顽力）", label_en: "NdFeB N30UH", grade_family: UH, temperature_class_c: 180, status: generic}
+  - {id: N35UH, category: magnet, motorcad_name: N35UH, label_zh: "NdFeB N35UH（超高矫顽力）", label_en: "NdFeB N35UH", grade_family: UH, temperature_class_c: 180, status: generic}
+  - {id: N38UH, category: magnet, motorcad_name: N38UH, label_zh: "NdFeB N38UH（超高矫顽力）", label_en: "NdFeB N38UH", grade_family: UH, temperature_class_c: 180, status: generic}
+  - id: N40UH
+    category: magnet
+    motorcad_name: N40UH
+    label_zh: NdFeB N40UH（TDK NEOREC 40UH参考）
+    label_en: NdFeB N40UH (TDK NEOREC 40UH reference)
+    grade_family: UH
+    temperature_class_c: 140
+    status: public_reference
+    properties: {br_mT_typ: 1290, hcj_kApm_min: 1990, bhmax_kJpm3_typ: 310}
+    source: tdk_neorec
+  - {id: N42UH, category: magnet, motorcad_name: N42UH, label_zh: "NdFeB N42UH（超高矫顽力）", label_en: "NdFeB N42UH", grade_family: UH, temperature_class_c: 180, status: generic}
+  - {id: N28EH, category: magnet, motorcad_name: N28EH, label_zh: "NdFeB N28EH（极高矫顽力）", label_en: "NdFeB N28EH", grade_family: EH, temperature_class_c: 200, status: generic}
+  - {id: N30EH, category: magnet, motorcad_name: N30EH, label_zh: "NdFeB N30EH（极高矫顽力）", label_en: "NdFeB N30EH", grade_family: EH, temperature_class_c: 200, status: generic}
+  - {id: N33EH, category: magnet, motorcad_name: N33EH, label_zh: "NdFeB N33EH（极高矫顽力）", label_en: "NdFeB N33EH", grade_family: EH, temperature_class_c: 200, status: generic}
+  - {id: N35EH, category: magnet, motorcad_name: N35EH, label_zh: "NdFeB N35EH（极高矫顽力）", label_en: "NdFeB N35EH", grade_family: EH, temperature_class_c: 200, status: generic}
+  - {id: SmCo_2_17, category: magnet, motorcad_name: SmCo 2-17, label_zh: "SmCo 2:17（高温永磁）", label_en: "SmCo 2:17", grade_family: SmCo, temperature_class_c: 300, status: generic}
+
+  # Common non-grain-oriented electrical steel grades; core-loss figures are standard/maximum orientation aids.
+  - {id: M235-35A, category: electrical_steel, motorcad_name: M235-35A, label_zh: "M235-35A 0.35mm低损耗电工钢", label_en: "M235-35A 0.35 mm NGO steel", thickness_mm: 0.35, max_loss_wpkg_50hz_1p5t: 2.35, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M250-35A, category: electrical_steel, motorcad_name: M250-35A, label_zh: "M250-35A 0.35mm电工钢", label_en: "M250-35A 0.35 mm NGO steel", thickness_mm: 0.35, density_kgpm3: 7600, max_loss_wpkg_50hz_1p5t: 2.50, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M270-35A, category: electrical_steel, motorcad_name: M270-35A, label_zh: "M270-35A 0.35mm电工钢", label_en: "M270-35A 0.35 mm NGO steel", thickness_mm: 0.35, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 2.70, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M300-35A, category: electrical_steel, motorcad_name: M300-35A, label_zh: "M300-35A 0.35mm电工钢", label_en: "M300-35A 0.35 mm NGO steel", thickness_mm: 0.35, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 3.00, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M330-35A, category: electrical_steel, motorcad_name: M330-35A, label_zh: "M330-35A 0.35mm电工钢", label_en: "M330-35A 0.35 mm NGO steel", thickness_mm: 0.35, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 3.30, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M250-50A, category: electrical_steel, motorcad_name: M250-50A, label_zh: "M250-50A 0.50mm电工钢", label_en: "M250-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7600, max_loss_wpkg_50hz_1p5t: 2.50, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M270-50A, category: electrical_steel, motorcad_name: M270-50A, label_zh: "M270-50A 0.50mm电工钢", label_en: "M270-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7600, max_loss_wpkg_50hz_1p5t: 2.70, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M310-50A, category: electrical_steel, motorcad_name: M310-50A, label_zh: "M310-50A 0.50mm电工钢", label_en: "M310-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 3.10, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M330-50A, category: electrical_steel, motorcad_name: M330-50A, label_zh: "M330-50A 0.50mm电工钢", label_en: "M330-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 3.30, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M350-50A, category: electrical_steel, motorcad_name: M350-50A, label_zh: "M350-50A 0.50mm电工钢", label_en: "M350-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7650, max_loss_wpkg_50hz_1p5t: 3.50, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M400-50A, category: electrical_steel, motorcad_name: M400-50A, label_zh: "M400-50A 0.50mm通用电工钢", label_en: "M400-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7700, max_loss_wpkg_50hz_1p5t: 4.00, status: public_reference, source: thyssenkrupp_powercore}
+  - {id: M470-50A, category: electrical_steel, motorcad_name: M470-50A, label_zh: "M470-50A 0.50mm通用电工钢", label_en: "M470-50A 0.50 mm NGO steel", thickness_mm: 0.50, density_kgpm3: 7700, max_loss_wpkg_50hz_1p5t: 4.70, status: public_reference, source: thyssenkrupp_powercore}
+
+  - {id: Copper, category: conductor, motorcad_name: Copper, label_zh: "铜 Cu（绕组常用）", label_en: "Copper Cu", electrical_resistivity_ohm_m_20c: 1.724e-8, density_kgpm3: 8960, status: generic}
+  - {id: Aluminium, category: conductor, motorcad_name: Aluminium, label_zh: "铝 Al（轻量化导体）", label_en: "Aluminium Al", electrical_resistivity_ohm_m_20c: 2.82e-8, density_kgpm3: 2700, status: generic}
+  - {id: Steel, category: structural, motorcad_name: Steel, label_zh: "结构钢（通用）", label_en: "Structural steel", status: generic}
+  - {id: Aluminium_Alloy, category: structural, motorcad_name: Aluminium, label_zh: "铝合金（机壳/端盖常用）", label_en: "Aluminium alloy", status: generic}
+  - {id: Stainless_Steel, category: structural, motorcad_name: Stainless Steel, label_zh: "不锈钢（轴/套筒常用）", label_en: "Stainless steel", status: generic}
+  - {id: Carbon_Fibre, category: structural, motorcad_name: Carbon Fibre, label_zh: "碳纤维套筒（高速转子）", label_en: "Carbon-fibre sleeve", status: generic}
+  - {id: Water, category: fluid, motorcad_name: Water, label_zh: "水", label_en: "Water", status: generic}
+  - {id: Air, category: fluid, motorcad_name: Air, label_zh: "空气", label_en: "Air", status: generic}
+  - {id: Oil, category: fluid, motorcad_name: Oil, label_zh: "油（通用占位）", label_en: "Oil (generic placeholder)", status: generic}
+component_slots:
+  - {id: Stator Lamination, category: electrical_steel, label_zh: 定子叠片, label_en: Stator lamination}
+  - {id: Rotor Lamination, category: electrical_steel, label_zh: 转子叠片, label_en: Rotor lamination}
+  - {id: Magnet, category: magnet, label_zh: 永磁体, label_en: Magnet}
+  - {id: Conductor, category: conductor, label_zh: 绕组导体, label_en: Winding conductor}
+  - {id: Shaft, category: structural, label_zh: 转轴, label_en: Shaft}
+  - {id: Housing, category: structural, label_zh: 机壳, label_en: Housing}
+  - {id: Sleeve, category: structural, label_zh: 转子套筒, label_en: Rotor sleeve}
+fluid_slots:
+  - {id: HousingWJFluid, label_zh: 机壳水套, label_en: Housing water jacket}
+  - {id: RotorWJFluid, label_zh: 转子水套, label_en: Rotor water jacket}
+  - {id: SlotWJFluid, label_zh: 槽内水冷, label_en: Slot water jacket}
+  - {id: WetRotorFluid, label_zh: 湿转子, label_en: Wet rotor}
+  - {id: SprayCoolingFluid, label_zh: 喷淋冷却, label_en: Spray cooling}
+  - {id: InternalFluid, label_zh: 内部流体, label_en: Internal fluid}

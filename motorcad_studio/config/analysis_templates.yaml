@@ -1,0 +1,356 @@
+version: 1
+policy:
+  common_mode_max_decisions: 3
+  auto_apply: missing_only
+  preserve_user_values: true
+  revision_only_writes: true
+templates:
+  rated_emag:
+    label: 额定点电磁性能
+    short_label: 额定点 EMag
+    intent: 在代表性额定转速与电流下确认转矩、反电动势、损耗、效率和电磁场状态。
+    module: EMag
+    recipe_id: emag
+    quality_profile: standard
+    common_decisions:
+    - shaft_speed_rpm
+    - peak_current_a
+    - dc_bus_voltage_v
+    recommended_outputs:
+    - efficiency_percent
+    - back_emf_curve
+    - airgap_flux_density_curve
+    - output_power_w
+    - total_loss_w
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    - peak_line_voltage_v
+    defaults:
+      phase_advance_deg: 0
+      torque_points_per_cycle: 30
+      torque_number_cycles: 1
+      torque_calculation: true
+      back_emf_calculation: true
+      cogging_torque_calculation: false
+      inductance_calculation: false
+      demagnetization_calculation: false
+    tags:
+    - emag
+    - rated
+    - baseline
+    common_decisions_by_motor_type:
+      IM:
+      - shaft_speed_rpm
+      - peak_current_a
+      - induction_slip
+    defaults_by_motor_type:
+      IM:
+        induction_slip: 0.01
+    qualification_metrics:
+    - shaft_torque_nm
+    - torque_ripple_percent
+    - efficiency_percent
+    - peak_line_voltage_v
+    - output_power_w
+    - total_loss_w
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    compute_cost_class: medium
+    compute_cost_weight: 2.0
+    engineering_question: 额定工况下能否达到目标转矩、功率和电压要求？
+    when_to_use: 完成主要几何与绕组设计后首先执行，用于建立电磁基准。
+    decision_role: baseline
+    expected_runtime: medium
+    engineering_groups:
+    - 性能
+    - 损耗
+    - 电气约束
+    - 电磁场
+  efficiency_map:
+    label: 效率图与运行包络
+    short_label: 效率 Map
+    intent: 构建 Lab 降阶模型并获得效率、损耗与转矩-转速运行范围，用于方案筛选与系统匹配。
+    module: Lab
+    recipe_id: lab_magnetic
+    quality_profile: standard
+    common_decisions:
+    - model_build_speed
+    - max_model_current
+    - saturation_model_points
+    recommended_outputs:
+    - torque_speed_envelope
+    - lab_loss_map
+    defaults:
+      model_type_motorlab: 1
+      model_build_speed: 10000
+      max_model_current: 480
+      saturation_model_points: 12
+      build_saturation_model: true
+    tags:
+    - lab
+    - map
+    - efficiency
+    qualification_metrics:
+    - lab_shaft_torque_nm
+    - lab_efficiency_percent
+    - torque_speed_envelope
+    - lab_loss_map
+    - lab_efficiency_map
+    compute_cost_class: high
+    compute_cost_weight: 3.0
+    engineering_question: 目标转矩-转速工作域内的效率、损耗和能力边界如何？
+    when_to_use: 额定点电磁结果稳定后，用于整机工作域评价和控制匹配。
+    decision_role: operating_envelope
+    expected_runtime: high
+    engineering_groups:
+    - 性能
+    - 损耗
+  demagnetization_check:
+    label: 永磁体退磁校核
+    short_label: 退磁校核
+    intent: 在高负载代表工况下执行电磁求解并启用退磁计算，检查永磁体安全裕度与局部风险。
+    module: EMag
+    recipe_id: emag
+    quality_profile: high
+    common_decisions:
+    - shaft_speed_rpm
+    - peak_current_a
+    - phase_advance_deg
+    recommended_outputs:
+    - airgap_flux_density_curve
+    - torque_harmonics
+    defaults:
+      phase_advance_deg: 0
+      torque_points_per_cycle: 60
+      torque_number_cycles: 1
+      torque_calculation: true
+      back_emf_calculation: false
+      demagnetization_calculation: true
+    tags:
+    - emag
+    - magnet
+    - demag
+    - validation
+    motor_types:
+    - BPM
+    - BPMOR
+    qualification_metrics:
+    - airgap_flux_density_curve
+    - torque_harmonics
+    - magnet_loss_w
+    compute_cost_class: high
+    compute_cost_weight: 3.0
+    engineering_question: 高负载、弱磁或高温条件下永磁体是否存在退磁风险？
+    when_to_use: IPM/SPM/AFPM 的高负载或弱磁设计必须执行。
+    decision_role: safety_check
+    expected_runtime: high
+    engineering_groups:
+    - 永磁体
+    - 电磁场
+    - 性能
+  thermal_steady:
+    label: 额定稳态热分析
+    short_label: 稳态热
+    intent: 使用代表性环境与冷却边界评估绕组、磁钢和机壳的稳态温度水平。
+    module: Therm
+    recipe_id: thermal_steady
+    quality_profile: standard
+    common_decisions:
+    - ambient_temperature_c
+    - coolant_inlet_temperature_c
+    - coolant_flow_rate_lpm
+    recommended_outputs:
+    - magnet_temperature_c
+    - housing_temperature_c
+    - thermal_node_table
+    defaults:
+      shaft_speed_rpm: 3000
+      ambient_temperature_c: 25
+      coolant_inlet_temperature_c: 25
+      coolant_flow_rate_lpm: 0
+      thermal_model_size: full
+      thermal_model_type: model_3d
+      loss_source: template
+      coupling_mode: none
+    tags:
+    - thermal
+    - rated
+    - steady
+    qualification_metrics:
+    - winding_max_temperature_c
+    - winding_average_temperature_c
+    - magnet_temperature_c
+    - housing_temperature_c
+    - thermal_node_table
+    compute_cost_class: high
+    compute_cost_weight: 3.0
+    engineering_question: 连续运行时绕组、永磁体和机壳温度是否处于允许范围？
+    when_to_use: 获得代表性损耗或热边界后执行，用于连续工况热安全判断。
+    decision_role: thermal_check
+    expected_runtime: high
+    engineering_groups:
+    - 热
+    - 损耗
+  coupled_rated:
+    label: 额定点电磁-热顺序耦合
+    short_label: EMag + Thermal
+    intent: 先计算电磁损耗，再传递至稳态热模型，形成额定工况的性能与温升联合判断。
+    module: Coupled
+    recipe_id: emag_thermal
+    quality_profile: high
+    common_decisions:
+    - shaft_speed_rpm
+    - peak_current_a
+    - ambient_temperature_c
+    recommended_outputs:
+    - total_loss_w
+    - magnet_temperature_c
+    - thermal_node_table
+    defaults:
+      shaft_speed_rpm: 3000
+      peak_current_a: 80
+      dc_bus_voltage_v: 400
+      phase_advance_deg: 0
+      ambient_temperature_c: 25
+      coolant_inlet_temperature_c: 25
+      coolant_flow_rate_lpm: 0
+      torque_calculation: true
+      back_emf_calculation: true
+      thermal_model_size: full
+      thermal_model_type: model_3d
+      loss_source: emag
+      coupling_mode: losses_to_thermal
+    tags:
+    - coupled
+    - emag
+    - thermal
+    - rated
+    defaults_by_motor_type:
+      IM:
+        induction_slip: 0.01
+    qualification_metrics:
+    - shaft_torque_nm
+    - efficiency_percent
+    - total_loss_w
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    - winding_max_temperature_c
+    - winding_average_temperature_c
+    - magnet_temperature_c
+    - housing_temperature_c
+    - thermal_node_table
+    compute_cost_class: very_high
+    compute_cost_weight: 5.0
+    engineering_question: 额定电磁损耗传递到热模型后，性能与温升是否同时满足要求？
+    when_to_use: 需要更一致的额定点电磁-热联合判断时执行。
+    decision_role: coupled_validation
+    expected_runtime: very_high
+    engineering_groups:
+    - 性能
+    - 损耗
+    - 热
+  rotor_mechanical:
+    label: 最高转速机械强度
+    short_label: 转子应力
+    intent: 在目标最高转速下检查转子等效应力、位移和结构安全裕度。
+    module: Mechanical
+    recipe_id: mechanical
+    quality_profile: high
+    common_decisions:
+    - shaft_speed_rpm
+    - mechanical_mesh_size
+    - adhesion_factor
+    recommended_outputs:
+    - max_displacement_mm
+    - stress_field
+    - modal_frequency_table
+    defaults:
+      shaft_speed_rpm: 10000
+      adhesion_factor: 1
+      mechanical_mesh_size: 1
+    tags:
+    - mechanical
+    - stress
+    - overspeed
+    - validation
+    defaults_by_motor_type:
+      BPM:
+        include_magnets: true
+        include_rotor_bars: false
+      BPMOR:
+        include_magnets: true
+        include_rotor_bars: false
+      IM:
+        include_magnets: false
+        include_rotor_bars: true
+      IM1PH:
+        include_magnets: false
+        include_rotor_bars: true
+      SYNC:
+        include_magnets: false
+        include_rotor_bars: false
+      SYNCREL:
+        include_magnets: false
+        include_rotor_bars: false
+      SRM:
+        include_magnets: false
+        include_rotor_bars: false
+    qualification_metrics:
+    - max_von_mises_stress_mpa
+    - max_displacement_mm
+    - stress_field
+    - modal_frequency_table
+    compute_cost_class: high
+    compute_cost_weight: 3.5
+    engineering_question: 最高转速下转子应力、位移和结构安全裕度是否可接受？
+    when_to_use: 高速 IPM、外转子及存在套筒/绑带约束的设计重点执行。
+    decision_role: mechanical_check
+    expected_runtime: high
+    engineering_groups:
+    - 机械
+  nvh_force:
+    label: 电磁力与 NVH 输入
+    short_label: 电磁力
+    intent: 生成多位置电磁力及谐波证据，为后续结构、振动与噪声分析提供可追溯载荷。
+    module: EMag
+    recipe_id: emag_multi_force
+    quality_profile: high
+    common_decisions:
+    - shaft_speed_rpm
+    - peak_current_a
+    - force_positions
+    recommended_outputs:
+    - force_spatial_harmonics
+    - force_temporal_harmonics
+    defaults:
+      shaft_speed_rpm: 3000
+      peak_current_a: 80
+      dc_bus_voltage_v: 400
+      phase_advance_deg: 0
+      force_open_circuit: false
+      force_on_load: true
+      force_positions: 36
+      max_harmonic_order: 50
+    tags:
+    - emag
+    - force
+    - nvh
+    defaults_by_motor_type:
+      IM:
+        induction_slip: 0.01
+    qualification_metrics:
+    - force_spatial_harmonics
+    - force_temporal_harmonics
+    - force_position_table
+    compute_cost_class: high
+    compute_cost_weight: 3.0
+    engineering_question: 主要电磁力空间/时间谐波位于哪些阶次，是否可能激励结构模态？
+    when_to_use: 需要开展结构振动、噪声或电磁激振分析时执行。
+    decision_role: nvh_input
+    expected_runtime: high
+    engineering_groups:
+    - NVH/谐波
+contract_version: 0.87-C

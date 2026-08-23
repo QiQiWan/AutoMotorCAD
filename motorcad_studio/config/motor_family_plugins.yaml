@@ -1,0 +1,16 @@
+version: 1
+plugin_api_version: "1"
+plugins:
+  - id: builtin.pm
+    kind: builtin
+    enabled: true
+    description: V0.71-V0.75 PM motor object, Motor-CAD binding, analysis/result and optimization capabilities behind Plugin Contract v1.
+# External plugins use an explicit Python import path and are disabled until installed.
+# - id: example.external
+#   kind: python
+#   import: my_motor_plugin:Plugin
+#   enabled: false
+  - id: builtin.induction
+    kind: builtin
+    enabled: true
+    description: V0.75-B three-phase squirrel-cage induction motor pilot; contributes IM domain parameters, object projection, visualization, Motor-CAD binding/result contracts and qualification plan.

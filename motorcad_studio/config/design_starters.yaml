@@ -1,0 +1,236 @@
+version: 1
+contract_version: 0.87-D
+default_visibility: guided
+starters:
+  golden_spm_servo:
+    label: SPM 表贴式永磁电机
+    short_label: SPM
+    description: 面向伺服与通用永磁电机的低门槛预制设计。使用已进入验证候选的工业 SPM 模板作为几何、绕组和材料基线。
+    template_id: i5_Industrial_SPM_Servo_Tooth_Wound
+    family_id: rfpm_spm
+    topology_label: 径向磁通 · 内转子 · SPM
+    application: 工业伺服 / 通用驱动
+    product_status: golden_starter_candidate
+    qualification_status: windows_pending
+    priority: 1
+    default_name: SPM 工程设计
+    guided_inputs:
+      air_gap:
+        label: 气隙
+        unit: mm
+        recommended_min: 0.4
+        recommended_max: 1.5
+        step: 0.1
+        required: false
+      stator_outer_diameter:
+        label: 定子外径
+        unit: mm
+        recommended_min: 50
+        recommended_max: 300
+        step: 5
+        required: false
+      stator_inner_diameter:
+        label: 定子内径
+        unit: mm
+        recommended_min: 15
+        recommended_max: 220
+        step: 5
+        required: false
+      magnet_thickness:
+        label: 永磁体厚度
+        unit: mm
+        recommended_min: 2
+        recommended_max: 12
+        step: 0.5
+        required: false
+    design_groups:
+    - 设计目标
+    - 主要尺寸
+    - 定转子
+    - 绕组
+    - 永磁体
+    - 材料
+    - 冷却
+    standard_analysis_package:
+    - rated_emag
+    - efficiency_map
+    - thermal_steady
+    - demagnetization_check
+    result_scorecard:
+    - shaft_torque_nm
+    - output_power_w
+    - efficiency_percent
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    optimization_variables:
+    - air_gap
+    - magnet_thickness
+    - magnet_arc_deg
+    - turns_per_coil
+    - slot_fill_factor
+    validation_package_label: 标准设计验证
+    validation_package_policy:
+      fail_closed: true
+      reuse_existing_analysis: true
+      native_precheck_required: true
+  golden_ipm_emobility:
+    label: IPM 内置式永磁电机
+    short_label: IPM
+    description: 面向电驱与高转速应用的 IPM 预制设计。采用已进入验证候选的 eMobility IPM 模板，保留 V 形磁钢及关键转子几何语义。
+    template_id: e9_eMobility_IPM
+    family_id: rfpm_ipm
+    topology_label: 径向磁通 · 内转子 · IPM
+    application: 新能源汽车 / 高功率密度驱动
+    product_status: golden_starter_candidate
+    qualification_status: windows_pending
+    priority: 2
+    default_name: IPM 电驱设计
+    guided_inputs:
+      air_gap:
+        label: 气隙
+        unit: mm
+        recommended_min: 0.5
+        recommended_max: 1.5
+        step: 0.1
+        required: false
+      stator_outer_diameter:
+        label: 定子外径
+        unit: mm
+        recommended_min: 120
+        recommended_max: 350
+        step: 5
+        required: false
+      magnet_width:
+        label: 磁钢宽度
+        unit: mm
+        recommended_min: 3
+        recommended_max: 60
+        step: 0.5
+        required: false
+      magnet_embed_depth:
+        label: 磁钢埋深
+        unit: mm
+        recommended_min: 0.5
+        recommended_max: 20
+        step: 0.5
+        required: false
+    design_groups:
+    - 设计目标
+    - 主要尺寸
+    - 定子
+    - 转子磁障
+    - 绕组
+    - 永磁体
+    - 材料
+    - 冷却
+    standard_analysis_package:
+    - rated_emag
+    - efficiency_map
+    - thermal_steady
+    - demagnetization_check
+    - rotor_mechanical
+    result_scorecard:
+    - shaft_torque_nm
+    - output_power_w
+    - efficiency_percent
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    - max_von_mises_stress_mpa
+    optimization_variables:
+    - air_gap
+    - magnet_thickness
+    - magnet_width
+    - magnet_embed_depth
+    - pole_v_angle_deg
+    - turns_per_coil
+    validation_package_label: 标准设计验证
+    validation_package_policy:
+      fail_closed: true
+      reuse_existing_analysis: true
+      native_precheck_required: true
+  golden_afpm_ssdr:
+    label: AFPM 双转子单定子轴向磁通电机
+    short_label: AFPM
+    description: 面向高功率密度轴向磁通设计的预制入口。采用 YASA 型单定子双转子模板，默认保留轴向拓扑的几何与绕组耦合约束。
+    template_id: e14_eMobility_AFM
+    family_id: afpm
+    topology_label: 轴向磁通 · 双转子单定子
+    application: 高功率密度电驱 / 研究样机
+    product_status: golden_starter_candidate
+    qualification_status: windows_pending
+    priority: 3
+    default_name: AFPM 双转子单定子设计
+    guided_inputs:
+      air_gap:
+        label: 单侧气隙
+        unit: mm
+        recommended_min: 0.5
+        recommended_max: 2.0
+        step: 0.1
+        required: false
+      axial_rotor_diameter:
+        label: 转子外径
+        unit: mm
+        recommended_min: 120
+        recommended_max: 500
+        step: 5
+        required: false
+      turns_per_coil:
+        label: 每线圈匝数
+        unit: turn
+        recommended_min: 1
+        recommended_max: 80
+        step: 1
+        required: false
+      slot_fill_factor:
+        label: 槽满率
+        unit: ratio
+        recommended_min: 0.25
+        recommended_max: 0.7
+        step: 0.05
+        required: false
+    design_groups:
+    - 设计目标
+    - 总体尺寸
+    - 轴向气隙
+    - 定子与绕组
+    - 双转子
+    - 永磁体
+    - 材料
+    - 冷却
+    standard_analysis_package:
+    - rated_emag
+    - efficiency_map
+    - thermal_steady
+    - demagnetization_check
+    result_scorecard:
+    - shaft_torque_nm
+    - output_power_w
+    - efficiency_percent
+    - copper_loss_w
+    - stator_iron_loss_w
+    - magnet_loss_w
+    - winding_max_temperature_c
+    - magnet_temperature_c
+    optimization_variables:
+    - air_gap
+    - axial_rotor_diameter
+    - magnet_arc_deg
+    - turns_per_coil
+    - slot_fill_factor
+    validation_package_label: 标准设计验证
+    validation_package_policy:
+      fail_closed: true
+      reuse_existing_analysis: true
+      native_precheck_required: true
+    deferred_parameters:
+      magnet_thickness:
+        status: native_semantics_pending
+        reason: Motor-CAD 2026R1 AFPM Magnet_Thickness 需要目标工作站回读确认轴向几何语义；Guided 与自动优化暂不暴露。
+        available_in: Engineering / Expert after native qualification

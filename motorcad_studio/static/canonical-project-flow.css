@@ -1,0 +1,75 @@
+/* Canonical project flow: Project -> Solution -> Motor Configuration -> Analysis Configuration -> Results. */
+.canonical-project-flow{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+  padding:10px 12px 12px;
+  border-top:1px solid var(--border,#d8dee9);
+}
+.canonical-project-flow button{
+  min-height:54px;
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  text-align:left;
+  border-radius:10px;
+  padding:9px 12px;
+}
+.canonical-project-flow button>span{
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  font-size:12px;font-weight:700;
+}
+.canonical-project-flow button>b{font-size:14px;font-weight:650;white-space:nowrap;}
+.canonical-project-flow button.active{box-shadow:inset 0 0 0 1px currentColor;}
+.canonical-project-flow button.stage-pending{opacity:.62;}
+.canonical-project-flow button.stage-attention{opacity:.92;}
+.canonical-project-flow button.stage-running{opacity:1;}
+
+/* Historical flow bars are intentionally retired. Keeping a hard CSS boundary also
+   protects the canonical shell if an old compatibility module is loaded by a stale client. */
+#projectSecondaryNav,
+#motorcadContextNavV046,
+#engineeringContextBarV029,
+#engineerFlowBarV030,
+.workflow-action-dock-v059,
+.engineer-flow-v030,
+.engineering-context-v029{display:none!important;}
+
+.canonical-stage-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;}
+.canonical-stage-hero>div:first-child{max-width:900px;}
+.canonical-overview-grid{grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);}
+.project-boundary-panel{display:flex;flex-direction:column;justify-content:center;}
+.canonical-object-chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0 2px;}
+.canonical-object-chain span{padding:8px 11px;border:1px solid var(--border,#d8dee9);border-radius:9px;font-weight:600;background:var(--panel-bg,#fff);}
+.canonical-object-chain i{font-style:normal;opacity:.5;}
+
+.canonical-solution-metrics{margin:14px 0;}
+.canonical-solution-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.canonical-solution-card{display:flex;flex-direction:column;gap:14px;min-height:230px;}
+.canonical-solution-card header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+.canonical-solution-card header h3{margin:4px 0 3px;}
+.canonical-solution-card header small{display:block;overflow-wrap:anywhere;}
+.canonical-solution-card .solution-type{font-size:12px;font-weight:700;padding:5px 8px;border:1px solid var(--border,#d8dee9);border-radius:999px;white-space:nowrap;}
+.canonical-solution-card .solution-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.canonical-solution-card .solution-facts div{padding:10px;border:1px solid var(--border,#d8dee9);border-radius:9px;min-width:0;}
+.canonical-solution-card .solution-facts span{display:block;font-size:11px;opacity:.72;margin-bottom:3px;}
+.canonical-solution-card .solution-facts b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.canonical-solution-card footer{margin-top:auto;display:flex;gap:8px;justify-content:flex-end;}
+.canonical-empty-solution{grid-column:1/-1;text-align:center;padding:46px 24px;}
+.canonical-empty-solution h3{margin:8px 0;}
+.canonical-empty-solution p{max-width:640px;margin:0 auto 18px;}
+.canonical-analysis-context{margin-top:12px;}
+
+/* Keep support capabilities available without making them primary navigation stages. */
+#templates .template-stage-header,
+
+@media (max-width:1000px){
+  .canonical-project-flow{grid-template-columns:repeat(5,minmax(110px,1fr));overflow-x:auto;}
+  .canonical-overview-grid{grid-template-columns:1fr;}
+  .canonical-stage-hero{align-items:flex-start;flex-direction:column;}
+}
+@media (max-width:700px){
+  .canonical-solution-list{grid-template-columns:1fr;}
+  .canonical-solution-card .solution-facts{grid-template-columns:1fr;}
+}

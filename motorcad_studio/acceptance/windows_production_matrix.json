@@ -1,0 +1,295 @@
+{
+  "authority": "WindowsMotorCADProductionQualificationV2",
+  "contract_version": "0.88-A",
+  "target_motorcad_version": "2026R1",
+  "environment_gates": {
+    "platform": "Windows",
+    "studio_version": "0.88.1",
+    "motorcad_binary_version": "2026R1",
+    "pymotorcad_version": "0.8.8",
+    "licensed_motorcad": true,
+    "mock_disabled": true,
+    "deep_preflight": true,
+    "host_fingerprint_evidence": true
+  },
+  "representative_scenarios": [
+    {
+      "id": "SPM",
+      "template_id": "i5_Industrial_SPM_Servo_Tooth_Wound",
+      "profile_id": "spm",
+      "family": "PM",
+      "required": true,
+      "required_gates": [
+        "native_motorcad",
+        "native_closure_qualified",
+        "native_semantic_binding_qualified",
+        "native_binding_readback_pass",
+        "native_precheck_pass",
+        "solver_pass",
+        "result_extraction_pass",
+        "result_integrity_pass",
+        "restart_reopen_pass",
+        "runtime_shutdown_clean",
+        "license_observed",
+        "process_exit_clean"
+      ],
+      "required_evidence": [
+        "native_closure",
+        "task_export",
+        "result_bundle",
+        "restart_reopen",
+        "runtime_shutdown"
+      ]
+    },
+    {
+      "id": "IPM",
+      "template_id": "e9_eMobility_IPM",
+      "profile_id": "ipm",
+      "family": "PM",
+      "required": true,
+      "required_gates": [
+        "native_motorcad",
+        "native_closure_qualified",
+        "native_semantic_binding_qualified",
+        "native_binding_readback_pass",
+        "native_precheck_pass",
+        "solver_pass",
+        "result_extraction_pass",
+        "result_integrity_pass",
+        "restart_reopen_pass",
+        "runtime_shutdown_clean",
+        "license_observed",
+        "process_exit_clean"
+      ],
+      "required_evidence": [
+        "native_closure",
+        "task_export",
+        "result_bundle",
+        "restart_reopen",
+        "runtime_shutdown"
+      ]
+    },
+    {
+      "id": "AFPM",
+      "template_id": "e14_eMobility_AFM",
+      "profile_id": "afpm",
+      "family": "PM",
+      "required": true,
+      "required_gates": [
+        "native_motorcad",
+        "native_closure_qualified",
+        "native_semantic_binding_qualified",
+        "native_binding_readback_pass",
+        "native_precheck_pass",
+        "solver_pass",
+        "result_extraction_pass",
+        "result_integrity_pass",
+        "restart_reopen_pass",
+        "runtime_shutdown_clean",
+        "license_observed",
+        "process_exit_clean"
+      ],
+      "required_evidence": [
+        "native_closure",
+        "task_export",
+        "result_bundle",
+        "restart_reopen",
+        "runtime_shutdown"
+      ]
+    },
+    {
+      "id": "IM",
+      "template_id": "i4_Industrial_IM",
+      "profile_id": "im",
+      "family": "Induction",
+      "required": true,
+      "required_gates": [
+        "native_motorcad",
+        "native_closure_qualified",
+        "native_semantic_binding_qualified",
+        "native_binding_readback_pass",
+        "native_precheck_pass",
+        "solver_pass",
+        "result_extraction_pass",
+        "result_integrity_pass",
+        "restart_reopen_pass",
+        "runtime_shutdown_clean",
+        "license_observed",
+        "process_exit_clean"
+      ],
+      "required_evidence": [
+        "native_closure",
+        "task_export",
+        "result_bundle",
+        "restart_reopen",
+        "runtime_shutdown"
+      ]
+    }
+  ],
+  "failure_injections": [
+    {
+      "id": "EXECUTABLE_MISSING_OR_UNSUPPORTED",
+      "group": "environment",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Temporarily select a missing/unsupported Motor-CAD executable in an isolated acceptance data directory.",
+      "expected_signal": "Deep preflight fails closed before native task submission and Studio remains responsive."
+    },
+    {
+      "id": "LICENSE_UNAVAILABLE",
+      "group": "environment",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Run the isolated acceptance probe while the required Motor-CAD module license is deliberately unavailable.",
+      "expected_signal": "License/preflight or native solve reports a classified license failure without producing a trusted ResultBundle."
+    },
+    {
+      "id": "PYMOTORCAD_INCOMPATIBLE",
+      "group": "environment",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Use an isolated Python environment whose PyMotorCAD version differs from the frozen 0.8.8 contract.",
+      "expected_signal": "Production qualification blocks with PYMOTORCAD_VERSION_MISMATCH before evidence can be promoted."
+    },
+    {
+      "id": "RPC_SESSION_DISCONNECT",
+      "group": "runtime",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Disconnect/terminate the Motor-CAD Automation session during an isolated active native Case.",
+      "expected_signal": "Case/worker failure is classified, resources are reclaimed, and a subsequent run can create a fresh session."
+    },
+    {
+      "id": "WORKER_CRASH",
+      "group": "runtime",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Terminate one persistent Motor-CAD worker process during an isolated Case.",
+      "expected_signal": "Worker ownership records the crash, no orphan remains after shutdown, and replacement/retry is possible."
+    },
+    {
+      "id": "STALE_REVISION",
+      "group": "lineage",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "harness",
+      "trigger": "Submit an execution request with an intentionally stale Analysis Revision ID.",
+      "expected_signal": "HTTP 409 stale-revision guard rejects the request before native execution."
+    },
+    {
+      "id": "STALE_NATIVE_BINDING",
+      "group": "lineage",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Replay a frozen request with a stale native binding/plan hash in the isolated acceptance project.",
+      "expected_signal": "Binding authority rejects the stale plan before the result can be trusted or promoted."
+    },
+    {
+      "id": "INVALID_GEOMETRY",
+      "group": "input_validation",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Create an isolated Design Revision with a geometry value outside the canonical/precheck envelope.",
+      "expected_signal": "Design/native precheck reports the geometry issue and blocks solver submission."
+    },
+    {
+      "id": "INVALID_WINDING_OR_MATERIAL",
+      "group": "input_validation",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Use an intentionally incompatible winding or unavailable material binding in the isolated acceptance design.",
+      "expected_signal": "Validation blocks native execution with a winding/material root cause and recovery guidance."
+    },
+    {
+      "id": "INVALID_OPERATING_POINT",
+      "group": "input_validation",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Create an Analysis Revision with an operating point outside the accepted input domain.",
+      "expected_signal": "Analysis validation/precheck blocks execution and preserves the last valid Design Revision."
+    },
+    {
+      "id": "SOLVER_TIMEOUT_OR_FAILURE",
+      "group": "solver_result",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Run a native Case with a controlled short timeout or a reproducible solver-failure condition.",
+      "expected_signal": "Solver process is terminated/classified, Case ends fail-visible, and runtime resources are released."
+    },
+    {
+      "id": "INCOMPLETE_RESULT_EXTRACTION",
+      "group": "solver_result",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Use an isolated analysis/output contract that produces a reproducible missing required native output.",
+      "expected_signal": "Result extraction is incomplete and the ResultBundle/Scorecard remains unqualified rather than silently filling data."
+    },
+    {
+      "id": "RESULT_INTEGRITY_FAILURE",
+      "group": "solver_result",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_safe",
+      "trigger": "Tamper a copied acceptance result/evidence artifact after its hash is frozen.",
+      "expected_signal": "Integrity verification detects the hash mismatch and blocks formal qualification."
+    },
+    {
+      "id": "BROWSER_REFRESH_ACTIVE_TASK",
+      "group": "recovery",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Refresh/reopen the browser while a native Case is running.",
+      "expected_signal": "Server-side task continues under stable ownership and the refreshed UI reattaches to current status/results."
+    },
+    {
+      "id": "STUDIO_RESTART_REOPEN",
+      "group": "recovery",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "harness",
+      "trigger": "Gracefully stop the first Studio process after native results, start a second process, and reopen the frozen project/results.",
+      "expected_signal": "Project, baseline and all representative ResultBundles reopen with matching identifiers/hashes."
+    },
+    {
+      "id": "NON_ASCII_SPACE_PATH",
+      "group": "filesystem_data",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "harness",
+      "trigger": "Write/read acceptance evidence under a path containing Chinese characters and spaces.",
+      "expected_signal": "Filesystem round-trip succeeds and packaged evidence remains hash-verifiable."
+    },
+    {
+      "id": "LARGE_HEAVY_DATA_LAZY_READ",
+      "group": "filesystem_data",
+      "required": true,
+      "observed_evidence_required": true,
+      "automation": "operator_required",
+      "trigger": "Open a representative large native field/map result through the heavy-data gateway without eager-loading the entire artifact.",
+      "expected_signal": "Lazy/chunked read succeeds, UI remains responsive, and the artifact hash/reference remains intact."
+    }
+  ],
+  "release_gates": [
+    "backend_regression",
+    "baseline_fail_closed",
+    "hmi_regression",
+    "latest_only_frontend",
+    "native_semantic_authority",
+    "runtime_lifecycle_qualification",
+    "wheel_install_smoke"
+  ],
+  "formal_gate": "4/4 native scenarios with V0.88-A semantic authority + 17/17 observed faults + clean runtime lifecycle + complete immutable evidence package",
+  "soak_boundary": "100/500 Case soak remains V0.87-F-C and does not get inferred by this contract."
+}
