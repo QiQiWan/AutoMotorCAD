@@ -1,0 +1,110 @@
+2026-08-23T03:50:08.571819+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T03:50:08.572813+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T03:50:10.740517+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T03:50:10.741511+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T03:50:12.396463+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.87.8 starting
+2026-08-23T03:50:14.123926+00:00 [ERROR] [frontend] [FRONTEND_UNCAUGHT_ERROR] Cannot read properties of null (reading 'addEventListener')
+2026-08-23T03:50:14.126850+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T03:50:14.310120+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-61A234850A/engineer-journey -> 404
+2026-08-23T06:43:28.446906+00:00 [ERROR] [frontend] [FRONTEND_UNCAUGHT_ERROR] Cannot read properties of null (reading 'addEventListener')
+2026-08-23T06:43:28.571073+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T06:43:28.771726+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-61A234850A/engineer-journey -> 404
+2026-08-23T06:43:40.601007+00:00 [ERROR] [frontend] [FRONTEND_UNCAUGHT_ERROR] Cannot read properties of null (reading 'addEventListener')
+2026-08-23T06:43:40.739080+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T06:43:40.914403+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-61A234850A/engineer-journey -> 404
+2026-08-23T06:43:46.724606+00:00 [ERROR] [frontend] [FRONTEND_UNCAUGHT_ERROR] Cannot read properties of null (reading 'addEventListener')
+2026-08-23T06:43:46.835363+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T06:43:47.041976+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-61A234850A/engineer-journey -> 404
+2026-08-23T06:43:51.267704+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-23T06:43:57.635242+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T06:43:57.636235+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T06:43:59.678031+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T06:43:59.679025+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T06:44:01.321501+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.87.8 starting
+2026-08-23T06:44:03.454684+00:00 [ERROR] [frontend] [FRONTEND_UNCAUGHT_ERROR] Cannot read properties of null (reading 'addEventListener')
+2026-08-23T06:44:03.455677+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T06:44:03.616100+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-61A234850A/engineer-journey -> 404
+2026-08-23T06:44:55.666324+00:00 [WARNING] [api] [HTTP_REQUEST] GET /.well-known/appspecific/com.chrome.devtools.json -> 404
+2026-08-23T07:06:10.793895+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-23T07:06:27.380577+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:06:27.381073+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:06:29.095566+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:06:29.096063+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:06:30.513053+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.87.9 starting
+2026-08-23T07:07:17.132170+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-23T07:07:17.133164+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-23T07:07:19.975586+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:07:19.976580+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:07:46.726494+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-23T07:09:52.729194+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2173 ms
+2026-08-23T07:09:52.730187+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T07:11:50.565677+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-23T07:11:50.567168+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-2BEE8896FA/design-starters/golden_spm_servo -> 201
+2026-08-23T07:14:10.883901+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:12.917042+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:14.888021+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:16.588607+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:16.878848+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:18.393309+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:27.646921+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:43.099406+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:45.282397+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:46.131697+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:14:52.026882+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:16:02.792997+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-443904D99D/draft/commit -> 201
+2026-08-23T07:16:12.648847+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2088 ms
+2026-08-23T07:16:12.675667+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-23T07:16:59.090118+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:00.124176+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:42.118456+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:47.063649+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:48.960965+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:55.723507+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:59.461542+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:17:59.482402+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:06.843257+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:07.353520+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:09.511104+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:17.849179+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:34.221166+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:35.120096+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:36.652076+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:18:38.623525+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:20:05.497093+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:20:14.620842+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/material-library/scan -> 200
+2026-08-23T07:21:01.556991+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/material-library/scan -> 200
+2026-08-23T07:22:21.803764+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-8dfc5edd6c4e650973ed -> 200
+2026-08-23T07:22:55.013835+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-87a48decfd72b469d095 -> 200
+2026-08-23T07:23:03.045215+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-adb70a4c7816222893b4 -> 200
+2026-08-23T07:23:03.059618+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-adb70a4c7816222893b4 -> 200
+2026-08-23T07:23:13.161721+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-adb70a4c7816222893b4 -> 200
+2026-08-23T07:25:10.725336+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-037c7f36241217c29ca1 -> 200
+2026-08-23T07:25:25.017691+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:25:30.431273+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-62825F73E9/workbench/precheck -> 200
+2026-08-23T07:25:37.633989+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:25:37.634982+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:25:47.074797+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-23T07:25:47.603250+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-check -> 200
+2026-08-23T07:26:32.578262+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:26:33.638645+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:26:35.352565+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:26:37.660478+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:26:46.269563+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-443904D99D/draft/commit -> 201
+2026-08-23T07:26:55.832380+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-F4D029DA85/workbench/precheck -> 200
+2026-08-23T07:26:59.206236+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:26:59.207229+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:27:08.273380+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-23T07:27:08.275049+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-check -> 200
+2026-08-23T07:27:34.339244+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:27:36.088491+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-443904D99D/draft -> 200
+2026-08-23T07:27:37.939185+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-443904D99D/draft/commit -> 201
+2026-08-23T07:27:44.187746+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-3010159306/workbench/precheck -> 200
+2026-08-23T07:27:48.660725+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:27:48.661221+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:27:57.710981+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-23T07:27:58.844871+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-check -> 200
+2026-08-23T07:33:25.107345+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-23T07:33:25.108339+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-23T07:33:34.113617+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-23T07:33:34.393737+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/templates/i5_Industrial_SPM_Servo_Tooth_Wound/geometry-check -> 200
+2026-08-23T08:48:01.878837+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping

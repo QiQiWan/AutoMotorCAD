@@ -1,0 +1,165 @@
+{
+  "studio_version": "0.87.9",
+  "session_id": "BOOT-AAD6D837DAF5",
+  "ok": true,
+  "result": {
+    "ok": true,
+    "deep": true,
+    "checks": [
+      {
+        "id": "operating_system",
+        "status": "PASS",
+        "message": "当前系统: Windows"
+      },
+      {
+        "id": "python",
+        "status": "PASS",
+        "message": "Python 3.12.12"
+      },
+      {
+        "id": "pymotorcad",
+        "status": "PASS",
+        "message": "PyMotorCAD可用",
+        "version": "0.8.6"
+      },
+      {
+        "id": "target_version",
+        "status": "PASS",
+        "message": "目标Motor-CAD映射版本: 2026R1"
+      },
+      {
+        "id": "model_policy",
+        "status": "PASS",
+        "message": "模型运行策略: development"
+      },
+      {
+        "id": "installation_selection",
+        "status": "PASS",
+        "message": "已选择Motor-CAD: - · I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe"
+      },
+      {
+        "id": "motorcad_executable",
+        "status": "PASS",
+        "message": "PyMotorCAD已绑定: - · I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe"
+      },
+      {
+        "id": "motorcad_binary_version",
+        "status": "PASS",
+        "message": "Motor-CAD二进制版本: 2026R1; 文件版本 2026.1.1.1; 产品版本 2026.1.1.1"
+      },
+      {
+        "id": "motorcad_launch",
+        "status": "PASS",
+        "message": "Motor-CAD实例启动成功，RPC链路可用。"
+      },
+      {
+        "id": "automation_registration",
+        "status": "PASS",
+        "message": "PyMotorCAD已成功连接目标Motor-CAD；更换版本后仍建议在Defaults → Automation确认注册。"
+      },
+      {
+        "id": "licence",
+        "status": "INFO",
+        "message": "许可证接口调用未抛出异常，但当前PyMotorCAD接口未返回可解释的许可状态；实际求解时仍以Motor-CAD是否成功checkout对应模块许可为准。"
+      },
+      {
+        "id": "message_log",
+        "status": "PASS",
+        "message": "消息接口可用，共读取 1 条。"
+      }
+    ],
+    "installation": {
+      "selected": {
+        "installation_id": "3e511636cd3c7fc3",
+        "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+        "version": null,
+        "source": "runtime_selection",
+        "exists": true,
+        "selected": true
+      },
+      "detected_count": 1
+    },
+    "executable_identity": {
+      "available": true,
+      "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+      "exists": true,
+      "path_inferred_version": null,
+      "file_version": "2026.1.1.1",
+      "product_version": "2026.1.1.1",
+      "normalized_version": "2026R1",
+      "product_name": "Motor-CAD",
+      "company_name": "Ansys, Inc",
+      "original_filename": "MotorCAD.exe",
+      "metadata_probe": {
+        "available": true
+      }
+    },
+    "capabilities": {
+      "available": true,
+      "mode": "motorcad",
+      "analyses": [
+        "emag",
+        "thermal_steady",
+        "thermal_transient",
+        "emag_thermal",
+        "emag_thermal_coupled",
+        "mechanical",
+        "lab_magnetic",
+        "lab_operating_point",
+        "emag_saturation_map",
+        "emag_torque_envelope",
+        "emag_multi_force",
+        "emag_force_harmonics",
+        "weight",
+        "lab_thermal",
+        "lab_duty_cycle",
+        "lab_generator",
+        "lab_test_performance"
+      ],
+      "description": "PyMotorCAD可用",
+      "pymotorcad_version": "0.8.6",
+      "motorcad_target_version": "2026R1",
+      "model_policy": "development",
+      "reuse_instances": false,
+      "selected_installation": {
+        "installation_id": "3e511636cd3c7fc3",
+        "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+        "version": null,
+        "source": "runtime_selection",
+        "exists": true,
+        "selected": true
+      },
+      "use_blackbox_licence": null,
+      "features": [
+        "local_mot_load",
+        "registered_template_fallback",
+        "context_aware_parameter_write",
+        "unit_conversion",
+        "parameter_write_readback",
+        "runtime_default_snapshot",
+        "geometry_validation",
+        "license_precheck",
+        "optional_instance_reuse",
+        "emag",
+        "thermal_steady",
+        "thermal_transient",
+        "native_emag_thermal_coupling",
+        "mechanical",
+        "lab",
+        "materials",
+        "automation_parameter_overrides",
+        "scalar_extract",
+        "series_extract",
+        "message_log",
+        "parameter_audit",
+        "output_audit",
+        "native_table_extract",
+        "multi_force_table_export",
+        "artifact_integrity",
+        "motor_domain_snapshot",
+        "native_binding_plan",
+        "native_binding_readback"
+      ]
+    }
+  }
+}

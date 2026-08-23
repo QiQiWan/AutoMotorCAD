@@ -1,8 +1,0 @@
-default:
-  absolute: 1.0e-6
-  relative: 0.01
-outputs:
-  shaft_torque_nm: {absolute: 0.05, relative: 0.005}
-  efficiency_percent: {absolute: 0.1, relative: 0.002}
-  total_loss_w: {absolute: 1.0, relative: 0.02}
-  winding_max_temperature_c: {absolute: 0.5, relative: 0.005}

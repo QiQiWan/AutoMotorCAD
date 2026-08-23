@@ -1,0 +1,23 @@
+{
+  "authority": "RuntimeLifecycleStartupV1",
+  "generation": 1,
+  "started_at": "2026-08-23T06:44:01.321998+00:00",
+  "accepting_tasks": true,
+  "recovered_tasks": 0,
+  "scheduler": {
+    "authority": "RuntimeSchedulerLifecycleV1",
+    "state": "OPEN",
+    "generation": 1,
+    "reopened": false,
+    "queue_depth": 0,
+    "active_leases": 0
+  },
+  "worker_pool": {
+    "authority": "PersistentWorkerPoolLifecycleV1",
+    "state": "OPEN",
+    "generation": 1,
+    "reopened": false,
+    "lazy": true,
+    "started": false
+  }
+}

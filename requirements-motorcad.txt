@@ -1,2 +1,0 @@
--r requirements.txt
-ansys-motorcad-core==0.8.8

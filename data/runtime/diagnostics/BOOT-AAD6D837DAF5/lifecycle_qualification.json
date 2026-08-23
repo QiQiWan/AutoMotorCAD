@@ -1,0 +1,414 @@
+{
+  "authority": "RuntimeLifecycleQualificationV1",
+  "contract_version": "0.87-F-A",
+  "generated_at": "2026-08-23T08:48:01.874864+00:00",
+  "runtime_state": "STOPPED",
+  "local_qualified": true,
+  "production_qualified": false,
+  "production_boundary": "Windows + licensed Motor-CAD production qualification is a separate V0.87-F-B gate.",
+  "checks": [
+    {
+      "code": "LAST_SHUTDOWN_CLEAN",
+      "passed": true,
+      "severity": "INFO",
+      "message": "A stopped runtime is locally qualified only when its latest shutdown evidence is clean.",
+      "evidence": {
+        "state": "STOPPED",
+        "last_shutdown_clean": true
+      }
+    },
+    {
+      "code": "DATABASE_CONNECTION_ACCOUNTING",
+      "passed": true,
+      "severity": "INFO",
+      "message": "SQLite connection ownership counters are internally consistent.",
+      "evidence": {
+        "authority": "SQLiteLifecycleV1",
+        "path": "I:\\repositories\\AutoMotorCAD\\data\\runtime\\motorcad_studio.sqlite3",
+        "active_connections": 0,
+        "peak_connections": 1,
+        "total_connections": 16181,
+        "idle": true,
+        "last_connection_opened_at": "2026-08-23T08:48:01.857977+00:00",
+        "last_connection_closed_at": "2026-08-23T08:48:01.859964+00:00"
+      }
+    },
+    {
+      "code": "DATABASE_IDLE_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must not retain SQLite handles.",
+      "evidence": {
+        "state": "STOPPED",
+        "active_connections": 0
+      }
+    },
+    {
+      "code": "SCHEDULER_LIFECYCLE_STATE",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Runtime scheduler exposes an explicit open/closed lifecycle state.",
+      "evidence": {
+        "state": "CLOSED",
+        "generation": 1,
+        "started_at": "2026-08-23T07:06:30.513550+00:00",
+        "closed_at": "2026-08-23T08:48:01.860957+00:00",
+        "last_shutdown_evidence": {
+          "authority": "RuntimeSchedulerShutdownV1",
+          "state": "CLOSED",
+          "generation": 1,
+          "closed_at": "2026-08-23T08:48:01.860957+00:00",
+          "cancelled_queued_requests": 0,
+          "residual_active_leases": [],
+          "clean": true,
+          "elapsed_ms": 0.0
+        }
+      }
+    },
+    {
+      "code": "SCHEDULER_CLOSED_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must reject new scheduler leases.",
+      "evidence": {
+        "state": "STOPPED",
+        "scheduler_state": "CLOSED"
+      }
+    },
+    {
+      "code": "WORKER_POOL_NO_DEAD_OWNERS",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Persistent worker inventory must not contain dead owners.",
+      "evidence": []
+    },
+    {
+      "code": "WORKER_POOL_CLOSED_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must close persistent worker ownership.",
+      "evidence": {
+        "state": "STOPPED",
+        "worker_state": "CLOSED"
+      }
+    },
+    {
+      "code": "NO_TASK_THREADS_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must not retain TaskManager threads.",
+      "evidence": []
+    },
+    {
+      "code": "NO_CASE_THREADS_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must not retain Case executor threads.",
+      "evidence": []
+    },
+    {
+      "code": "NO_RESIDUAL_WORKER_PIDS_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must not retain a worker PID recorded as residual by shutdown evidence.",
+      "evidence": {
+        "recorded": [],
+        "still_alive": []
+      }
+    },
+    {
+      "code": "NO_MOTORCAD_CHILDREN_WHEN_STOPPED",
+      "passed": true,
+      "severity": "INFO",
+      "message": "Stopped runtime must not retain a descendant process whose command/name identifies Motor-CAD.",
+      "evidence": []
+    }
+  ],
+  "blocking_failures": 0,
+  "runtime": {
+    "authority": "RuntimeLifecycleSnapshotV1",
+    "state": "STOPPED",
+    "generation": 1,
+    "started_at": "2026-08-23T07:06:30.513550+00:00",
+    "accepting_tasks": false,
+    "shutdown_requested": true,
+    "task_threads": [],
+    "active_task_thread_count": 0,
+    "case_threads": [],
+    "active_case_thread_count": 0,
+    "scheduler": {
+      "mode": "atomic_runtime_scheduler",
+      "lifecycle": {
+        "state": "CLOSED",
+        "generation": 1,
+        "started_at": "2026-08-23T07:06:30.513550+00:00",
+        "closed_at": "2026-08-23T08:48:01.860957+00:00",
+        "last_shutdown_evidence": {
+          "authority": "RuntimeSchedulerShutdownV1",
+          "state": "CLOSED",
+          "generation": 1,
+          "closed_at": "2026-08-23T08:48:01.860957+00:00",
+          "cancelled_queued_requests": 0,
+          "residual_active_leases": [],
+          "clean": true,
+          "elapsed_ms": 0.0
+        }
+      },
+      "worker": {
+        "capacity": 1,
+        "in_use": 0,
+        "available": 1
+      },
+      "licenses": {
+        "EMAG": {
+          "capacity": 1,
+          "in_use": 0,
+          "available": 1,
+          "waiting": 0
+        },
+        "THERMAL": {
+          "capacity": 1,
+          "in_use": 0,
+          "available": 1,
+          "waiting": 0
+        },
+        "LAB": {
+          "capacity": 1,
+          "in_use": 0,
+          "available": 1,
+          "waiting": 0
+        },
+        "MECHANICAL": {
+          "capacity": 1,
+          "in_use": 0,
+          "available": 1,
+          "waiting": 0
+        }
+      },
+      "memory": {
+        "host_available_mb": 12779.9,
+        "min_free_memory_mb": 1536.0,
+        "case_reservation_mb": 1024.0,
+        "active_reserved_mb": 0
+      },
+      "queue": [],
+      "queue_depth": 0,
+      "active_leases": [],
+      "metrics": {
+        "grants": 0,
+        "timeouts": 0,
+        "cancellations": 0,
+        "average_wait_ms": 0.0,
+        "p95_wait_ms": 0.0
+      },
+      "effective_concurrency": {
+        "emag": 1,
+        "thermal_steady": 1,
+        "thermal_transient": 1,
+        "emag_thermal": 1,
+        "emag_thermal_coupled": 1,
+        "mechanical": 1,
+        "lab_magnetic": 1,
+        "lab_operating_point": 1,
+        "emag_saturation_map": 1,
+        "emag_torque_envelope": 1,
+        "emag_multi_force": 1,
+        "emag_force_harmonics": 1,
+        "weight": 1,
+        "lab_thermal": 1,
+        "lab_duty_cycle": 1,
+        "lab_generator": 1,
+        "lab_test_performance": 1
+      },
+      "readiness": {
+        "ok": false,
+        "issues": [
+          {
+            "severity": "BLOCKING",
+            "code": "RUNTIME_SCHEDULER_CLOSED",
+            "message": "运行时资源调度器当前已关闭。"
+          }
+        ],
+        "effective_concurrency": {
+          "emag": 1,
+          "thermal_steady": 1,
+          "thermal_transient": 1,
+          "emag_thermal": 1,
+          "emag_thermal_coupled": 1,
+          "mechanical": 1,
+          "lab_magnetic": 1,
+          "lab_operating_point": 1,
+          "emag_saturation_map": 1,
+          "emag_torque_envelope": 1,
+          "emag_multi_force": 1,
+          "emag_force_harmonics": 1,
+          "weight": 1,
+          "lab_thermal": 1,
+          "lab_duty_cycle": 1,
+          "lab_generator": 1,
+          "lab_test_performance": 1
+        },
+        "worker_capacity": 1,
+        "license_capacities": {
+          "EMAG": 1,
+          "THERMAL": 1,
+          "LAB": 1,
+          "MECHANICAL": 1
+        },
+        "min_free_memory_mb": 1536.0,
+        "case_memory_reservation_mb": 1024.0
+      }
+    },
+    "worker_pool": {
+      "mode": "persistent",
+      "started": false,
+      "configured_size": 1,
+      "lifecycle": {
+        "state": "CLOSED",
+        "generation": 1,
+        "last_shutdown_evidence": {
+          "authority": "PersistentWorkerPoolShutdownV1",
+          "generation": 1,
+          "clean": true,
+          "already_closed": false,
+          "workers": [],
+          "residual_pids": [],
+          "elapsed_ms": 0.0,
+          "stopped_at": "2026-08-23T08:48:01.860957+00:00"
+        }
+      },
+      "workers": [],
+      "total_jobs": 0,
+      "total_restarts": 0,
+      "recycle_jobs": 20,
+      "recycle_rss_mb": 4096.0
+    },
+    "database": {
+      "authority": "SQLiteLifecycleV1",
+      "path": "I:\\repositories\\AutoMotorCAD\\data\\runtime\\motorcad_studio.sqlite3",
+      "active_connections": 0,
+      "peak_connections": 1,
+      "total_connections": 16181,
+      "idle": true,
+      "last_connection_opened_at": "2026-08-23T08:48:01.857977+00:00",
+      "last_connection_closed_at": "2026-08-23T08:48:01.859964+00:00"
+    },
+    "last_shutdown_evidence": {
+      "authority": "RuntimeLifecycleShutdownV1",
+      "generation": 1,
+      "clean": true,
+      "stopped_at": "2026-08-23T08:48:01.860957+00:00",
+      "grace_s": 8.0,
+      "force_grace_s": 5.0,
+      "interrupted_task_ids": [],
+      "residual_task_threads": [],
+      "residual_case_threads": [],
+      "scheduler_initial": {
+        "authority": "RuntimeSchedulerShutdownV1",
+        "state": "CLOSED",
+        "generation": 1,
+        "closed_at": "2026-08-23T08:48:01.860957+00:00",
+        "cancelled_queued_requests": 0,
+        "residual_active_leases": [],
+        "clean": true,
+        "elapsed_ms": 0.0
+      },
+      "scheduler_final": {
+        "authority": "RuntimeSchedulerShutdownV1",
+        "state": "CLOSED",
+        "generation": 1,
+        "closed_at": "2026-08-23T08:48:01.860957+00:00",
+        "cancelled_queued_requests": 0,
+        "residual_active_leases": [],
+        "clean": true,
+        "elapsed_ms": 0.0
+      },
+      "worker_pool": {
+        "authority": "PersistentWorkerPoolShutdownV1",
+        "generation": 1,
+        "clean": true,
+        "already_closed": false,
+        "workers": [],
+        "residual_pids": [],
+        "elapsed_ms": 0.0,
+        "stopped_at": "2026-08-23T08:48:01.860957+00:00"
+      },
+      "database": {
+        "authority": "SQLiteLifecycleV1",
+        "path": "I:\\repositories\\AutoMotorCAD\\data\\runtime\\motorcad_studio.sqlite3",
+        "active_connections": 0,
+        "peak_connections": 1,
+        "total_connections": 16181,
+        "idle": true,
+        "last_connection_opened_at": "2026-08-23T08:48:01.857977+00:00",
+        "last_connection_closed_at": "2026-08-23T08:48:01.859964+00:00"
+      },
+      "elapsed_ms": 0.0
+    }
+  },
+  "database": {
+    "authority": "SQLiteLifecycleV1",
+    "path": "I:\\repositories\\AutoMotorCAD\\data\\runtime\\motorcad_studio.sqlite3",
+    "active_connections": 0,
+    "peak_connections": 1,
+    "total_connections": 16181,
+    "idle": true,
+    "last_connection_opened_at": "2026-08-23T08:48:01.857977+00:00",
+    "last_connection_closed_at": "2026-08-23T08:48:01.859964+00:00"
+  },
+  "child_processes": [],
+  "motorcad_child_processes": [],
+  "residual_worker_pids_alive": [],
+  "last_shutdown_evidence": {
+    "authority": "RuntimeLifecycleShutdownV1",
+    "generation": 1,
+    "clean": true,
+    "stopped_at": "2026-08-23T08:48:01.860957+00:00",
+    "grace_s": 8.0,
+    "force_grace_s": 5.0,
+    "interrupted_task_ids": [],
+    "residual_task_threads": [],
+    "residual_case_threads": [],
+    "scheduler_initial": {
+      "authority": "RuntimeSchedulerShutdownV1",
+      "state": "CLOSED",
+      "generation": 1,
+      "closed_at": "2026-08-23T08:48:01.860957+00:00",
+      "cancelled_queued_requests": 0,
+      "residual_active_leases": [],
+      "clean": true,
+      "elapsed_ms": 0.0
+    },
+    "scheduler_final": {
+      "authority": "RuntimeSchedulerShutdownV1",
+      "state": "CLOSED",
+      "generation": 1,
+      "closed_at": "2026-08-23T08:48:01.860957+00:00",
+      "cancelled_queued_requests": 0,
+      "residual_active_leases": [],
+      "clean": true,
+      "elapsed_ms": 0.0
+    },
+    "worker_pool": {
+      "authority": "PersistentWorkerPoolShutdownV1",
+      "generation": 1,
+      "clean": true,
+      "already_closed": false,
+      "workers": [],
+      "residual_pids": [],
+      "elapsed_ms": 0.0,
+      "stopped_at": "2026-08-23T08:48:01.860957+00:00"
+    },
+    "database": {
+      "authority": "SQLiteLifecycleV1",
+      "path": "I:\\repositories\\AutoMotorCAD\\data\\runtime\\motorcad_studio.sqlite3",
+      "active_connections": 0,
+      "peak_connections": 1,
+      "total_connections": 16181,
+      "idle": true,
+      "last_connection_opened_at": "2026-08-23T08:48:01.857977+00:00",
+      "last_connection_closed_at": "2026-08-23T08:48:01.859964+00:00"
+    },
+    "elapsed_ms": 0.0
+  }
+}
