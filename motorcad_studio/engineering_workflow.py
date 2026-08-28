@@ -19,7 +19,8 @@ class EngineeringWorkflowService:
     browser does not need to guess project readiness independently on every page.
     """
 
-    CONTRACT_VERSION = "0.81-B"
+    CONTRACT_VERSION = "0.89-A"
+    AUTHORITY = "GlobalWorkflowTruthV1"
 
     def __init__(self, db: Database):
         self.db = db
@@ -265,6 +266,76 @@ class EngineeringWorkflowService:
             "diagnostic_route": "/app/issues",
         }
 
+    def _coherent_resume_context(self, project_id: str) -> dict[str, Any]:
+        """Resolve one ancestry-consistent resume chain from the deepest persisted object.
+
+        V0.89-A deliberately avoids independently choosing the newest Solution, Motor
+        Revision, Analysis and Result because those rows can belong to different
+        branches. A leaf is selected first and every ancestor is derived from it.
+        """
+        result = self.db.query_one(
+            """SELECT rb.id AS result_bundle_id,rb.case_id,rb.task_id,rb.execution_plan_id,
+                      t.design_revision_id AS motor_revision_id,
+                      ep.analysis_definition_revision_id AS analysis_revision_id,
+                      adr.analysis_definition_id AS analysis_id,mr.solution_id
+                 FROM result_bundles rb
+                 JOIN tasks t ON t.id=rb.task_id
+                 LEFT JOIN execution_plans ep ON ep.id=COALESCE(rb.execution_plan_id,t.execution_plan_id)
+                 LEFT JOIN analysis_definition_revisions adr ON adr.id=ep.analysis_definition_revision_id
+                 LEFT JOIN motor_revisions mr ON mr.id=t.design_revision_id
+                WHERE t.project_id=? ORDER BY rb.created_at DESC LIMIT 1""",
+            (project_id,),
+        )
+        if result:
+            result["project_id"] = project_id
+            return result
+
+        task = self.db.query_one(
+            """SELECT t.id AS task_id,t.execution_plan_id,t.design_revision_id AS motor_revision_id,
+                      ep.analysis_definition_revision_id AS analysis_revision_id,
+                      adr.analysis_definition_id AS analysis_id,mr.solution_id
+                 FROM tasks t
+                 LEFT JOIN execution_plans ep ON ep.id=t.execution_plan_id
+                 LEFT JOIN analysis_definition_revisions adr ON adr.id=ep.analysis_definition_revision_id
+                 LEFT JOIN motor_revisions mr ON mr.id=t.design_revision_id
+                WHERE t.project_id=? ORDER BY COALESCE(t.updated_at,t.created_at) DESC LIMIT 1""",
+            (project_id,),
+        )
+        if task:
+            task["project_id"] = project_id
+            return task
+
+        analysis = self.db.query_one(
+            """SELECT ad.id AS analysis_id,adr.id AS analysis_revision_id,ad.design_revision_id AS motor_revision_id,
+                      mr.solution_id
+                 FROM analysis_definitions ad
+                 JOIN analysis_definition_revisions adr ON adr.id=(
+                    SELECT a2.id FROM analysis_definition_revisions a2
+                     WHERE a2.analysis_definition_id=ad.id ORDER BY a2.revision DESC LIMIT 1)
+                 LEFT JOIN motor_revisions mr ON mr.id=ad.design_revision_id
+                WHERE ad.project_id=? ORDER BY ad.updated_at DESC,ad.created_at DESC LIMIT 1""",
+            (project_id,),
+        )
+        if analysis:
+            analysis["project_id"] = project_id
+            return analysis
+
+        motor = self.db.query_one(
+            """SELECT mr.id AS motor_revision_id,mr.solution_id
+                 FROM motor_revisions mr JOIN solutions s ON s.id=mr.solution_id
+                WHERE s.project_id=? ORDER BY mr.created_at DESC,mr.revision DESC LIMIT 1""",
+            (project_id,),
+        )
+        if motor:
+            motor["project_id"] = project_id
+            return motor
+
+        solution = self.db.query_one(
+            "SELECT id AS solution_id FROM solutions WHERE project_id=? ORDER BY updated_at DESC,created_at DESC LIMIT 1",
+            (project_id,),
+        )
+        return {"project_id": project_id, **(solution or {})}
+
     def project_status(self, project_id: str, *, runtime_ready: bool, runtime_detail: str = "") -> dict[str, Any]:
         project = self.db.query_one("SELECT id,name,description,updated_at FROM projects WHERE id=?", (project_id,))
         if not project:
@@ -309,6 +380,22 @@ class EngineeringWorkflowService:
                  FROM result_bundles rb JOIN tasks t ON t.id=rb.task_id
                 WHERE t.project_id=? ORDER BY rb.created_at DESC LIMIT 1""", (project_id,)
         )
+
+        canonical_context = self._coherent_resume_context(project_id)
+        # Resolve display objects from the same coherent chain. These are used only
+        # for resume labels/routes; stage completion remains a project-wide fact.
+        if canonical_context.get("solution_id"):
+            coherent_solution = next((row for row in solutions if row.get("id") == canonical_context["solution_id"]), None)
+            if coherent_solution:
+                latest_solution = coherent_solution
+        if canonical_context.get("motor_revision_id"):
+            coherent_revision = next((row for row in revisions if row.get("id") == canonical_context["motor_revision_id"]), None)
+            if coherent_revision:
+                latest_revision = coherent_revision
+        if canonical_context.get("analysis_id"):
+            coherent_analysis = next((row for row in analyses if row.get("id") == canonical_context["analysis_id"]), None)
+            if coherent_analysis:
+                latest_analysis = coherent_analysis
 
         base = f"/app/projects/{project_id}"
         solution_route = f"{base}/solutions"
@@ -403,8 +490,37 @@ class EngineeringWorkflowService:
         if latest_result and current_stage == "results":
             resume_route = results_route
         return {
+            "schema_version": 2,
+            "object_type": "global_workflow_truth",
+            "authority": self.AUTHORITY,
             "contract_version": self.CONTRACT_VERSION,
             "project": {"id": project_id, "name": project.get("name"), "description": project.get("description") or ""},
+            "canonical_context": {
+                **{key: canonical_context.get(key) for key in (
+                    "project_id", "solution_id", "motor_revision_id", "analysis_id", "analysis_revision_id",
+                    "execution_plan_id", "task_id", "case_id", "result_bundle_id"
+                )},
+                "selection_policy": "deepest_leaf_then_derive_ancestry",
+                "integrity": "COHERENT",
+            },
+            "context_hierarchy": [
+                "project_id", "solution_id", "motor_revision_id", "analysis_id", "analysis_revision_id",
+                "execution_plan_id", "task_id", "case_id", "result_bundle_id"
+            ],
+            "visible_journey": [
+                {"id": "design", "label": "设计", "object_stages": ["solution", "motor"]},
+                {"id": "validate", "label": "验证", "object_stages": ["analysis"], "requires": ["motor_revision_id"]},
+                {"id": "decide", "label": "决策", "object_stages": ["results"], "requires": ["result_bundle_id"]},
+            ],
+            "transition_policy": {
+                "solution_requires": ["project_id"],
+                "motor_requires": ["project_id", "solution_id"],
+                "analysis_requires": ["project_id", "solution_id", "motor_revision_id"],
+                "execution_requires": ["motor_revision_id", "analysis_revision_id", "runtime_ready", "calculation_check"],
+                "result_requires": ["task_id", "case_id"],
+                "persisted_browser_context": "resume_hint_only",
+                "deep_task_result_routes": "backend_lineage_required",
+            },
             "stages": stages,
             "completion_percent": completion_percent,
             "completed_stage_count": completed_stage_count,
@@ -414,12 +530,14 @@ class EngineeringWorkflowService:
             "resume": {
                 "stage": resume_stage,
                 "route": resume_route,
-                "solution_id": latest_solution.get("id") if latest_solution else None,
-                "motor_revision_id": latest_revision.get("id") if latest_revision else None,
-                "analysis_id": latest_analysis.get("id") if latest_analysis else None,
-                "analysis_revision_id": latest_analysis.get("analysis_revision_id") if latest_analysis else None,
-                "task_id": latest_task.get("id") if latest_task else None,
-                "result_bundle_id": latest_result.get("id") if latest_result else None,
+                "solution_id": canonical_context.get("solution_id"),
+                "motor_revision_id": canonical_context.get("motor_revision_id"),
+                "analysis_id": canonical_context.get("analysis_id"),
+                "analysis_revision_id": canonical_context.get("analysis_revision_id"),
+                "execution_plan_id": canonical_context.get("execution_plan_id"),
+                "task_id": canonical_context.get("task_id"),
+                "case_id": canonical_context.get("case_id"),
+                "result_bundle_id": canonical_context.get("result_bundle_id"),
             },
             "run_center": run_center,
             "failure_center": failure_center,

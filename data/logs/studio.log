@@ -1,0 +1,545 @@
+2026-08-25T08:52:09.173758+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-25T08:52:09.175248+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-25T08:52:11.122181+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-25T08:52:11.123716+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-25T08:52:12.589830+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.6 starting
+2026-08-25T08:52:29.503580+00:00 [INFO] [installation] [NATIVE_EXE_BROWSER_REQUESTED] native Motor-CAD executable browser requested
+2026-08-25T08:52:47.632901+00:00 [INFO] [installation] [NATIVE_EXE_BROWSER_RESULT] native Motor-CAD executable browser completed
+2026-08-25T08:52:49.855980+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/browse -> 200
+2026-08-25T08:52:53.521519+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-25T08:52:53.522513+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-25T08:52:53.527479+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-25T08:52:53.528472+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-25T08:52:57.793461+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-25T08:52:57.794454+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-25T08:53:47.770183+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-25T08:53:49.898896+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2103 ms
+2026-08-25T08:53:49.899393+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-25T08:54:30.731589+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2256 ms
+2026-08-25T08:54:30.732583+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-25T08:55:09.844869+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-25T08:55:09.846359+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-E66EE921A7/design-starters/golden_spm_servo -> 201
+2026-08-25T08:55:44.696993+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-99026726C2/draft -> 200
+2026-08-25T08:55:45.616905+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-99026726C2/draft/commit -> 201
+2026-08-25T08:57:09.555917+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/material-library/scan -> 200
+2026-08-25T09:01:13.883373+00:00 [INFO] [api] [HTTP_REQUEST] PATCH /api/material-library/MAT-8dfc5edd6c4e650973ed -> 200
+2026-08-25T09:03:03.885715+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-FB1AFD88D8/workbench/precheck -> 200
+2026-08-26T01:01:17.992312+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:01:17.993812+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T01:01:19.963281+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:01:19.964281+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T01:01:21.425773+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.6 starting
+2026-08-26T01:03:03.571261+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-26T01:37:06.535429+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:37:06.536429+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T01:37:08.511426+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:37:08.514427+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T01:37:10.045308+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.6 starting
+2026-08-26T01:38:03.026121+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 5390 ms
+2026-08-26T01:38:03.027122+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T01:44:40.615221+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:44:40.616221+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T01:59:48.365043+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2608 ms
+2026-08-26T01:59:48.366043+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T01:59:55.268917+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T01:59:55.269918+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T02:00:23.968135+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2722 ms
+2026-08-26T02:00:23.968634+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T02:02:12.471092+00:00 [ERROR] [frontend] [FRONTEND_UNHANDLED_REJECTION] route-change
+2026-08-26T02:02:12.473092+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T02:02:18.140588+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 3290 ms
+2026-08-26T02:02:18.141087+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T02:06:22.313441+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 50678 ms
+2026-08-26T02:06:22.344941+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T02:06:29.396616+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/rated_emag/preview -> 200
+2026-08-26T02:08:04.473806+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/efficiency_map/preview -> 200
+2026-08-26T02:08:12.931797+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/rated_emag/preview -> 200
+2026-08-26T02:08:22.616285+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/thermal_steady/preview -> 200
+2026-08-26T02:09:38.494696+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T02:09:38.496196+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T02:09:49.298184+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-26T02:09:50.164683+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-F9C5BCEA959D
+2026-08-26T02:09:50.610182+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-E66EE921A7/design-revisions/DRV-FB1AFD88D8/standard-validation-package/execute -> 201
+2026-08-26T02:10:26.642494+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-F4D4975000
+2026-08-26T02:10:26.646995+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-E66EE921A7/analysis-definitions/from-template -> 201
+2026-08-26T02:10:36.498982+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-E66EE921A7
+2026-08-26T02:10:36.499983+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-E66EE921A7 -> 200
+2026-08-26T02:10:43.214238+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-26T02:10:46.984233+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/demagnetization_check/preview -> 200
+2026-08-26T02:10:50.583729+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/efficiency_map/preview -> 200
+2026-08-26T02:10:59.275719+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-26T02:10:59.278219+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-starters/golden_spm_servo -> 201
+2026-08-26T02:11:24.942188+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-26T02:11:24.981689+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-F9C5BCEA959D
+2026-08-26T02:11:24.985189+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-E66EE921A7/design-revisions/DRV-FB1AFD88D8/standard-validation-package/execute -> 201
+2026-08-26T02:14:06.951173+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 97321 ms
+2026-08-26T02:14:06.975674+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T02:19:19.283890+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-26T10:07:37.285923+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T10:07:37.287423+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T10:07:39.009064+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T10:07:39.010064+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T10:07:40.425230+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-26T10:08:22.512329+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 5603 ms
+2026-08-26T10:08:22.513329+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-26T10:08:27.789598+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-26T10:08:27.790598+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-26T10:10:09.045310+00:00 [WARNING] [api] [HTTP_REQUEST] GET /.well-known/appspecific/com.chrome.devtools.json -> 404
+2026-08-26T10:10:09.349310+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 7663 ms
+2026-08-26T10:10:09.356810+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T00:48:46.002267+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:48:46.005267+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:48:48.043830+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:48:48.044336+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:48:49.615564+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-27T00:50:16.159755+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 61943 ms
+2026-08-27T00:50:16.161255+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T00:50:21.090252+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/rated_emag/preview -> 200
+2026-08-27T00:53:26.920201+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/efficiency_map/preview -> 200
+2026-08-27T00:53:51.006158+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/demagnetization_check/preview -> 200
+2026-08-27T00:53:53.432656+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-17B7BDC85E
+2026-08-27T00:53:53.436156+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/analysis-definitions/from-template -> 201
+2026-08-27T00:55:14.389110+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/demagnetization_check/preview -> 200
+2026-08-27T00:55:21.094606+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 87597 ms
+2026-08-27T00:55:21.120106+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T00:55:28.508602+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/demagnetization_check/preview -> 200
+2026-08-27T00:56:03.296698+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/demagnetization_check/preview -> 200
+2026-08-27T00:56:11.368727+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-4C2D152D0D
+2026-08-27T00:56:11.373194+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/analysis-definitions/from-template -> 201
+2026-08-27T00:58:33.175114+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:58:33.176114+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:58:33.178114+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:58:33.179114+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:58:33.644114+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:58:33.645614+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:58:35.426113+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:58:35.427113+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:58:36.839112+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T00:58:36.840111+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T00:59:11.954502+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-27T00:59:12.297002+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-27T00:59:12.762002+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-27T00:59:13.120502+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-27T00:59:13.445502+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T00:59:13.721002+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T00:59:13.725001+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T00:59:13.748502+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T00:59:13.758501+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T00:59:13.759502+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T00:59:13.760502+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T00:59:13.762002+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:00:22.636313+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:00:22.713813+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:00:22.720813+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:00:25.015476+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:00:25.108977+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:00:25.113477+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:00:25.324445+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:00:25.405445+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:00:25.407944+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:00:28.028944+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:00:28.081443+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:00:28.089943+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:01:24.804311+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:01:24.862312+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:01:24.864812+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:01:25.009811+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:01:25.108311+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:01:25.112394+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:01:27.556309+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:01:27.647809+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:01:29.225308+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:01:29.867309+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/thermal_steady/preview -> 200
+2026-08-27T01:01:49.180804+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/coupled_rated/preview -> 200
+2026-08-27T01:02:07.129294+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T01:02:07.156294+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-B4642D604C99
+2026-08-27T01:02:07.159294+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T01:02:56.236267+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 400102 ms
+2026-08-27T01:02:56.253766+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T08:20:35.474224+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:20:35.475724+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:20:37.426503+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:20:37.427503+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:20:38.888379+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-27T08:20:50.293345+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-27T08:20:50.293845+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-27T08:20:51.107344+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:20:51.108344+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:21:18.887643+00:00 [ERROR] [frontend] [FRONTEND_UNHANDLED_REJECTION] 分析必须绑定已验证的电机版本。
+2026-08-27T08:21:18.914142+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T08:22:08.459906+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 46219 ms
+2026-08-27T08:22:08.480405+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T08:22:26.793747+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-templates/rated_emag/preview -> 200
+2026-08-27T08:28:48.610651+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-B65FE5CC71
+2026-08-27T08:28:48.613150+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/analysis-definitions/from-template -> 201
+2026-08-27T08:28:51.169821+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-7F9CF00A55
+2026-08-27T08:28:51.172821+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/analysis-definitions/from-template -> 201
+2026-08-27T08:28:53.532818+00:00 [INFO] [analysis_guidance] [ANALYSIS_TEMPLATE_CREATED] analysis created from template: ANL-010C1C6515
+2026-08-27T08:28:53.535818+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/analysis-definitions/from-template -> 201
+2026-08-27T08:30:37.439681+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/flow_circuit -> 200
+2026-08-27T08:30:40.288841+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/end_space -> 200
+2026-08-27T08:30:42.720204+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/convection -> 200
+2026-08-27T08:30:45.275522+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/radiation -> 200
+2026-08-27T08:30:47.444969+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/interfaces -> 200
+2026-08-27T08:30:50.039173+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/cooling -> 200
+2026-08-27T08:30:51.686336+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B65FE5CC71/input-domains/losses -> 200
+2026-08-27T08:30:54.922208+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B65FE5CC71/revisions -> 201
+2026-08-27T08:30:58.883204+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B65FE5CC71/revisions -> 201
+2026-08-27T08:32:46.915605+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:32:46.916605+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:32:54.620095+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOINED] joined in-flight Motor-CAD feasibility check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T08:32:57.648036+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: PASS
+2026-08-27T08:32:57.649536+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOIN_RESULT] reused freshly completed in-flight Motor-CAD check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T08:32:57.669036+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B65FE5CC71/calculation-check -> 200
+2026-08-27T08:32:59.295781+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-CBD32DF5FC task created with 1 cases
+2026-08-27T08:32:59.305039+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-1DFC3B6B29 -> TASK-CBD32DF5FC
+2026-08-27T08:32:59.316398+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-CBD32DF5FC task started, parallelism=1
+2026-08-27T08:32:59.361516+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=VALIDATING Case开始执行
+2026-08-27T08:32:59.379824+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T08:32:59.390744+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T08:32:59.404759+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 0 ms
+2026-08-27T08:32:59.416837+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T08:32:59.441087+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T08:33:00.209504+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:33:00.210504+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:33:00.947003+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-6D42517FA3 task created with 1 cases
+2026-08-27T08:33:00.956503+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-FD1EBD256A -> TASK-6D42517FA3
+2026-08-27T08:33:00.968503+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-6D42517FA3 task started, parallelism=1
+2026-08-27T08:33:01.001003+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=VALIDATING Case开始执行
+2026-08-27T08:33:01.015502+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T08:33:01.032503+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T08:33:01.080502+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T08:33:01.917002+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=STARTING_SOLVER 求解Worker PID=25716
+2026-08-27T08:33:01.924502+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T08:33:02.492832+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-9C44E5BC69 task created with 1 cases
+2026-08-27T08:33:02.502332+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-BEEC4675E9 -> TASK-9C44E5BC69
+2026-08-27T08:33:02.514832+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-9C44E5BC69 task started, parallelism=1
+2026-08-27T08:33:02.547831+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=VALIDATING Case开始执行
+2026-08-27T08:33:02.562832+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T08:33:02.579832+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T08:33:02.626332+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-27T08:33:04.090330+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-EBE7BC1082 task created with 1 cases
+2026-08-27T08:33:04.100830+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-2DCD19241B -> TASK-EBE7BC1082
+2026-08-27T08:33:04.101331+00:00 [INFO] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package submitted: SVP-B4642D604C99
+2026-08-27T08:33:04.102830+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/design-revisions/REV-AA31F6D50D/standard-validation-package/execute -> 201
+2026-08-27T08:33:04.110330+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-EBE7BC1082 task started, parallelism=1
+2026-08-27T08:33:04.151830+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=VALIDATING Case开始执行
+2026-08-27T08:33:04.189329+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T08:33:04.201329+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T08:33:07.518826+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] 3 个Case正在等待运行时资源，最长 6.5s；原因=LICENSE_EMAG_BUSY, WORKER_CAPACITY
+2026-08-27T08:33:11.195322+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] TASK-6D42517FA3-C0001 心跳已 9.4s 未更新
+2026-08-27T08:33:12.937320+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] TASK-9C44E5BC69-C0001 心跳已 9.7s 未更新
+2026-08-27T08:33:12.937820+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] TASK-EBE7BC1082-C0001 心跳已 8.1s 未更新
+2026-08-27T08:33:41.069226+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-27T08:33:41.136851+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 40093 ms
+2026-08-27T08:33:41.154850+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T08:33:41.169850+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=STARTING_SOLVER 求解Worker PID=25716
+2026-08-27T08:33:41.803688+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T08:33:41.966188+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_HEARTBEAT_STALE 已恢复：TASK-6D42517FA3-C0001 心跳已 38.3s 未更新
+2026-08-27T08:33:42.184948+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-27T08:33:42.222448+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-CBD32DF5FC case=TASK-CBD32DF5FC-C0001 stage=COMPLETED Case计算完成，质量状态=INVALID
+2026-08-27T08:33:42.250448+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-CBD32DF5FC data factory task ingestion started
+2026-08-27T08:33:42.278448+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-CBD32DF5FC data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T08:33:42.278948+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-CBD32DF5FC 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T08:33:42.282948+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-CBD32DF5FC 任务结束: COMPLETED
+2026-08-27T08:34:28.464533+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-27T08:34:28.604033+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 85985 ms
+2026-08-27T08:34:28.669562+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T08:34:28.700718+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 求解Worker PID=25716
+2026-08-27T08:34:28.715718+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T08:34:29.127719+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-27T08:34:29.184218+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-6D42517FA3 case=TASK-6D42517FA3-C0001 stage=COMPLETED Case计算完成，质量状态=INVALID
+2026-08-27T08:34:29.221218+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-6D42517FA3 data factory task ingestion started
+2026-08-27T08:34:29.260217+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-6D42517FA3 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T08:34:29.260717+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-6D42517FA3 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T08:34:29.266217+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-6D42517FA3 任务结束: COMPLETED
+2026-08-27T08:34:31.511715+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_HEARTBEAT_STALE 已恢复：TASK-9C44E5BC69-C0001 心跳已 84.4s 未更新
+2026-08-27T08:34:34.528711+00:00 [ERROR] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_EXCEPTION] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=FAILED [Therm] 专家参数写入失败: LossSource: pymotorcad: set_variable: Error in SetVariable: Could not find LossSource
+2026-08-27T08:34:35.439210+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T08:34:35.440713+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T08:34:37.129208+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 92907 ms
+2026-08-27T08:34:37.166708+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T08:34:37.204707+00:00 [ERROR] [monitoring] [SYSTEM_ALERT] TASK-9C44E5BC69-C0001 Worker进程状态=missing
+2026-08-27T08:34:37.205207+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] RUNTIME_RESOURCE_QUEUE 已恢复：1 个Case正在等待运行时资源，最长 90.2s；原因=WORKER_CAPACITY
+2026-08-27T08:34:37.212208+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 求解Worker PID=16300
+2026-08-27T08:34:37.260707+00:00 [ERROR] [task_engine] [CASE_FAILED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=FAILED SolverProcessError: RuntimeError: [Therm] 专家参数写入失败: LossSource: pymotorcad: set_variable: Error in SetVariable: Could not find LossSource
+2026-08-27T08:34:37.218708+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T08:34:37.295208+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-9C44E5BC69 data factory task ingestion started
+2026-08-27T08:34:37.324208+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-9C44E5BC69 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T08:34:37.324708+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-9C44E5BC69 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T08:34:37.330208+00:00 [ERROR] [task_engine] [TASK_FINISHED] task=TASK-9C44E5BC69 任务结束: FAILED
+2026-08-27T08:34:39.871705+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_HEARTBEAT_STALE 已恢复：TASK-EBE7BC1082-C0001 心跳已 91.3s 未更新
+2026-08-27T08:34:39.872205+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_PROCESS_LOST 已恢复：TASK-9C44E5BC69-C0001 Worker进程状态=missing
+2026-08-27T08:34:45.588903+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2318 ms
+2026-08-27T08:34:45.616904+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T08:34:45.659905+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-8F5108CF9F/qualification-campaign/preview -> 200
+2026-08-27T08:35:24.296872+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-27T08:35:26.202656+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-27T08:35:26.258156+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=COMPLETED Case计算完成，质量状态=INVALID
+2026-08-27T08:35:26.296656+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-EBE7BC1082 data factory task ingestion started
+2026-08-27T08:35:26.336656+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-EBE7BC1082 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T08:35:26.336656+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-EBE7BC1082 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T08:35:26.342156+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-EBE7BC1082 任务结束: COMPLETED
+2026-08-27T08:35:26.544155+00:00 [INFO] [frontend] [EXPERIMENT_RESULTS_HANDOFF] 参数研究计算完成，交还 Results/Optimization
+2026-08-27T08:35:26.544655+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T08:35:33.584150+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 7032 ms
+2026-08-27T08:35:33.584644+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T10:28:27.690456+00:00 [WARNING] [task_engine] [INCOMPLETE_CASES_RETRY] task=TASK-EBE7BC1082 1 个有限元/结果提取不完整 Case 已重新排队
+2026-08-27T10:28:27.721456+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/tasks/TASK-EBE7BC1082/retry-incomplete -> 200
+2026-08-27T10:28:27.766456+00:00 [ERROR] [frontend] [FRONTEND_ROUTE_FAILED] experimentModeLabel is not defined
+2026-08-27T10:28:27.767957+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T10:28:27.747456+00:00 [WARNING] [task_engine] [INCOMPLETE_CASES_RETRY] task=TASK-9C44E5BC69 1 个有限元/结果提取不完整 Case 已重新排队
+2026-08-27T10:28:27.769957+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/tasks/TASK-9C44E5BC69/retry-incomplete -> 200
+2026-08-27T10:28:27.780456+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-EBE7BC1082 task started, parallelism=1
+2026-08-27T10:28:27.806456+00:00 [ERROR] [frontend] [FRONTEND_ROUTE_FAILED] experimentModeLabel is not defined
+2026-08-27T10:28:27.807457+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-27T10:28:27.819457+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-9C44E5BC69 task started, parallelism=1
+2026-08-27T10:28:27.878956+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=VALIDATING Case开始执行
+2026-08-27T10:28:27.917456+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=VALIDATING Case开始执行
+2026-08-27T10:28:27.936456+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T10:28:27.948455+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-27T10:28:27.953456+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T10:28:27.975456+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-27T10:28:27.980956+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 16 ms
+2026-08-27T10:28:27.996956+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T10:28:28.007456+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER 求解Worker PID=16300
+2026-08-27T10:28:28.038456+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T10:28:35.192947+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] 1 个Case正在等待运行时资源，最长 7.2s；原因=WORKER_CAPACITY
+2026-08-27T10:28:38.838843+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] TASK-9C44E5BC69-C0001 心跳已 8.3s 未更新
+2026-08-27T10:29:13.014628+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-27T10:29:14.138127+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 46140 ms
+2026-08-27T10:29:14.188127+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-27T10:29:14.264626+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] RUNTIME_RESOURCE_QUEUE 已恢复：1 个Case正在等待运行时资源，最长 42.9s；原因=WORKER_CAPACITY
+2026-08-27T10:29:14.253626+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER 求解Worker PID=16300
+2026-08-27T10:29:14.312126+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-27T10:29:14.805625+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-27T10:29:14.874625+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-EBE7BC1082 case=TASK-EBE7BC1082-C0001 stage=COMPLETED Case计算完成，质量状态=INVALID
+2026-08-27T10:29:14.919626+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-EBE7BC1082 data factory task ingestion started
+2026-08-27T10:29:14.964126+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-EBE7BC1082 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T10:29:14.964626+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-EBE7BC1082 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T10:29:14.970126+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-EBE7BC1082 任务结束: COMPLETED
+2026-08-27T10:29:17.700622+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_HEARTBEAT_STALE 已恢复：TASK-9C44E5BC69-C0001 心跳已 44.0s 未更新
+2026-08-27T10:29:27.876110+00:00 [ERROR] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_EXCEPTION] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=FAILED [Therm] 专家参数写入失败: LossSource: pymotorcad: set_variable: Error in SetVariable: Could not find LossSource
+2026-08-27T10:29:31.787186+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-27T10:29:31.788685+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-27T10:29:36.991679+00:00 [ERROR] [task_engine] [CASE_FAILED] task=TASK-9C44E5BC69 case=TASK-9C44E5BC69-C0001 stage=FAILED SolverProcessError: RuntimeError: [Therm] 专家参数写入失败: LossSource: pymotorcad: set_variable: Error in SetVariable: Could not find LossSource
+2026-08-27T10:29:38.087678+00:00 [ERROR] [monitoring] [SYSTEM_ALERT] TASK-9C44E5BC69-C0001 Worker进程状态=missing
+2026-08-27T10:29:38.088178+00:00 [WARNING] [monitoring] [SYSTEM_ALERT] TASK-9C44E5BC69-C0001 心跳已 8.8s 未更新
+2026-08-27T10:29:38.091178+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-9C44E5BC69 data factory task ingestion started
+2026-08-27T10:29:39.332676+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-9C44E5BC69 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-27T10:29:39.599176+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-9C44E5BC69 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-27T10:29:39.929675+00:00 [ERROR] [task_engine] [TASK_FINISHED] task=TASK-9C44E5BC69 任务结束: FAILED
+2026-08-27T10:29:40.838174+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_HEARTBEAT_STALE 已恢复：TASK-9C44E5BC69-C0001 心跳已 8.8s 未更新
+2026-08-27T10:29:40.838674+00:00 [INFO] [monitoring] [SYSTEM_ALERT_RESOLVED] WORKER_PROCESS_LOST 已恢复：TASK-9C44E5BC69-C0001 Worker进程状态=missing
+2026-08-28T02:54:11.475860+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T02:54:11.477360+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T02:54:13.402357+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T02:54:13.403357+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T02:54:14.848356+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-28T02:54:24.862427+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-28T02:54:24.863426+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-28T02:54:54.563983+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-8F5108CF9F
+2026-08-28T02:54:54.564983+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-8F5108CF9F -> 200
+2026-08-28T02:55:06.309366+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-28T02:55:23.429845+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-28T02:55:23.432345+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9ED1F3C2DD/design-starters/golden_spm_servo -> 201
+2026-08-28T02:56:05.780925+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T02:56:05.829925+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T02:56:05.998425+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/commit -> 201
+2026-08-28T02:58:53.738192+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/material-library/scan -> 200
+2026-08-28T03:00:10.215184+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-9D26BF5190/workbench/precheck -> 200
+2026-08-28T03:09:52.295617+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:09:53.132116+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T03:09:53.133116+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T03:10:06.591651+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-28T03:10:07.709150+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:13:52.544266+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T03:13:52.976050+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:14:08.019803+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T03:14:08.116303+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:14:20.323935+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-9D26BF5190/workbench/precheck -> 200
+2026-08-28T03:14:20.560435+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T03:14:20.868172+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:14:23.085171+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:14:39.633369+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:14:41.765315+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:14:41.816814+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:14:41.979815+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/commit -> 201
+2026-08-28T03:14:56.466353+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:14:57.342796+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T03:14:57.343796+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T03:15:09.656281+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: PASS
+2026-08-28T03:15:12.260278+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:16:29.928373+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T03:16:30.021372+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/native-check -> 200
+2026-08-28T03:17:00.324318+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:17:20.243023+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9ED1F3C2DD/analysis-definitions -> 201
+2026-08-28T03:17:26.447016+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9ED1F3C2DD/analysis-definitions -> 201
+2026-08-28T03:17:58.577966+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/cooling -> 200
+2026-08-28T03:18:10.831521+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/losses -> 200
+2026-08-28T03:18:16.168393+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/interfaces -> 200
+2026-08-28T03:18:17.038892+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/radiation -> 200
+2026-08-28T03:18:19.735182+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/convection -> 200
+2026-08-28T03:18:22.319179+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/convection -> 200
+2026-08-28T03:18:27.250353+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/end_space -> 200
+2026-08-28T03:18:29.267350+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-B76B610B66/input-domains/flow_circuit -> 200
+2026-08-28T03:18:51.952222+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B76B610B66/revisions -> 201
+2026-08-28T03:19:11.908215+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T03:19:11.918215+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B76B610B66/calculation-check -> 200
+2026-08-28T03:19:22.806192+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-203CA80290 task created with 1 cases
+2026-08-28T03:19:22.815692+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-B76B610B66 -> TASK-203CA80290
+2026-08-28T03:19:22.817192+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-B76B610B66/execute -> 201
+2026-08-28T03:19:23.277191+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-203CA80290 task started, parallelism=1
+2026-08-28T03:19:24.360190+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=VALIDATING Case开始执行
+2026-08-28T03:19:24.483190+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-28T03:19:24.495190+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-28T03:19:24.545190+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 0 ms
+2026-08-28T03:19:24.561690+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-28T03:19:25.469688+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T03:19:25.471189+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T03:19:27.184187+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=STARTING_SOLVER 求解Worker PID=15176
+2026-08-28T03:19:27.242686+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4418 ms
+2026-08-28T03:19:27.243186+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T03:19:27.192187+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-28T03:20:04.318643+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-28T03:20:05.414141+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-28T03:20:05.472641+00:00 [WARNING] [task_engine] [CASE_COMPLETED] task=TASK-203CA80290 case=TASK-203CA80290-C0001 stage=COMPLETED Case计算完成，质量状态=WARNING
+2026-08-28T03:20:05.507641+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-203CA80290 data factory task ingestion started
+2026-08-28T03:20:05.544641+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-203CA80290 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-28T03:20:05.544641+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-203CA80290 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-28T03:20:05.548641+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-203CA80290 任务结束: COMPLETED
+2026-08-28T03:20:05.905640+00:00 [INFO] [frontend] [EXPERIMENT_RESULTS_HANDOFF] 参数研究计算完成，交还 Results/Optimization
+2026-08-28T03:20:06.731639+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T03:20:08.841637+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2931 ms
+2026-08-28T03:20:08.842137+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T03:20:39.198787+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2346 ms
+2026-08-28T03:20:39.214816+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T03:20:41.242784+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9ED1F3C2DD/qualification-campaign/preview -> 200
+2026-08-28T03:50:53.693669+00:00 [ERROR] [frontend] [FRONTEND_UNHANDLED_REJECTION] Cannot set properties of null (setting 'innerHTML')
+2026-08-28T03:50:53.694169+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T03:52:06.494642+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-A8EE64617D/draft -> 200
+2026-08-28T03:52:06.705142+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-A8EE64617D/draft/commit -> 201
+2026-08-28T06:34:17.855733+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-9ED1F3C2DD
+2026-08-28T06:34:17.857233+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-9ED1F3C2DD -> 200
+2026-08-28T06:35:53.136605+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-28T06:35:53.137605+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-28T06:35:54.184604+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T06:35:54.186104+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T06:36:07.960665+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-28T06:36:11.471661+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 3479 ms
+2026-08-28T06:36:11.472661+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T06:36:35.083858+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_afpm_ssdr
+2026-08-28T06:36:35.086358+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-FE2CA938E5/design-starters/golden_afpm_ssdr -> 201
+2026-08-28T06:37:17.215739+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:37:17.268739+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:37:17.428238+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-672B5CA77F/draft/commit -> 201
+2026-08-28T06:37:35.224006+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-0360DE9F61/workbench/precheck -> 200
+2026-08-28T06:37:38.427001+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:37:39.285500+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T06:37:39.287027+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T06:37:50.889303+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check e14_eMobility_AFM: FAIL
+2026-08-28T06:37:52.107301+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-672B5CA77F/draft/native-check -> 200
+2026-08-28T06:38:12.094277+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:38:24.994639+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:38:28.277635+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-672B5CA77F/draft/commit -> 201
+2026-08-28T06:38:43.065117+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:38:43.936616+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T06:38:43.938116+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T06:38:55.326102+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check e14_eMobility_AFM: FAIL
+2026-08-28T06:38:57.022100+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-672B5CA77F/draft/native-check -> 200
+2026-08-28T06:39:04.219592+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for e14_eMobility_AFM
+2026-08-28T06:39:04.309092+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-672B5CA77F/draft/native-check -> 200
+2026-08-28T06:39:15.350578+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-672B5CA77F/draft -> 200
+2026-08-28T06:39:37.897657+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-FE2CA938E5
+2026-08-28T06:39:37.898657+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-FE2CA938E5 -> 200
+2026-08-28T06:39:46.186647+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-28T06:39:48.709644+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2494 ms
+2026-08-28T06:39:48.710644+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T06:40:03.537626+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-28T06:40:03.540126+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/design-starters/golden_spm_servo -> 201
+2026-08-28T06:40:29.900978+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T06:40:33.104026+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/commit -> 201
+2026-08-28T06:40:46.845510+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/material-library/scan -> 200
+2026-08-28T06:41:21.397716+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/DRV-FDB273DBB3/workbench/precheck -> 200
+2026-08-28T06:41:26.882709+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T06:41:27.748709+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T06:41:27.749708+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T06:41:40.998192+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-28T06:41:41.098193+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/native-check -> 200
+2026-08-28T06:41:50.913851+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T06:42:06.638309+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T06:42:09.305306+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/commit -> 201
+2026-08-28T06:42:23.515790+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T06:42:26.465285+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/commit -> 201
+2026-08-28T06:43:18.230336+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/analysis-definitions -> 201
+2026-08-28T06:43:44.448795+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/analysis-definitions -> 201
+2026-08-28T06:43:51.599786+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 6834 ms
+2026-08-28T06:43:51.605787+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T06:44:11.491763+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/analysis-definitions -> 201
+2026-08-28T08:01:30.902780+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects -> 201
+2026-08-28T08:03:06.930826+00:00 [INFO] [design_starter] [GOLDEN_STARTER_APPLIED] golden starter applied: golden_spm_servo
+2026-08-28T08:03:06.932826+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-A0A4123D9B/design-starters/golden_spm_servo -> 201
+2026-08-28T08:03:32.514330+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-1A09C7A46C/draft -> 200
+2026-08-28T08:03:34.774293+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-1A09C7A46C/draft -> 200
+2026-08-28T08:03:46.742291+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-1A09C7A46C/draft -> 200
+2026-08-28T08:14:44.215286+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/design-revisions/REV-A2FD53ECD4/workbench/precheck -> 200
+2026-08-28T08:14:45.207785+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-1A09C7A46C/draft -> 200
+2026-08-28T08:14:47.820282+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T08:14:47.821282+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T08:14:59.101269+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: PASS
+2026-08-28T08:14:59.200269+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-1A09C7A46C/draft/native-check -> 200
+2026-08-28T08:16:46.602616+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/solutions/DSN-1A09C7A46C/draft -> 200
+2026-08-28T08:17:52.952536+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 66309 ms
+2026-08-28T08:17:52.980537+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T08:21:04.773607+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-A0A4123D9B/analysis-definitions -> 201
+2026-08-28T08:21:52.923846+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-728739C270/revisions -> 201
+2026-08-28T08:21:55.756842+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-728739C270/revisions -> 201
+2026-08-28T08:22:04.123327+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-728739C270/input-domains/cooling -> 200
+2026-08-28T08:22:07.579800+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-728739C270/input-domains/losses -> 200
+2026-08-28T08:23:16.377752+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T08:23:16.378752+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T08:23:27.661061+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: PASS
+2026-08-28T08:23:27.678061+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-728739C270/calculation-check -> 200
+2026-08-28T08:23:46.153368+00:00 [INFO] [task_engine] [TASK_CREATED] task=TASK-4AD994ED66 task created with 1 cases
+2026-08-28T08:23:46.167869+00:00 [INFO] [analysis_execution] [ANALYSIS_EXECUTION_SUBMITTED] analysis execution submitted: ANL-728739C270 -> TASK-4AD994ED66
+2026-08-28T08:23:46.169369+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-728739C270/execute -> 201
+2026-08-28T08:23:46.180368+00:00 [INFO] [task_engine] [TASK_STARTED] task=TASK-4AD994ED66 task started, parallelism=1
+2026-08-28T08:23:46.240368+00:00 [INFO] [task_engine] [CASE_STARTED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=VALIDATING Case开始执行
+2026-08-28T08:23:46.265368+00:00 [INFO] [task_engine] [CASE_INPUTS_READY] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=INPUTS_READY 电机参数、运行工况、材料与物理输入已组装并通过本地规则检查
+2026-08-28T08:23:46.282368+00:00 [INFO] [task_engine] [WAITING_FOR_RUNTIME_RESOURCES] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=WAITING_FOR_RESOURCES 等待Motor-CAD运行时资源：Worker + 许可证 + 内存余量
+2026-08-28T08:23:46.308368+00:00 [INFO] [task_engine] [RUNTIME_RESOURCE_LEASE_ACQUIRED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=STARTING_SOLVER 运行时资源已原子授予，等待 15 ms
+2026-08-28T08:23:46.394868+00:00 [INFO] [task_engine] [MOTORCAD_WORKER_LEASE_REQUESTED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=STARTING_SOLVER 请求Motor-CAD持久Worker执行租约
+2026-08-28T08:23:46.436368+00:00 [INFO] [task_engine] [WORKER_STARTED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=STARTING_SOLVER 求解Worker PID=15176
+2026-08-28T08:23:46.477368+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_START] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=STARTING_SOLVER persistent Motor-CAD worker accepted case
+2026-08-28T08:24:38.368305+00:00 [INFO] [persistent_solver_worker] [PERSISTENT_WORKER_JOB_SUCCESS] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=COMPLETED persistent Motor-CAD worker completed case
+2026-08-28T08:24:40.335303+00:00 [INFO] [task_engine] [VALIDATE_AND_RUN_LEASE_COMPLETED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=ARCHIVING 模型原生校验与正式求解在同一执行租约内完成
+2026-08-28T08:24:40.392803+00:00 [INFO] [task_engine] [CASE_COMPLETED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=COMPLETED Case计算完成，质量状态=VALID
+2026-08-28T08:24:40.412303+00:00 [INFO] [task_engine] [QUALIFICATION_PROMOTED] task=TASK-4AD994ED66 case=TASK-4AD994ED66-C0001 stage=COMPLETED 真实成功 Case 已登记为 i5_Industrial_SPM_Servo_Tooth_Wound/emag_thermal Level 4 运行资格证据
+2026-08-28T08:24:40.535803+00:00 [INFO] [data_factory] [INGEST_START] task=TASK-4AD994ED66 data factory task ingestion started
+2026-08-28T08:24:40.587303+00:00 [INFO] [data_factory] [INGEST_COMPLETE] task=TASK-4AD994ED66 data factory ingestion completed for 1 rows; this does not imply solver success
+2026-08-28T08:24:40.587803+00:00 [INFO] [task_engine] [DATA_FACTORY_INGESTED] task=TASK-4AD994ED66 任务数据归档完成；该事件仅表示数据工厂摄取完成，不代表求解成功。
+2026-08-28T08:24:40.613803+00:00 [INFO] [task_engine] [TASK_FINISHED] task=TASK-4AD994ED66 任务结束: COMPLETED
+2026-08-28T08:24:42.782801+00:00 [INFO] [frontend] [EXPERIMENT_RESULTS_HANDOFF] 参数研究计算完成，交还 Results/Optimization
+2026-08-28T08:24:42.783800+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T08:24:46.594796+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 3802 ms
+2026-08-28T08:24:46.595796+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T08:44:22.157328+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2867 ms
+2026-08-28T08:44:22.201828+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T08:44:30.441912+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4822 ms
+2026-08-28T08:44:30.442413+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T09:01:42.544827+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-A0A4123D9B/qualification-campaign/preview -> 200
+2026-08-28T09:01:42.588827+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2776 ms
+2026-08-28T09:01:42.608827+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T09:02:01.676420+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-A0A4123D9B/qualification-campaign/preview -> 200
+2026-08-28T09:02:08.527641+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2884 ms
+2026-08-28T09:02:08.540642+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-A0A4123D9B/qualification-campaign/preview -> 200
+2026-08-28T09:02:08.542141+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T09:02:33.835527+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4013 ms
+2026-08-28T09:02:33.836027+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T09:32:57.180146+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 4005 ms
+2026-08-28T09:32:57.181146+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T10:06:09.186379+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T10:06:09.187879+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T10:06:10.965378+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T10:06:10.966877+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T10:06:12.457876+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting

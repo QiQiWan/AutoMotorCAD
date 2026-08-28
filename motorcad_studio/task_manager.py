@@ -735,7 +735,7 @@ class TaskManager:
                     "revision_value": revision_materials.get("material_database_path"),
                     "task_value": task_materials.get("material_database_path"),
                 })
-            for group in ("component_materials", "cooling_fluids"):
+            for group in ("component_materials",):
                 baseline_group = revision_materials.get(group) or {}
                 task_group = task_materials.get(group) or {}
                 for key in sorted(set(baseline_group) | set(task_group)):
@@ -2230,7 +2230,17 @@ class TaskManager:
             )
             self.db.execute("UPDATE case_stages SET status='SUCCEEDED',progress=1,finished_at=?,updated_at=? WHERE case_id=? AND status='RUNNING'", (self.db.now(), self.db.now(), case_id))
             severity = "WARNING" if quality_status in {QualityStatus.WARNING.value, QualityStatus.INVALID.value, QualityStatus.UNVERIFIED.value} else "INFO"
-            self._event(task_id, "CASE_COMPLETED", f"Case计算完成，质量状态={quality_status}", case_id=case_id, stage="COMPLETED", severity=severity, progress=1.0)
+            quality_flags_payload = [flag.model_dump(mode="json") for flag in result.quality_flags]
+            self._event(
+                task_id, "CASE_COMPLETED", f"Case计算完成，质量状态={quality_status}",
+                case_id=case_id, stage="COMPLETED", severity=severity, progress=1.0,
+                payload={
+                    "quality_status": quality_status,
+                    "result_bundle_id": persisted_bundle.get("id"),
+                    "warnings": list(result.warnings or [])[:8],
+                    "quality_flags": quality_flags_payload[:12],
+                },
+            )
             if task["solver_mode"] == SolverMode.MOTORCAD.value and self.calibration_registry is not None:
                 try:
                     evidence_id = self.calibration_registry.promote_from_task_success(

@@ -338,6 +338,10 @@ class EngineeringPlatformService:
             required = set(required_input_domains(analysis.get("module"), analysis.get("recipe_id")))
         domains = []
         for domain_id, spec in self.input_domains.items():
+            # Design-owned domains are retained in the registry only to decode
+            # legacy revisions. They must not appear as editable Analysis inputs.
+            if bool(spec.get("hidden_in_analysis")) or str(spec.get("scope") or "analysis") == "design":
+                continue
             defaults = {str(field.get("id")): deepcopy(field.get("default")) for field in spec.get("fields") or [] if "default" in field}
             saved = deepcopy(current.get(domain_id) or {})
             domains.append({

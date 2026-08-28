@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 
 class Database:
-    SCHEMA_VERSION = 44
+    SCHEMA_VERSION = 45
 
     def __init__(self, path: Path):
         self.path = path
@@ -1251,8 +1251,17 @@ class Database:
                 "motor_snapshot_json": "TEXT NOT NULL DEFAULT '{}'",
                 "motor_snapshot_schema_version": "INTEGER NOT NULL DEFAULT 1",
                 "motor_snapshot_hash": "TEXT NOT NULL DEFAULT ''",
+                "editor_transaction_id": "TEXT NOT NULL DEFAULT ''",
+                "editor_intent_hash": "TEXT NOT NULL DEFAULT ''",
+                "editor_intent_version": "INTEGER NOT NULL DEFAULT 0",
+                "native_reconciliation_json": "TEXT NOT NULL DEFAULT '{}'",
             }.items():
                 self._ensure_column(conn, "solution_drafts", name, ddl)
+            for name, ddl in {
+                "editor_transaction_json": "TEXT NOT NULL DEFAULT '{}'",
+                "native_reconciliation_json": "TEXT NOT NULL DEFAULT '{}'",
+            }.items():
+                self._ensure_column(conn, "motor_revisions", name, ddl)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_solution_drafts_base_revision ON solution_drafts(base_motor_revision_id)")
             self._ensure_column(conn, "datasets", "project_id", "TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_datasets_project ON datasets(project_id,updated_at)")

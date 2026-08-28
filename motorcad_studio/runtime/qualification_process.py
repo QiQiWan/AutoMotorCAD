@@ -30,9 +30,12 @@ def _child(payload: dict[str, Any], result_queue: Any) -> None:
         result = adapter.qualify_template(
             template=payload["template"],
             parameters=payload.get("parameters") or {},
+            effective_parameters=payload.get("effective_parameters") or {},
+            explicit_parameter_ids=payload.get("explicit_parameter_ids") or [],
             materials=payload.get("materials") or {},
             analysis=AnalysisType(payload.get("analysis", "emag")),
             run_solver_smoke=bool(payload.get("run_solver_smoke", False)),
+            repair_policy=str(payload.get("repair_policy") or "suggest"),
             work_dir=Path(payload["work_dir"]),
         )
         result_queue.put({"ok": True, "result": result})

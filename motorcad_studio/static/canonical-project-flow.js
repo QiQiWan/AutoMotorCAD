@@ -64,9 +64,9 @@
     const families=new Set(designs.map(typeLabel).filter(Boolean));
     metrics.innerHTML=[['方案',designs.length],['电机配置版本',revisions],['电机类型',families.size],['当前项目',project?.name||'—']].map(([label,value])=>`<div class="metric-card"><span>${safe(label)}</span><b>${safe(value)}</b></div>`).join('');
     if(!designs.length){
-      list.innerHTML=`<article class="panel canonical-empty-solution"><span class="eyebrow">从方案开始</span><h3>当前项目还没有方案</h3><p>先建立一个方案，再进入电机配置维护几何、绕组、材料和 Revision。分析配置只引用已保存的电机版本。</p><button type="button" class="primary" data-canonical-create-solution>＋ 新建第一个方案</button></article>`;
+      list.innerHTML=`<article class="panel canonical-empty-solution"><span class="eyebrow">从方案开始</span><h3>当前项目还没有方案</h3><p>先建立一个方案，再进入电机配置维护几何、绕组和材料。分析配置只引用已保存的电机版本。</p><button type="button" class="primary" data-canonical-create-solution>＋ 新建第一个方案</button></article>`;
     }else{
-      list.innerHTML=designs.map(design=>{const rev=latestRevision(design),count=(design.revisions||[]).length;return `<article class="panel canonical-solution-card" data-solution-id="${safe(design.id)}"><header><div><span class="eyebrow">方案</span><h3>${safe(design.name||design.id)}</h3><small>${safe(design.id)}</small></div><span class="solution-type">${safe(typeLabel(design))}</span></header><div class="solution-facts"><div><span>模板 / 来源</span><b>${safe(design.template_id||design.source_kind||'默认模型')}</b></div><div><span>配置版本</span><b>${count?`${count} 个 Revision`:'尚无 Revision'}</b></div><div><span>当前版本</span><b>${rev?`Rev.${safe(rev.revision)}`:'—'}</b></div></div><footer><button type="button" data-canonical-analysis="${safe(design.id)}" ${rev?'':'disabled'}>分析配置</button><button type="button" class="primary" data-canonical-motor="${safe(design.id)}">电机配置</button></footer></article>`}).join('');
+      list.innerHTML=designs.map(design=>{const rev=latestRevision(design),count=(design.revisions||[]).length;return `<article class="panel canonical-solution-card" data-solution-id="${safe(design.id)}"><header><div><span class="eyebrow">方案</span><h3>${safe(design.name||design.id)}</h3><small>${safe(design.id)}</small></div><span class="solution-type">${safe(typeLabel(design))}</span></header><div class="solution-facts"><div><span>模板 / 来源</span><b>${safe(design.template_id||design.source_kind||'默认模型')}</b></div><div><span>配置版本</span><b>${count?`${count} 个电机版本`:'尚无电机版本'}</b></div><div><span>当前版本</span><b>${rev?`Rev.${safe(rev.revision)}`:'—'}</b></div></div><footer><button type="button" data-canonical-analysis="${safe(design.id)}" ${rev?'':'disabled'}>分析配置</button><button type="button" class="primary" data-canonical-motor="${safe(design.id)}">电机配置</button></footer></article>`}).join('');
     }
     qa('[data-canonical-create-solution]',list).forEach(button=>button.addEventListener('click',openSolutionCreator));
     qa('[data-canonical-motor]',list).forEach(button=>button.addEventListener('click',()=>openMotorConfiguration(designs.find(row=>row.id===button.dataset.canonicalMotor))));
@@ -98,7 +98,7 @@
   q('#refreshSolutionsCanonical')?.addEventListener('click',()=>mountSolutions());
   q('#workspaceToAnalysisCanonical')?.addEventListener('click',()=>{
     const design=state.workspaceDesign,revision=state.workspaceRevision;
-    if(!design||!revision)return typeof toast==='function'&&toast('请先选择方案及电机配置 Revision。','WARNING');
+    if(!design||!revision)return typeof toast==='function'&&toast('请先选择方案及已保存的电机版本。','WARNING');
     window.MCSEngineeringContext?.setMotorRevision?.(revision,{solution:design,source:'canonical:workspace-to-analysis'});
     openAnalysisConfiguration(design);
   });

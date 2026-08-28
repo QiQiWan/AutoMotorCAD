@@ -246,12 +246,12 @@ def test_v087e_current_frontend_contract_contains_linked_decision_views():
     assert "data-opt-study-preset-v087e" in optimization_js and "applyStudyPreset" in optimization_js
     assert "data-opt-inspect-v087e" in optimization_js
     assert "MCSOptimizationDecisionWorkbench?.mount" in optimization_js
-    assert "/static/results/optimization-decision.js?v=0.88.1" in index
+    assert "/static/results/optimization-decision.js?v=0.89.9" in index
     assert ".optimization-workbench-grid-v087e" in css
     assert ".candidate-delta-row-v087e.improved" in css
     assert ".parallel-line.selected" in css
 
 
 def test_v087e_version_and_schema_boundary():
-    assert main_module.db.SCHEMA_VERSION == 44
-    assert main_module.__version__ == "0.88.1"
+    assert main_module.db.SCHEMA_VERSION == 45
+    assert main_module.__version__ == "0.89.9"

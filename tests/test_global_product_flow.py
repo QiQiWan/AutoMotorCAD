@@ -29,7 +29,7 @@ def test_full_product_control_plane_smoke_chain():
 
         project_response = client.post(
             "/api/projects",
-            json={"name": "Global Interaction Smoke", "description": "0.88.1 whole-product smoke"},
+            json={"name": "Global Interaction Smoke", "description": "0.88.3 whole-product smoke"},
         )
         assert project_response.status_code == 201, project_response.text
         project_id = project_response.json()["id"]

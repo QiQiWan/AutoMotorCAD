@@ -15,9 +15,9 @@ def test_v087a_guided_mode_is_default_and_advanced_catalog_is_progressive_disclo
     html = (STATIC / "index.html").read_text(encoding="utf-8")
     production = (STATIC / "production.js").read_text(encoding="utf-8")
     css = (STATIC / "engineering-workflow.css").read_text(encoding="utf-8")
-    assert __version__ == "0.88.1"
-    assert '<span class="version">0.88.1</span>' in html
-    assert '<option value="operator" selected>设计工程师 / Guided</option>' in html
+    assert __version__ == "0.89.9"
+    assert '<span class="version">0.89.9</span>' in html
+    assert '<option value="operator" selected>设计工程师</option>' in html
     assert "(el?.value||'operator')" in production
     assert 'body[data-user-mode="operator"] .engineering-catalog-only' in css
     assert 'worker-pool-panel-v026 expert-only' in html

@@ -116,18 +116,30 @@
     updateTitle(parse(path),path);
   }
 
-  async function allowRouteChange(route){
-    if(typeof window.MCSDesignEditor?.prepareRouteChange!=='function')return true;
-    try{return (await window.MCSDesignEditor.prepareRouteChange(route))!==false}
-    catch(error){console.error('route leave guard failed',error);toast(`页面跳转检查失败：${error.message||error}`,'ERROR',8000);return false}
+  async function allowRouteChange(route,meta={}){
+    try{
+      if(typeof window.MCSNavigationTransaction?.prepare==='function')return (await window.MCSNavigationTransaction.prepare(route,{...meta,source:meta.source||'router:guard'}))!==false;
+      if(typeof window.MCSDesignEditor?.prepareRouteChange==='function')return (await window.MCSDesignEditor.prepareRouteChange(route))!==false;
+      return true;
+    }catch(error){console.error('route leave guard failed',error);toast(`页面跳转检查失败：${error.message||error}`,'ERROR',8000);return false}
   }
 
-  async function navigate(path,{replace=false}={}){
+  async function navigate(path,{replace=false,source='router:navigate'}={}){
     if(!path)return false;
-    const route=parse(path);
-    if(!(await allowRouteChange(route)))return false;
-    if(location.pathname!==path)history[replace?'replaceState':'pushState']({mcs:true},'',path);
-    return apply(path,{skipGuard:true});
+    const route=parse(path),from=location.pathname;
+    const commit=async()=>{
+      if(location.pathname!==path)history[replace?'replaceState':'pushState']({mcs:true},'',path);
+      return apply(path,{skipGuard:true});
+    };
+    if(typeof window.MCSNavigationTransaction?.run!=='function'){
+      if(!(await allowRouteChange(route,{source,from,path})))return false;
+      return commit();
+    }
+    return window.MCSNavigationTransaction.run({
+      target:path,key:`route:${path}`,source,meta:{route,replace,from},
+      prepare:()=>allowRouteChange(route,{source,from,path}),commit,
+      rollback:()=>{if(lastStablePath&&location.pathname!==lastStablePath){history.replaceState({mcs:true},'',lastStablePath);updateTitle(parse(lastStablePath),lastStablePath)}}
+    });
   }
 
   function updateTitle(route,path=location.pathname){
@@ -169,7 +181,7 @@
       history.replaceState({mcs:true},'',path);route=parse(path);
       window.MCSEngineeringContext?.reconcileRoute?.(route,{source:'router:legacy-normalize'});
     }
-    if(!skipGuard&&!(await allowRouteChange(route))){
+    if(!skipGuard&&!(await allowRouteChange(route,{source:'router:apply',path}))){
       if(lastStablePath&&location.pathname!==lastStablePath)history.replaceState({mcs:true},'',lastStablePath);
       updateTitle(parse(lastStablePath),lastStablePath);
       return false;
@@ -257,15 +269,24 @@
   if(typeof previousSelect==='function')window.selectWorkspaceRevision=function(...args){revisionEditActive=false;const result=previousSelect.apply(this,args);if(started&&!isRouting())setUrl(routeForTab('workspace'),true);return result};
 
   document.addEventListener('click',event=>{
-    if(event.target.closest('#projectEditorClose')&&started&&!isRouting())navigate('/app/projects');
-    if(event.target.closest('#closeTemplateDetail')&&started&&!isRouting()){templateDetailId=null;navigate(projectPath('designs/templates'))}
+    if(event.target.closest('#projectEditorClose')&&started&&!isRouting())navigate('/app/projects',{source:'project-editor:close'});
+    if(event.target.closest('#closeTemplateDetail')&&started&&!isRouting()){templateDetailId=null;navigate(projectPath('designs/templates'),{source:'template-detail:close'})}
   });
 
   function preferredRevisionEditor(){return window.MCSDesignEditor?.open}
 
   function start(defaultTab='projects'){
     if(started)return;started=true;
-    window.addEventListener('popstate',()=>apply(location.pathname));
+    window.addEventListener('popstate',()=>{
+      const target=location.pathname,route=parse(target),fallback=lastStablePath;
+      if(typeof window.MCSNavigationTransaction?.run!=='function')return apply(target);
+      window.MCSNavigationTransaction.run({
+        target,key:`pop:${target}`,source:'browser:popstate',meta:{route,from:fallback},
+        prepare:()=>allowRouteChange(route,{source:'browser:popstate',from:fallback,path:target}),
+        commit:()=>apply(target,{skipGuard:true}),
+        rollback:()=>{if(fallback&&location.pathname!==fallback){history.replaceState({mcs:true},'',fallback);updateTitle(parse(fallback),fallback)}}
+      }).catch(error=>console.error('popstate transaction failed',error));
+    });
     const path=location.pathname;
     if(path==='/app'||path.startsWith('/app/'))return apply(path==='/app'?'/app/projects':path);
     return navigate(routeForTab(defaultTab),{replace:true});

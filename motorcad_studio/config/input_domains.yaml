@@ -19,9 +19,11 @@ domains:
       - {id: mechanical_loss_w, label: 机械损耗, type: number, unit: W, default: 0, minimum: 0, maximum: 10000000, help: 轴承、风阻等未由电磁模型给出的损耗。}
       - {id: loss_table_reference, label: 损耗表名称, type: text, default: '', help: 当损耗来源选择转速—损耗表时填写已导入表名。}
   materials:
-    label: 材料
-    purpose: 为主要部件选择工程材料；材料属性参与电磁、热、质量和机械计算。
-    analysis: [EMag, Therm, Coupled, Lab, Mechanical]
+    label: 材料（设计阶段）
+    purpose: 兼容旧分析定义；主要部件材料由 Design Revision 统一管理。
+    scope: design
+    hidden_in_analysis: true
+    analysis: []
     fields:
       - {id: stator_material, label: 定子铁心材料, type: text, default: M350-50A, required: true, help: 应与目标 Motor-CAD 材料库名称一致。}
       - {id: rotor_material, label: 转子铁心材料, type: text, default: M350-50A, required: true, help: 同步磁阻或感应电机也需要明确转子材料。}
@@ -67,7 +69,7 @@ domains:
     purpose: 定义冷却介质从入口、泵和水套到出口的流量、温度与压降。
     analysis: [Therm, Coupled]
     fields:
-      - {id: fluid, label: 流体, type: text, default: Water Glycol 50/50, required: true, help: 应与材料页的冷却介质一致。}
+      - {id: fluid, label: 流体, type: text, default: Water Glycol 50/50, required: true, help: 冷却介质由分析工况统一管理，并用于热流动边界。}
       - {id: inlet_temperature_c, label: 入口温度, type: number, unit: °C, default: 25, minimum: -80, maximum: 250, help: 将同步到热工况入口温度。}
       - {id: volume_flow_rate_lpm, label: 体积流量, type: number, unit: L/min, default: 5, minimum: 0, maximum: 10000, help: 水套或油路分析时必须大于零。}
       - {id: pressure_drop_pa, label: 允许压降, type: number, unit: Pa, default: 20000, minimum: 0, maximum: 100000000, help: 用于判断泵和流道匹配。}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "motorcad-studio-mvp"
-version = "0.88.1"
+version = "0.89.9"
 description = "Motor-CAD engineering optimization and simulation data factory platform"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,7 +25,9 @@ e2e = ["pytest>=8", "httpx>=0.27", "playwright>=1.45"]
 [project.scripts]
 motorcad-studio = "motorcad_studio.main:run"
 motorcad-studio-windows-qualification = "motorcad_studio.acceptance.windows_production:main"
+motorcad-studio-windows-golden-journey = "motorcad_studio.acceptance.windows_golden_journey:main"
 motorcad-studio-production-soak = "motorcad_studio.acceptance.production_soak:main"
+motorcad-studio-ui-soak = "motorcad_studio.acceptance.ui_soak_recovery:main"
 
 [tool.setuptools.packages.find]
 include = ["motorcad_studio*"]

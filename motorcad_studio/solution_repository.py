@@ -7,6 +7,7 @@ from typing import Any
 
 from .db import Database
 from .workspace import DesignDraftConflictError
+from .editor_transaction import editor_intent_hash, editor_transaction_hash
 
 
 def _hash_payload(payload: Any) -> str:
@@ -48,6 +49,8 @@ class SolutionRepository:
         item["source_snapshot"] = self.db.loads(item.pop("source_snapshot_json", None), {})
         item["promotion_source"] = self.db.loads(item.pop("promotion_source_json", None), {})
         item["motor_snapshot"] = self.db.loads(item.pop("motor_snapshot_json", None), {})
+        item["editor_transaction"] = self.db.loads(item.pop("editor_transaction_json", None), {})
+        item["native_reconciliation"] = self.db.loads(item.pop("native_reconciliation_json", None), {})
         item["motor_snapshot_persisted"] = bool(item.get("motor_snapshot"))
         return item
 
@@ -64,6 +67,10 @@ class SolutionRepository:
         item["materials"] = self.db.loads(item.pop("materials_json", None), {})
         item["explicit_parameter_ids"] = self.db.loads(item.pop("explicit_parameter_ids_json", None), [])
         item["motor_snapshot"] = self.db.loads(item.pop("motor_snapshot_json", None), {})
+        item["native_reconciliation"] = self.db.loads(item.pop("native_reconciliation_json", None), {})
+        item["editor_transaction_id"] = str(item.get("editor_transaction_id") or "")
+        item["editor_intent_hash"] = str(item.get("editor_intent_hash") or "")
+        item["editor_intent_version"] = int(item.get("editor_intent_version") or 0)
         item["motor_snapshot_persisted"] = bool(item.get("motor_snapshot"))
         return item
 
@@ -264,14 +271,16 @@ class SolutionRepository:
     ) -> dict[str, Any]:
         if not self.db.query_one("SELECT id FROM solutions WHERE id=?", (solution_id,)):
             raise KeyError(solution_id)
-        base = self.db.query_one(
-            "SELECT id,solution_id FROM motor_revisions WHERE id=?", (base_motor_revision_id,)
-        )
+        base = self.db.query_one("SELECT id,solution_id FROM motor_revisions WHERE id=?", (base_motor_revision_id,))
         if not base or str(base.get("solution_id")) != str(solution_id):
             raise ValueError("base motor revision does not belong to solution")
         now = self.db.now()
         explicit_ids = sorted({str(value) for value in (explicit_parameter_ids or []) if str(value)})
         view = str(active_view or "radial")[:64]
+        next_intent_hash = editor_intent_hash(
+            base_revision_id=base_motor_revision_id, parameters=dict(parameters or {}),
+            materials=dict(materials or {}), explicit_parameter_ids=explicit_ids,
+        )
         with self.db.transaction() as conn:
             raw = conn.execute("SELECT * FROM solution_drafts WHERE solution_id=?", (solution_id,)).fetchone()
             current = dict(raw) if raw else None
@@ -282,43 +291,29 @@ class SolutionRepository:
                 raise DesignDraftConflictError(self._decode_draft(current))
             created_at = str((current or {}).get("created_at") or now)
             next_version = current_version + 1
+            transaction_id = str((current or {}).get("editor_transaction_id") or "") or f"EDT-{uuid.uuid4().hex[:12].upper()}"
+            old_intent_hash = str((current or {}).get("editor_intent_hash") or "")
+            old_intent_version = int((current or {}).get("editor_intent_version") or 0)
+            intent_version = 1 if not current else max(1, old_intent_version if old_intent_hash == next_intent_hash else old_intent_version + 1)
+            reconciliation_json = str((current or {}).get("native_reconciliation_json") or "{}")
+            values = (
+                base_motor_revision_id, self.db.dumps(dict(parameters or {})), self.db.dumps(dict(materials or {})),
+                self.db.dumps(explicit_ids), view, str(notes or ""), next_version, now, transaction_id,
+                next_intent_hash, intent_version, reconciliation_json, solution_id,
+            )
             if current:
                 conn.execute(
-                    """UPDATE solution_drafts
-                          SET base_motor_revision_id=?,parameters_json=?,materials_json=?,explicit_parameter_ids_json=?,
-                              active_view=?,notes=?,version=?,updated_at=?
-                        WHERE solution_id=?""",
-                    (
-                        base_motor_revision_id,
-                        self.db.dumps(dict(parameters or {})),
-                        self.db.dumps(dict(materials or {})),
-                        self.db.dumps(explicit_ids),
-                        view,
-                        str(notes or ""),
-                        next_version,
-                        now,
-                        solution_id,
-                    ),
-                )
+                    """UPDATE solution_drafts SET base_motor_revision_id=?,parameters_json=?,materials_json=?,explicit_parameter_ids_json=?,
+                       active_view=?,notes=?,version=?,updated_at=?,editor_transaction_id=?,editor_intent_hash=?,editor_intent_version=?,
+                       native_reconciliation_json=? WHERE solution_id=?""", values)
             else:
                 conn.execute(
-                    """INSERT INTO solution_drafts(
-                           solution_id,base_motor_revision_id,parameters_json,materials_json,explicit_parameter_ids_json,
-                           active_view,notes,version,created_at,updated_at
-                       ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
-                    (
-                        solution_id,
-                        base_motor_revision_id,
-                        self.db.dumps(dict(parameters or {})),
-                        self.db.dumps(dict(materials or {})),
-                        self.db.dumps(explicit_ids),
-                        view,
-                        str(notes or ""),
-                        next_version,
-                        created_at,
-                        now,
-                    ),
-                )
+                    """INSERT INTO solution_drafts(solution_id,base_motor_revision_id,parameters_json,materials_json,
+                       explicit_parameter_ids_json,active_view,notes,version,created_at,updated_at,editor_transaction_id,
+                       editor_intent_hash,editor_intent_version,native_reconciliation_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (solution_id, base_motor_revision_id, self.db.dumps(dict(parameters or {})), self.db.dumps(dict(materials or {})),
+                     self.db.dumps(explicit_ids), view, str(notes or ""), next_version, created_at, now, transaction_id,
+                     next_intent_hash, intent_version, reconciliation_json))
         return self.get_draft(solution_id) or {}
 
     def delete_draft(self, solution_id: str, *, expected_version: int | None = None) -> bool:
@@ -332,6 +327,30 @@ class SolutionRepository:
                 return False
             conn.execute("DELETE FROM solution_drafts WHERE solution_id=?", (solution_id,))
             return True
+
+    def record_native_reconciliation(
+        self, solution_id: str, *, expected_transaction_hash: str, expected_intent_hash: str, reconciliation: dict[str, Any]
+    ) -> dict[str, Any]:
+        with self.db.transaction() as conn:
+            raw = conn.execute("SELECT * FROM solution_drafts WHERE solution_id=?", (solution_id,)).fetchone()
+            current = dict(raw) if raw else None
+            if not current:
+                raise ValueError("design draft not found for native reconciliation")
+            tx_hash = editor_transaction_hash(
+                transaction_id=str(current.get("editor_transaction_id") or ""),
+                base_revision_id=str(current.get("base_motor_revision_id") or ""),
+                intent_hash=str(current.get("editor_intent_hash") or ""),
+                intent_version=int(current.get("editor_intent_version") or 0),
+            )
+            if tx_hash != str(expected_transaction_hash or "") or str(current.get("editor_intent_hash") or "") != str(expected_intent_hash or ""):
+                raise DesignDraftConflictError(self._decode_draft(current))
+            conn.execute("UPDATE solution_drafts SET native_reconciliation_json=?,updated_at=? WHERE solution_id=?",
+                         (self.db.dumps(dict(reconciliation or {})), self.db.now(), solution_id))
+        return self.get_draft(solution_id) or {}
+
+    def persist_revision_editor_evidence(self, revision_id: str, *, editor_transaction: dict[str, Any], native_reconciliation: dict[str, Any]) -> None:
+        self.db.execute("UPDATE motor_revisions SET editor_transaction_json=?,native_reconciliation_json=? WHERE id=?",
+                        (self.db.dumps(dict(editor_transaction or {})), self.db.dumps(dict(native_reconciliation or {})), revision_id))
 
     def persist_revision_snapshot(self, revision_id: str, payload: dict[str, Any], schema_version: int, digest: str) -> None:
         self.db.execute(

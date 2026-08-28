@@ -76,12 +76,12 @@
     host.innerHTML=items.length?`<div class="failure-center-summary"><span><b>${Number(sum.affected_tasks||0)}</b> 个受影响任务</span><span><b>${Number(sum.open_issues||0)}</b> 个待处理项</span>${categories}</div><div class="failure-items">${items.slice(0,8).map(failureCard).join('')}</div>`:`<div class="workflow-empty-v081a failure-clear"><b>没有需要处理的失败项</b><span>失败、超时、取消和质量无效 Case 会在这里按根因自动聚合。</span></div>`;
     bindActions(host);
   }
-  function render(payload){if(!payload)return;renderStageNav(payload);renderCue(payload);renderOverview(payload);renderRunCenter(payload);renderFailureCenter(payload);}
+  function render(payload){if(!payload)return;window.MCSGlobalWorkflowTruth?.ingest?.(payload);renderStageNav(payload);renderCue(payload);renderOverview(payload);renderRunCenter(payload);renderFailureCenter(payload);}
   async function refresh(projectId,{force=false,silent=false}={}){
     projectId=projectId||currentContext().projectId||window.state?.activeProjectId;if(!projectId)return null;
     if(state.loading)return state.payload;if(!force&&state.projectId===projectId&&Date.now()-state.lastAt<1200){render(state.payload);return state.payload}
     state.loading=true;
-    try{const payload=await apiCall(`/api/projects/${encodeURIComponent(projectId)}/engineering-workflow`);state.projectId=projectId;state.payload=payload;state.lastAt=Date.now();render(payload);clearTimeout(state.pollTimer);if((payload.run_center?.summary?.active||0)>0)state.pollTimer=setTimeout(()=>refresh(projectId,{force:true,silent:true}),5000);return payload}
+    try{const payload=await apiCall(`/api/projects/${encodeURIComponent(projectId)}/workflow-truth`);state.projectId=projectId;state.payload=payload;state.lastAt=Date.now();render(payload);clearTimeout(state.pollTimer);if((payload.run_center?.summary?.active||0)>0)state.pollTimer=setTimeout(()=>refresh(projectId,{force:true,silent:true}),5000);return payload}
     catch(error){if(!silent)window.toast?.(`工程流程状态读取失败：${error.message||error}`,'WARNING',6000);return null}
     finally{state.loading=false}
   }

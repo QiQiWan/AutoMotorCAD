@@ -402,9 +402,22 @@ class MotorCADBindingPlanner:
                     for_write=write_policy == "write_readback",
                 )
             provenance["configured_candidates"] = configured_candidates
+            # A template-inherited material is already frozen in the loaded MTT. When
+            # V0.88-A has not yet qualified the exact PyMotorCAD component alias, a
+            # failed get_component_material(alias) is an observability gap, not proof
+            # that the loaded engineering model carries the wrong material. Keep the
+            # readback best-effort for design-time feasibility. Explicit assignments
+            # remain fail-closed, and a qualified semantic profile restores strict
+            # inherited readback. Formal Native Closure still enforces its independent
+            # required-material component contract.
+            readback_qualified = bool(authority_meta.get("qualified"))
+            required_readback = (not is_inherited) or readback_qualified
+            provenance["native_readback_requirement"] = "required" if required_readback else "best_effort_inherited"
+            provenance["template_inherited"] = bool(is_inherited)
+            provenance["semantic_profile_qualified"] = readback_qualified
             rows.append(MotorCADMaterialComponentBinding(
                 component_id=str(component_id), material_name=str(material_name), component_candidates=candidates,
-                required=True, write_policy=write_policy, provenance=provenance, semantic_authority=authority_meta,
+                required=required_readback, write_policy=write_policy, provenance=provenance, semantic_authority=authority_meta,
             ))
         return MotorCADMaterialBindingPlan(
             material_database_path=str(material_db) if material_db else None,
@@ -412,6 +425,180 @@ class MotorCADBindingPlanner:
             components=rows,
             fluids=[MotorCADFluidBinding(cooling_type=str(key), fluid_name=str(value)) for key, value in cooling_fluids.items()],
         )
+
+    def _native_readback_contract(
+        self,
+        snapshot: MotorSnapshot,
+        effective_parameters: dict[str, Any],
+        *,
+        template: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Freeze the canonical Design -> live Motor-CAD readback contract.
+
+        V0.88-B deliberately reads geometry/topology/winding semantics independently
+        from the write plan.  Untouched template defaults still need native evidence,
+        otherwise a Studio preview can remain internally consistent while the loaded
+        Motor-CAD model has drifted.  Exact names come from V0.88-A in read mode; the
+        versioned registry remains diagnostic fallback outside formal production.
+        """
+        schema = self.registry.parameter_schema(snapshot.identity.template_id)
+        rows: list[dict[str, Any]] = []
+        domain_categories = {
+            "topology": "topology",
+            "geometry": "geometry",
+            "magnet": "magnet",
+            "winding": "winding",
+        }
+        for parameter_id, definition in sorted(schema.items()):
+            category = str(definition.get("category") or "").strip().lower()
+            domain = domain_categories.get(category)
+            if domain is None or parameter_id not in effective_parameters:
+                continue
+            engineering = dict(definition.get("engineering") or {})
+            required = bool(definition.get("motorcad_required")) or bool(engineering.get("native_mapping_required_for_golden"))
+            configured = [str(value) for value in definition.get("motorcad_candidates") or [] if str(value)]
+            # Optional Studio-only semantics do not need native evidence. Required
+            # semantics with no mapping are preserved as zero-candidate contract rows so
+            # V0.88-B fails closed instead of silently omitting them from readback.
+            if not configured and not required:
+                continue
+            candidates = configured
+            authority_meta: dict[str, Any] = {
+                "authority": "UNRESOLVED" if not configured else "CONFIG_FALLBACK",
+                "qualified": False, "profile_backed": False, "for_write": False,
+            }
+            if self.semantic_authority is not None and configured:
+                candidates, authority_meta = self.semantic_authority.prioritize_parameter_candidates(
+                    snapshot.identity.template_id, parameter_id, configured,
+                    template=template, kind="parameter", for_write=False,
+                )
+            converted = to_solver(effective_parameters.get(parameter_id), definition)
+            rows.append({
+                "semantic_id": parameter_id,
+                "domain": domain,
+                "category": category,
+                "label": definition.get("label") or parameter_id,
+                "context": definition.get("motorcad_context") or "EMag",
+                "configured_candidates": configured,
+                "candidates": candidates,
+                "required": required,
+                "expected_canonical": converted.canonical_value,
+                "expected_solver": converted.solver_value,
+                "canonical_unit": converted.canonical_unit,
+                "solver_unit": converted.solver_unit,
+                "conversion": converted.conversion,
+                "semantic_authority": authority_meta,
+                "engineering_role": engineering.get("engineering_role"),
+                "engineering_group": engineering.get("engineering_group"),
+            })
+
+        winding_cfg = dict(self.config.get("winding") or {})
+        high_level: list[dict[str, Any]] = []
+        winding_expected = {
+            "phase_count": snapshot.winding.phase_count,
+            "parallel_paths": int(effective_parameters.get("parallel_paths", snapshot.winding.parallel_paths) or 1),
+            "layers": snapshot.winding.layers,
+        }
+        for semantic_id, definition in sorted((winding_cfg.get("high_level") or {}).items()):
+            configured = [str(value) for value in (definition or {}).get("candidates") or [] if str(value)]
+            if not configured:
+                continue
+            candidates = configured
+            authority_meta: dict[str, Any] = {
+                "authority": "CONFIG_FALLBACK", "qualified": False, "profile_backed": False, "for_write": False,
+            }
+            if self.semantic_authority is not None:
+                candidates, authority_meta = self.semantic_authority.prioritize_parameter_candidates(
+                    snapshot.identity.template_id, str(semantic_id), configured,
+                    template=template, kind="winding_parameter", for_write=False,
+                )
+            high_level.append({
+                "semantic_id": str(semantic_id),
+                "domain": "winding",
+                "context": (definition or {}).get("context") or "EMag",
+                "candidates": candidates,
+                "configured_candidates": configured,
+                "required": semantic_id in {"phase_count", "parallel_paths"},
+                "expected_canonical": winding_expected.get(str(semantic_id)),
+                "canonical_unit": None,
+                "solver_unit": None,
+                "conversion": "identity",
+                "semantic_authority": authority_meta,
+            })
+
+        # Custom coil addressing depends on the native path convention. Preserve the
+        # exact V0.88-A-qualified variable/value in the readback contract so a winding
+        # can never qualify with an accidentally switched left/right vs upper/lower
+        # addressing convention. Template-default winding keeps this optional because
+        # older MOTs do not expose a stable path-type variable until custom mode.
+        path_key = str(snapshot.winding.path_type or "").strip().lower().replace("/", "_").replace("-", "_")
+        path_cfg = dict((winding_cfg.get("path_types") or {}).get(path_key) or {})
+        custom_requested = bool(snapshot.winding.coils and snapshot.winding.metadata.get("native_writeback_allowed") is True)
+        if path_key and path_cfg.get("variable"):
+            configured = [str(path_cfg.get("variable"))]
+            candidates = configured
+            authority_meta: dict[str, Any] = {
+                "authority": "CONFIG_FALLBACK", "qualified": False, "profile_backed": False, "for_write": False,
+            }
+            semantic_key = f"path_type:{path_key}"
+            if self.semantic_authority is not None:
+                candidates, authority_meta = self.semantic_authority.prioritize_parameter_candidates(
+                    snapshot.identity.template_id, semantic_key, configured,
+                    template=template, kind="winding_parameter", for_write=False,
+                )
+            high_level.append({
+                "semantic_id": semantic_key,
+                "domain": "winding",
+                "context": "EMag",
+                "candidates": candidates,
+                "configured_candidates": configured,
+                "required": custom_requested,
+                "expected_canonical": path_cfg.get("value"),
+                "canonical_unit": None,
+                "solver_unit": None,
+                "conversion": "identity",
+                "semantic_authority": authority_meta,
+                "path_type": snapshot.winding.path_type,
+            })
+
+        profile = (
+            self.semantic_authority.load_profile(snapshot.identity.template_id, template=template)
+            if self.semantic_authority is not None else None
+        )
+        return {
+            "schema_version": 1,
+            "authority": "NativeGeometryWindingReadbackAuthorityV1",
+            "semantic_profile_hash": profile.content_hash() if profile is not None else None,
+            "semantic_profile_status": profile.status if profile is not None else "MISSING",
+            "model_source_fingerprint": (
+                profile.model_source_fingerprint
+                if profile is not None
+                else NativeSemanticBindingAuthority.model_source_fingerprint(template or {})
+            ),
+            "parameters": rows,
+            "winding_high_level": high_level,
+            "winding_expected": {
+                **winding_expected,
+                "slot_count": int(effective_parameters.get("slot_count", snapshot.winding.slot_count) or 0) or None,
+                "turns_per_coil": (
+                    float(effective_parameters.get("turns_per_coil", snapshot.winding.turns_per_coil))
+                    if effective_parameters.get("turns_per_coil", snapshot.winding.turns_per_coil) is not None else None
+                ),
+                "slot_fill_factor": (
+                    float(effective_parameters.get("slot_fill_factor"))
+                    if effective_parameters.get("slot_fill_factor") is not None else None
+                ),
+                "path_type": snapshot.winding.path_type,
+                "mode": "custom_coils" if snapshot.winding.coils and snapshot.winding.metadata.get("native_writeback_allowed") is True else "template_default",
+            },
+            "policy": {
+                "read_all_design_semantics": True,
+                "required_missing_mapping": "preserve_as_unresolved_contract_row",
+                "required_mismatch": "fail_closed_validation_production",
+                "geometry_validity": "check_if_geometry_is_valid_no_edit",
+                "winding_coils": "get_winding_coil_structured_readback",
+            },
+        }
 
     def _calculation(self, analysis: AnalysisType | str) -> MotorCADCalculationBinding:
         analysis_id = analysis.value if isinstance(analysis, AnalysisType) else str(analysis)
@@ -545,6 +732,9 @@ class MotorCADBindingPlanner:
                     "generated_at": authority_profile.generated_at if authority_profile is not None else None,
                     "model_source_fingerprint": authority_profile.model_source_fingerprint if authority_profile is not None else None,
                 },
+                "native_readback_contract": self._native_readback_contract(
+                    snapshot, parameters, template=template,
+                ),
             },
         )
         return plan

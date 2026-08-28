@@ -271,8 +271,8 @@ def test_v087fc_release_truth_api_cli_and_hmi_registration():
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
     html = (root / "motorcad_studio" / "static" / "index.html").read_text(encoding="utf-8")
     ps1 = (root / "run_production_soak.ps1").read_text(encoding="utf-8")
-    assert __version__ == "0.88.1"
-    assert manifest["version"] == "0.88.1"
+    assert __version__ == "0.89.9"
+    assert manifest["version"] == "0.89.9"
     assert manifest["release_track"] == "current_clean_release"
     assert 'motorcad-studio-production-soak' in pyproject
     assert '/api/runtime/production-hardening/snapshot' in main

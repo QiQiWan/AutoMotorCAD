@@ -163,9 +163,13 @@ def _magnet_reference_summary(properties: dict[str, Any]) -> dict[str, Any]:
             h = -hcb + hcb * i / 40.0
             b = br_ref + mu0 * mur * h
             ref_curve.append({"h": h, "b": b, "temperature": tref})
+    hcj_magnitude0 = abs(hcj0) if hcj0 is not None else None
     for temp in temperatures:
         br = br0 * (1.0 + alpha_br / 100.0 * (temp - tref))
-        hcj = hcj0 * (1.0 + alpha_hcj / 100.0 * (temp - tref)) if hcj0 is not None else None
+        # Motor-CAD databases may store HcJ with a negative second-quadrant sign.
+        # The engineering temperature chart reports coercivity magnitude |HcJ|,
+        # so a normal negative temperature coefficient remains visually decreasing.
+        hcj = hcj_magnitude0 * (1.0 + alpha_hcj / 100.0 * (temp - tref)) if hcj_magnitude0 is not None else None
         temp_points.append({"temperature": temp, "br": br, "hcj": hcj})
     return {
         "bh_reference": ref_curve,
@@ -174,6 +178,8 @@ def _magnet_reference_summary(properties: dict[str, Any]) -> dict[str, Any]:
         "source": "derived_from_scalar_magnet_properties",
         "equation": "B(H,Tref)=Br(Tref)+mu0*mur*H; HcB=Br/(mu0*mur)",
         "note": "Engineering reference derived from Br, mur and temperature coefficients; not raw measured B-H samples.",
+        "hcj_display": "magnitude",
+        "hcj_source_sign": -1 if hcj0 is not None and hcj0 < 0 else (1 if hcj0 is not None else None),
     }
 
 

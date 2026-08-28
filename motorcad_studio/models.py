@@ -313,6 +313,9 @@ class GeometryRuntimeCheckRequest(BaseModel):
     materials: MaterialConfiguration = Field(default_factory=MaterialConfiguration)
     timeout_s: int = Field(default=120, ge=10, le=600)
     force: bool = False
+    # V0.88-C: suggest is read-only diagnosis; safe_auto can only resynchronize the
+    # live Motor-CAD model to the frozen Design Snapshot using AUTO_SAFE actions.
+    repair_policy: Literal["suggest", "safe_auto", "manual"] = "suggest"
 
 class TemplateQualificationRequest(BaseModel):
     template_id: str
@@ -553,8 +556,18 @@ class DesignDraftUpdate(BaseModel):
 
 class DesignDraftCommit(BaseModel):
     expected_version: int | None = Field(default=None, ge=0)
+    commit_key: str | None = Field(default=None, min_length=8, max_length=120, pattern=r"^[A-Za-z0-9._:-]+$")
     notes: str | None = Field(default=None, max_length=4000)
     analysis_definition_id: str | None = Field(default=None, min_length=1, max_length=80)
+
+
+class DesignDraftNativeCheckRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+    transaction_hash: str = Field(min_length=16, max_length=128)
+    intent_hash: str = Field(min_length=16, max_length=128)
+    timeout_s: int = Field(default=180, ge=10, le=600)
+    force: bool = False
+    repair_policy: Literal["suggest", "safe_auto", "manual"] = "suggest"
 
 
 class MotorChangePreviewRequest(BaseModel):
@@ -652,6 +665,10 @@ class StandardValidationExecuteRequest(StandardValidationPackageRequest):
     run_native_precheck: bool = True
     reuse_cache: bool = True
     quality_profile: str = Field(default="standard", min_length=1, max_length=80)
+    # Client execution identity. One standard-validation click fans out to several
+    # immutable AnalysisDefinitions; deriving each task submission key from this
+    # token makes a lost-response retry idempotent.
+    submission_key: str | None = Field(default=None, min_length=8, max_length=120)
 
 
 class AnalysisAutoFixRequest(BaseModel):

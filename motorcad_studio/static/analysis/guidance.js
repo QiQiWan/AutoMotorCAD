@@ -3,7 +3,7 @@
   const esc=value=>typeof window.esc==='function'?window.esc(value):String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const encode=value=>encodeURIComponent(String(value??''));
   function confidenceClass(value){const n=Number(value||0);return n>=.95?'high':n>=.8?'medium-high':n>=.6?'medium':'low'}
-  function sourceLabel(source){return ({user_decision:'人工确认',motor_revision:'Motor Revision',mapping_baseline_template:'模型映射基线',derived_motor_revision:'Revision 推导',analysis_template:'分析模板',recipe_default:'配方默认',saved_analysis:'已保存 Analysis',input_domain_default:'物理输入域默认',unresolved:'待确认'})[source]||source||'-'}
+  function sourceLabel(source){return ({user_decision:'人工确认',motor_revision:'电机版本',mapping_baseline_template:'模型映射基线',derived_motor_revision:'由电机版本推导',analysis_template:'分析模板',recipe_default:'配方默认',saved_analysis:'已保存分析',input_domain_default:'物理输入域默认',unresolved:'待确认'})[source]||source||'-'}
   function compact(value){if(value===null||value===undefined||value==='')return '未配置';if(typeof value==='object'){if(value.configured&&value.field_count!==undefined)return `已配置 ${value.field_count} 个字段`;if(value.count!==undefined)return `${value.count} 项`;return '已配置'}return String(value)}
   function decisionControl(row){
     const unit=row.unit?`<span>${esc(row.unit)}</span>`:'';
@@ -22,7 +22,7 @@
   function actionCard(row){
     const preview=(row.change_preview||[]).slice(0,4);const paths=(row.touched_paths||[]).slice(0,4);
     const changes=preview.length?`<div class="analysis-guidance-change-preview">${preview.map(item=>`<small><code>${esc(item.path)}</code><span>${esc(compact(item.before))} → ${row.can_apply?esc(compact(item.after)):'人工确认'}</span></small>`).join('')}</div>`:(paths.length?`<small>影响：${paths.map(esc).join(' · ')}</small>`:'');
-    return `<div class="analysis-guidance-action ${row.can_apply?'applicable':'manual'}"><div><span class="chip">${esc(row.type||'')}</span><b>${esc(row.label||row.type)}</b><p>${esc(row.reason||'')}</p>${changes}</div>${row.can_apply&&row.changes?`<button type="button" data-analysis-autofix="${esc(row.id)}">应用并生成新 Revision</button>`:`<span class="analysis-guidance-manual">${row.can_apply?'已满足':'需要人工确认'}</span>`}</div>`;
+    return `<div class="analysis-guidance-action ${row.can_apply?'applicable':'manual'}"><div><span class="chip">${esc(row.type||'')}</span><b>${esc(row.label||row.type)}</b><p>${esc(row.reason||'')}</p>${changes}</div>${row.can_apply&&row.changes?`<button type="button" data-analysis-autofix="${esc(row.id)}">应用并生成新版本</button>`:`<span class="analysis-guidance-manual">${row.can_apply?'已满足':'需要人工确认'}</span>`}</div>`;
   }
   async function listTemplates(api,revisionId){return api(`/api/analysis-templates${revisionId?`?design_revision_id=${encode(revisionId)}`:''}`)}
   async function preview(api,templateId,revisionId,decisions={}){return api(`/api/analysis-templates/${encode(templateId)}/preview`,{method:'POST',body:JSON.stringify({design_revision_id:revisionId,decisions})})}

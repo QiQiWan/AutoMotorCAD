@@ -424,15 +424,21 @@ def normalize_native_fea_tables(
         table_counts = {"elements": 0, "nodes": 0, "regions": 0}
         declared_counts = {"elements": 0, "nodes": 0, "regions": 0}
         discovered_outputs: list[str] = []
-        element_width = 4 + len(configured_outputs) if configured_outputs else None
+        # Motor-CAD may silently omit unsupported requested outputs from the
+        # written ElementsTable (for example JEddy on some EMag solutions).
+        # Row validity must therefore follow the actual table structure rather
+        # than the requested output width.
+        element_width = None
         node_batch: list[tuple[str, float, float]] = []
         for block in _iter_native_blocks(raw_path, element_width, separator):
             logical_name = block.name.replace("table", "")
             declared_counts[logical_name] += block.declared_count
             parsed = 0
             if block.name == "elementstable":
-                if not configured_outputs and not discovered_outputs and len(block.headers) > 4:
-                    discovered_outputs = block.headers[4:]
+                if len(block.headers) > 4:
+                    for output in block.headers[4:]:
+                        if _norm(output) not in {_norm(item) for item in discovered_outputs}:
+                            discovered_outputs.append(output)
                 for _ in block.rows:
                     parsed += 1
             elif block.name == "nodestable":
@@ -465,9 +471,17 @@ def normalize_native_fea_tables(
         if node_batch:
             connection.executemany("INSERT OR REPLACE INTO nodes VALUES (?, ?, ?)", node_batch)
         connection.commit()
-        outputs = configured_outputs or discovered_outputs
+        # The table header is the native authority for what Motor-CAD actually
+        # exported. Requested fields are retained as provenance, but an omitted
+        # optional field must not shift every subsequent column or invalidate
+        # otherwise valid X/Y/B data.
+        outputs = discovered_outputs or configured_outputs
         if not outputs:
             return {"normalized": False, "reason": "native_output_columns_not_found"}
+        exported_norm = {_norm(item) for item in outputs}
+        missing_requested_outputs = [
+            item for item in configured_outputs if _norm(item) not in exported_norm
+        ]
         x_key = _pick(outputs, ("X", "XCoord", "XCoordinate", "NodeX"))
         y_key = _pick(outputs, ("Y", "YCoord", "YCoordinate", "NodeY"))
         if not x_key or not y_key:
@@ -489,14 +503,16 @@ def normalize_native_fea_tables(
         dropped = 0
         mesh_frame_count = 0
         frame_number = 0
-        for block in _iter_native_blocks(raw_path, 4 + len(outputs), separator):
+        for block in _iter_native_blocks(raw_path, None, separator):
             if block.name != "elementstable":
                 for _ in block.rows:
                     pass
                 continue
+            block_outputs = block.headers[4:] if len(block.headers) > 4 else outputs
+            block_field_columns, _ = _field_contract(block_outputs)
             accumulator = FrameAccumulator(frame_number, max_points_per_frame, available_fields)
             for parts in block.rows:
-                point = _point_from_row(parts, outputs, field_columns, region_names)
+                point = _point_from_row(parts, block_outputs, block_field_columns, region_names)
                 if point is None:
                     dropped += 1
                     continue
@@ -605,6 +621,9 @@ def normalize_native_fea_tables(
             "source_format": "motorcad_table",
             "headers": headers,
             "delimiter": separator,
+            "requested_output_columns": configured_outputs,
+            "exported_output_columns": outputs,
+            "missing_requested_outputs": missing_requested_outputs,
             "coordinate_columns": {"x": x_key, "y": y_key},
             "coordinate_metadata": {
                 "unit": "mm" if mechanical else None,

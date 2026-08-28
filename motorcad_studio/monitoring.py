@@ -207,7 +207,12 @@ class MonitoringService:
             if worker.get("process_status") in {"missing", "pid_reused"}:
                 alerts.append({"severity": "ERROR", "code": "WORKER_PROCESS_LOST", "entity": worker.get("case_id"), "message": f"{worker['case_id']} Worker进程状态={worker.get('process_status')}"})
             age = worker.get("heartbeat_age_s")
-            if isinstance(age, (int, float)) and age > 8:
+            # A Case enters RUNNING before the scheduler has necessarily granted
+            # a runtime/worker lease. Queue wait is already represented by
+            # RUNTIME_RESOURCE_QUEUE; emitting a stale-worker alert without a
+            # worker PID creates a false infrastructure failure.
+            worker_owned = bool(worker.get("worker_pid")) and worker.get("process_status") not in {"missing", "pid_reused", "unknown"}
+            if worker_owned and isinstance(age, (int, float)) and age > 8:
                 alerts.append({"severity": "WARNING", "code": "WORKER_HEARTBEAT_STALE", "entity": worker.get("case_id"), "message": f"{worker['case_id']} 心跳已 {age:.1f}s 未更新"})
         session_rows = list(session_snapshot.get("sessions") or [])
         live_pids = {int(row.get("pid")) for row in motorcad_processes if row.get("pid")}

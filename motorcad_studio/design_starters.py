@@ -20,6 +20,7 @@ class DesignStarterService:
         self.templates = templates
         self.registry = registry
         self.solutions = solutions
+        self.production_qualification_resolver = None
         payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         self.version = int(payload.get("version") or 1)
         self.contract_version = str(payload.get("contract_version") or "0.87-D")
@@ -127,6 +128,13 @@ class DesignStarterService:
                 "type": definition.get("type") or "scalar",
                 "engineering": deepcopy(definition.get("engineering") or {}),
             })
+        qualification_runtime = {}
+        if callable(self.production_qualification_resolver):
+            try:
+                qualification_runtime = dict(self.production_qualification_resolver(starter_id) or {})
+            except Exception:
+                qualification_runtime = {}
+        production_verified = qualification_runtime.get("production_verified") is True
         return {
             "id": starter_id,
             **deepcopy(row),
@@ -150,9 +158,16 @@ class DesignStarterService:
             },
             "qualification": {
                 "studio_product_status": row.get("product_status"),
-                "native_windows_status": row.get("qualification_status"),
-                "production_verified": False,
-                "message": "已形成工程预制设计与版本化参数映射；正式 Golden/Production 标识需通过 Windows + licensed Motor-CAD 全流程资格。",
+                "native_windows_status": qualification_runtime.get("status") or row.get("qualification_status"),
+                "production_verified": production_verified,
+                "journey_id": qualification_runtime.get("journey_id"),
+                "qualification_run_id": qualification_runtime.get("run_id"),
+                "qualification_content_hash": qualification_runtime.get("content_hash"),
+                "message": (
+                    "V0.89-D Windows Native Golden Journey 已通过；该预制设计已绑定正式 licensed Windows + Motor-CAD 2026R1 资格证据。"
+                    if production_verified
+                    else "已形成工程预制设计与版本化参数映射；正式 Golden/Production 标识需通过 V0.89-D Windows + licensed Motor-CAD 全流程 UI Golden Journey 资格。"
+                ),
             },
         }
 

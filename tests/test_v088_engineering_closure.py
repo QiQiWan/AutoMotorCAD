@@ -125,9 +125,9 @@ def test_v088_frontend_contracts_cover_reported_regressions():
 
     assert "保存修改并返回参数总览" in editor
     assert "设计参数保存（自动历史）" in editor
-    assert "底层模板始终保持只读" in editor
+    assert "不会写回 Motor-CAD 起始模板" in editor
 
-    assert "80vw" in materials and "80vh" in materials
+    assert "90vw" in materials and "90vh" in materials
     assert "确认选中并赋值" in materials
     assert "双击直接赋值" in materials
     assert "magnet_reference_curve" in materials

@@ -27,6 +27,7 @@
         currentVersion: version,
         precheckCurrent: state.precheckVersion === version && Boolean(state.precheck),
         nativeCurrent: state.nativeVersion === version && Boolean(state.nativeCheck),
+        nativeStale: state.nativeVersion !== version && Boolean(state.nativeCheck),
         blockingCount: state.precheckVersion === version ? blocking(state.precheck).length : null,
       };
     }
@@ -48,7 +49,8 @@
     }
 
     function invalidateNative() {
-      state.nativeCheck = null;
+      // Retain the prior evidence as explicitly stale. V0.88-D surfaces this distinction
+      // instead of making native evidence disappear after the next design edit.
       state.nativeVersion = -1;
       notify();
     }
@@ -76,8 +78,7 @@
         if (controller.signal.aborted || session !== state.session || version !== currentVersion()) return null;
         state.precheck = result;
         state.precheckVersion = version;
-        state.nativeCheck = null;
-        state.nativeVersion = -1;
+        if (state.nativeVersion !== version) state.nativeVersion = -1;
         return result;
       } catch (error) {
         if (error?.name === 'AbortError') return null;
@@ -90,7 +91,7 @@
       }
     }
 
-    async function runNative() {
+    async function runNative({repairPolicy = 'suggest'} = {}) {
       if (state.nativeBusy) return state.nativeCheck;
       const version = currentVersion();
       const session = state.session;
@@ -102,28 +103,33 @@
         error.code = 'STUDIO_PRECHECK_BLOCKED';
         throw error;
       }
-      const templateId = options.getTemplateId?.();
-      if (!templateId) throw new Error('当前 Design Revision 缺少 Motor-CAD 模板标识');
+      await options.ensurePersisted?.();
+      const designId = options.getDesignId?.();
+      const draft = options.getDraft?.();
+      const transaction = draft?.editor_transaction || options.getEditorTransaction?.();
+      if (!designId || !draft || !transaction?.transaction_hash || !transaction?.intent_hash) {
+        const error = new Error('当前设计事务尚未完整保存，无法安全启动 Motor-CAD 原生检查');
+        error.code = 'EDITOR_TRANSACTION_NOT_PERSISTED';
+        throw error;
+      }
       state.nativeAbort?.abort();
       const controller = new AbortController();
       state.nativeAbort = controller;
-      state.nativeBusy = true;
-      state.lastError = null;
-      notify();
+      state.nativeBusy = true; state.lastError = null; notify();
       try {
-        const result = await api(`/api/templates/${encodeURIComponent(templateId)}/geometry-check`, {
+        const result = await api(`/api/solutions/${encodeURIComponent(designId)}/draft/native-check`, {
           method: 'POST',
           body: JSON.stringify({
-            parameters: options.getParameters?.() || {},
-            explicit_parameter_ids: options.getExplicitIds?.() || [],
-            materials: options.getMaterials?.() || {},
-            timeout_s: 180,
+            expected_version: Number(draft.version || 0),
+            transaction_hash: transaction.transaction_hash,
+            intent_hash: transaction.intent_hash,
+            timeout_s: 180, force: repairPolicy === 'safe_auto', repair_policy: repairPolicy,
           }),
           signal: controller.signal,
         });
         if (controller.signal.aborted || session !== state.session || version !== currentVersion()) return null;
-        state.nativeCheck = result;
-        state.nativeVersion = version;
+        options.onNativeResult?.(result);
+        state.nativeCheck = result; state.nativeVersion = version;
         return result;
       } catch (error) {
         if (error?.name === 'AbortError') return null;

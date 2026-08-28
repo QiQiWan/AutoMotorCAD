@@ -20,7 +20,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from .db import Database
 from .monitoring import MonitoringService
 from .session_supervisor import MotorCADSessionSupervisor
-from .models import (AnalysisAutoFixRequest, AnalysisCalculationCheckRequest, AnalysisCaseCreate, AnalysisDefinitionCreate, AnalysisExecutionRequest, AnalysisExperimentRequest, AnalysisDefinitionRevisionCreate, AnalysisDesignRevisionUpdate, AnalysisTemplateCreateRequest, AnalysisTemplatePreviewRequest, AutomationRegistryImportRequest, BaselineCaptureRequest, BaselineCompareRequest, CancelRequest, CandidateValidationRequest, ClientEventCreate, DatasetBuildRequest, DesignCreate, DesignDraftCommit, DesignDraftUpdate, DesignFromTemplateCreate, DesignStarterCreate, DesignRevisionCreate, DesignValidationRequest, GeometryPrecheckRequest, GeometryRuntimeCheckRequest, InputDomainUpdate, InstallationSelectRequest, MaterialValidationRequest, ModelCreate, MotorChangePreviewRequest, MotorCADBindingPlanRequest, NativeClosureRunRequest, NativeClosureSuiteRequest, OutputProfileBundleCreate, OutputProfileCreate, OutputProfileRevisionCreate, OptimizationCandidatePromotionRequest, OptimizationEvidenceLedgerCaptureRequest, OptimizationReplayPlanCreateRequest, OptimizationReplayExecuteRequest, ProjectCreate, ProjectUpdate, ResultCalibrationRequest, RetryRequest, RunConfigurationCreate, RunConfigurationReplayRequest, RuntimeVerifyRequest, ScenarioBundleCreate, ScenarioCreate, ScenarioDefinition, ScenarioRevisionCreate, SolutionCreate, SolverProfileBundleCreate, SolverProfileCreate, SolverProfileRevisionCreate, TaskCreate, TemplateQualificationRequest, WorkbenchPrecheckRequest)
+from .models import (AnalysisAutoFixRequest, AnalysisCalculationCheckRequest, AnalysisCaseCreate, AnalysisDefinitionCreate, AnalysisExecutionRequest, AnalysisExperimentRequest, AnalysisDefinitionRevisionCreate, AnalysisDesignRevisionUpdate, AnalysisTemplateCreateRequest, AnalysisTemplatePreviewRequest, AutomationRegistryImportRequest, BaselineCaptureRequest, BaselineCompareRequest, CancelRequest, CandidateValidationRequest, ClientEventCreate, DatasetBuildRequest, DesignCreate, DesignDraftCommit, DesignDraftNativeCheckRequest, DesignDraftUpdate, DesignFromTemplateCreate, DesignStarterCreate, DesignRevisionCreate, DesignValidationRequest, GeometryPrecheckRequest, GeometryRuntimeCheckRequest, InputDomainUpdate, InstallationSelectRequest, MaterialValidationRequest, ModelCreate, MotorChangePreviewRequest, MotorCADBindingPlanRequest, NativeClosureRunRequest, NativeClosureSuiteRequest, OutputProfileBundleCreate, OutputProfileCreate, OutputProfileRevisionCreate, OptimizationCandidatePromotionRequest, OptimizationEvidenceLedgerCaptureRequest, OptimizationReplayPlanCreateRequest, OptimizationReplayExecuteRequest, ProjectCreate, ProjectUpdate, ResultCalibrationRequest, RetryRequest, RunConfigurationCreate, RunConfigurationReplayRequest, RuntimeVerifyRequest, ScenarioBundleCreate, ScenarioCreate, ScenarioDefinition, ScenarioRevisionCreate, SolutionCreate, SolverProfileBundleCreate, SolverProfileCreate, SolverProfileRevisionCreate, TaskCreate, TemplateQualificationRequest, WorkbenchPrecheckRequest)
 from .registry import Registry
 from .api_audit import audit_pymotorcad_api
 from .automation_registry import AutomationRegistryKey, AutomationRegistryStore
@@ -35,6 +35,7 @@ from .data_factory import DataFactoryService
 from .workspace import DesignDraftConflictError, WorkspaceService
 from .solution_repository import SolutionRepository
 from .solution_service import SolutionService
+from .editor_transaction import build_editor_transaction, native_reconciliation_record
 from .engineering_lineage import EngineeringLineage, EngineeringLineageService
 from .motor_domain import MotorDomainRegistry, MotorSnapshot
 from .plugins import create_motor_plugin_registry
@@ -75,9 +76,19 @@ from .workstation_acceptance import WorkstationAcceptanceService, WorkstationAcc
 from .windows_production_qualification import (
     WindowsProductionQualificationService, WindowsProductionQualificationImport, qualification_matrix_spec,
 )
+from .windows_golden_journey_qualification import (
+    WindowsGoldenJourneyQualificationService, WindowsGoldenJourneyQualificationImport,
+    qualification_matrix_spec as golden_journey_qualification_matrix_spec,
+)
 from .production_soak_qualification import (
     ProductionSoakQualificationService, ProductionSoakQualificationImport,
     ProductionHardeningRuntimeSnapshotService, soak_matrix_spec,
+)
+from .ui_soak_qualification import (
+    UISoakQualificationService, UISoakQualificationImport, ui_soak_matrix_spec,
+)
+from .release_candidate_gate import (
+    ReleaseCandidateGateService, ReleaseCandidateHumanAcceptanceImport, human_acceptance_checklist_spec,
 )
 from .calibration import CalibrationRegistry
 from .native_closure_registry import NativeClosureProfileStore, NativeClosureRegistry
@@ -100,6 +111,7 @@ from .engineering_precheck import load_precheck_catalog, required_input_domains,
 from .experiment_lifecycle import build_experiment_lifecycle
 from .native_tables import cached_file_sha256, file_sha256, read_native_table_page
 from .fea_views import build_fea_frame_view
+from .native_spatial import NativeSpatialResultOverlayAuthority
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -235,7 +247,19 @@ active_learning = ActiveLearningService(db)
 engineer_journey = EngineerJourneyService(db, engineering_requirements, manufacturing_robustness)
 workstation_acceptance = WorkstationAcceptanceService(db)
 windows_production_qualification = WindowsProductionQualificationService(db)
+windows_golden_journey_qualification = WindowsGoldenJourneyQualificationService(db)
+design_starters.production_qualification_resolver = windows_golden_journey_qualification.starter_status
 production_soak_qualification = ProductionSoakQualificationService(db)
+ui_soak_qualification = UISoakQualificationService(db)
+release_candidate_gate = ReleaseCandidateGateService(
+    settings.runtime_dir,
+    static_dir,
+    Path(__file__).resolve().parents[1] / "RELEASE_MANIFEST.json",
+    windows_summary=windows_production_qualification.summary,
+    golden_summary=windows_golden_journey_qualification.summary,
+    native_soak_summary=production_soak_qualification.summary,
+    ui_soak_summary=ui_soak_qualification.summary,
+)
 production_hardening_runtime = ProductionHardeningRuntimeSnapshotService(task_manager=tasks, database=db)
 candidate_validation = CandidateValidationService(db, workspace, motor_domain, registry, templates, tasks.result_bundles, model_policy=settings.model_policy)
 candidate_validation.optimization_result_authority = optimization_result_authority
@@ -273,6 +297,7 @@ _runtime_gate: dict[str, Any] = {"checked_at": 0.0, "ok": False, "result": None}
 _task_submission_lock = threading.RLock()
 _model_runtime_check_lock = threading.RLock()
 _model_runtime_check_cache: dict[str, dict[str, Any]] = {}
+_model_runtime_check_inflight: dict[str, threading.Event] = {}
 _MODEL_RUNTIME_CHECK_CACHE_TTL_S = 300.0
 _MODEL_RUNTIME_CHECK_CACHE_MAX = 64
 _analysis_precheck_evidence_lock = threading.RLock()
@@ -289,12 +314,13 @@ def _clean_parameter_overrides(parameters: dict[str, Any] | None) -> dict[str, A
         if value is not None and value != ""
     }
 
-def _model_runtime_check_key(template_id: str, parameters: dict[str, Any], explicit_parameter_ids: list[str], materials: dict[str, Any]) -> str:
+def _model_runtime_check_key(template_id: str, parameters: dict[str, Any], explicit_parameter_ids: list[str], materials: dict[str, Any], repair_policy: str = "suggest") -> str:
     payload = {
         "template_id": template_id,
         "parameters": parameters,
         "explicit_parameter_ids": sorted(set(explicit_parameter_ids or [])),
         "materials": materials,
+        "repair_policy": repair_policy,
         "motorcad_exe": str(tasks.motorcad_exe or ""),
         "motorcad_version": settings.motorcad_version,
         "model_policy": settings.model_policy,
@@ -322,6 +348,23 @@ def _store_model_runtime_check(key: str, value: dict[str, Any]) -> None:
             oldest = min(_model_runtime_check_cache.items(), key=lambda item: float(item[1].get("stored_at") or 0.0))[0]
             _model_runtime_check_cache.pop(oldest, None)
         _model_runtime_check_cache[key] = {"stored_at": time.monotonic(), "value": dict(value)}
+
+def _claim_model_runtime_check(key: str) -> tuple[bool, threading.Event]:
+    """Single-flight identical live Motor-CAD checks within this Studio process."""
+    with _model_runtime_check_lock:
+        existing = _model_runtime_check_inflight.get(key)
+        if existing is not None:
+            return False, existing
+        event = threading.Event()
+        _model_runtime_check_inflight[key] = event
+        return True, event
+
+def _release_model_runtime_check(key: str, event: threading.Event) -> None:
+    with _model_runtime_check_lock:
+        current = _model_runtime_check_inflight.get(key)
+        if current is event:
+            _model_runtime_check_inflight.pop(key, None)
+        event.set()
 
 def _task_submission_hash(payload: TaskCreate) -> str:
     """Fingerprint the user's task intent before Run Configuration allocation.
@@ -669,9 +712,26 @@ def client_contract():
             "windows_motorcad_fullflow_acceptance_v1": True,
             "windows_motorcad_production_qualification_v2": True,
             "windows_production_qualification_matrix_v087fb": True,
+            "windows_native_golden_journey_qualification_v089d": True,
+            "windows_native_golden_journey_matrix_v089d": True,
             "native_semantic_binding_authority_v088a": True,
+            "native_geometry_winding_readback_authority_v088b": True,
+            "native_validation_fault_tree_repair_authority_v088c": True,
+            "editor_transaction_native_reconciliation_v088d": True,
+            "native_preview_visualization_reconciliation_v088e": True,
+            "native_spatial_geometry_result_overlay_authority_v088f": True,
             "production_soak_qualification_v1": True,
             "production_soak_100_500_matrix_v087fc": True,
+            "ui_soak_recovery_fault_qualification_v089e": True,
+            "ui_soak_100_500_matrix_v089e": True,
+            "ui_fault_injection_matrix_v089e": True,
+            "engineer_ux_convergence_v089f": True,
+            "release_candidate_gate_v089f": True,
+            "rc_human_acceptance_checklist_v089f": True,
+            "static_asset_unique_load_gate_v089f": True,
+            "global_shell_typography_copy_convergence_v089g1": True,
+            "guided_copy_audit_v089g1": True,
+            "shell_responsive_layout_gate_v089g1": True,
             "production_hardening_runtime_telemetry_v1": True,
             "workstation_acceptance_fail_closed": True,
             "thermal_topology_view": True,
@@ -753,6 +813,12 @@ def project_engineering_workflow(project_id: str):
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="project not found") from exc
+
+
+@app.get("/api/projects/{project_id}/workflow-truth")
+def project_workflow_truth(project_id: str):
+    """V0.89-A canonical alias; legacy engineering-workflow remains compatible."""
+    return project_engineering_workflow(project_id)
 
 
 @app.get("/api/workflow/readiness")
@@ -935,7 +1001,7 @@ def _native_closure_matrix() -> dict[str, Any]:
             row["scope_error"] = scope["scope_error"]
     matrix["complete"] = bool(matrix.get("profiles")) and all(bool(row.get("qualified")) for row in matrix.get("profiles") or [])
     matrix["gate"] = "PASS" if matrix["complete"] else "PENDING"
-    matrix["release_track"] = "V0.73-A Native Closure"
+    matrix["release_track"] = "V0.88-C Validation Fault Tree & Native Repair Orchestration"
     return matrix
 
 
@@ -1043,6 +1109,14 @@ def _run_native_closure_profile(profile_id: str, timeout_s: float) -> dict[str, 
             "score": result.get("score"), "status": result.get("status"), "artifact_dir": str(work_dir),
             "native_binding_plan_hash": result.get("native_binding_plan_hash"),
             "native_snapshot_hash": result.get("native_snapshot_hash"),
+            "native_model_snapshot_hash": result.get("native_model_snapshot_hash"),
+            "native_model_design_state_hash": result.get("native_model_design_state_hash"),
+            "native_model_snapshot_phase": result.get("native_model_snapshot_phase"),
+            "native_model_readback_status": (result.get("native_model_snapshot") or {}).get("status"),
+            "native_repair_plan_hash": result.get("native_repair_plan_hash"),
+            "native_fault_tree_hash": result.get("native_fault_tree_hash"),
+            "native_repair_attempt_count": result.get("native_repair_attempt_count", 0),
+            "native_repair_orchestration_clean": result.get("native_repair_orchestration_clean"),
         },
     )
     logs.audit(
@@ -1078,8 +1152,8 @@ def native_closure_status():
     matrix = _native_closure_matrix()
     return {
         **matrix,
-        "authority": "V0.73-A Native Closure",
-        "trust_scope": "topology_id + binding_version + binding_plan_hash + Motor-CAD/PyMotorCAD + qualification contract",
+        "authority": "V0.88-C Validation Fault Tree & Native Repair Orchestration",
+        "trust_scope": "topology_id + binding_version + semantic_profile_hash + NativeModelSnapshot/design-state hash + typed fault-tree/repair-plan hash + Motor-CAD/PyMotorCAD + qualification contract",
         "legacy_native_parity_endpoints": "compatibility_alias",
         "production_gate": "OPEN" if matrix.get("complete") else "BLOCKED",
     }
@@ -1089,7 +1163,7 @@ def native_closure_status():
 def native_closure_plan():
     scopes = _native_closure_expected_scopes()
     return {
-        "release_track": "V0.73-A Native Closure",
+        "release_track": "V0.88-C Validation Fault Tree & Native Repair Orchestration",
         "motorcad_version": settings.motorcad_version,
         "contract_version": native_closure_profiles.contract_version,
         "profiles": [
@@ -1112,6 +1186,49 @@ def native_closure_run_detail(run_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Native Closure run not found")
     return {**row, "qualified": bool(row.get("qualified")), "evidence": db.loads(row.get("evidence_json"), {})}
+
+
+@app.get("/api/native-closure/runs/{run_id}/native-model-snapshot")
+def native_closure_native_model_snapshot(run_id: str):
+    row = db.query_one("SELECT evidence_json FROM native_parity_runs WHERE id=?", (run_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Native Closure run not found")
+    evidence = db.loads(row.get("evidence_json"), {})
+    snapshot = evidence.get("native_model_snapshot")
+    if not isinstance(snapshot, dict):
+        raise HTTPException(status_code=404, detail="NativeModelSnapshot evidence not found for this run")
+    return {
+        "run_id": run_id,
+        "authority": "NativeGeometryWindingReadbackAuthorityV1",
+        "status": snapshot.get("status"),
+        "native_model_snapshot_hash": evidence.get("native_model_snapshot_hash"),
+        "native_model_design_state_hash": evidence.get("native_model_design_state_hash") or (snapshot.get("metadata") or {}).get("design_state_hash"),
+        "snapshot_phase": evidence.get("native_model_snapshot_phase") or snapshot.get("phase"),
+        "snapshot": snapshot,
+    }
+
+
+@app.get("/api/native-closure/runs/{run_id}/native-repair-plan")
+def native_closure_native_repair_plan(run_id: str):
+    row = db.query_one("SELECT evidence_json FROM native_parity_runs WHERE id=?", (run_id,))
+    if not row:
+        raise HTTPException(status_code=404, detail="Native Closure run not found")
+    evidence = db.loads(row.get("evidence_json"), {})
+    snapshot = evidence.get("native_model_snapshot") or {}
+    plan = snapshot.get("repair_plan") if isinstance(snapshot, dict) else None
+    if not isinstance(plan, dict):
+        raise HTTPException(status_code=404, detail="Native RepairPlan evidence not found for this run")
+    return {
+        "run_id": run_id,
+        "authority": "NativeValidationFaultTreeAuthorityV1",
+        "status": plan.get("status"),
+        "native_repair_plan_hash": evidence.get("native_repair_plan_hash") or (snapshot.get("metadata") or {}).get("native_repair_plan_hash"),
+        "native_fault_tree_hash": evidence.get("native_fault_tree_hash") or plan.get("fault_tree_hash"),
+        "repair_attempt_count": int(evidence.get("native_repair_attempt_count") or len(snapshot.get("repair_history") or [])),
+        "fault_records": snapshot.get("fault_records") or [],
+        "repair_plan": plan,
+        "repair_history": snapshot.get("repair_history") or [],
+    }
 
 
 @app.get("/api/native-closure/runs/{run_id}/report")
@@ -2100,6 +2217,10 @@ def execute_standard_validation_package(project_id: str, design_revision_id: str
                 AnalysisExecutionRequest(
                     quality_profile=payload.quality_profile, reuse_cache=payload.reuse_cache,
                     run_native_precheck=payload.run_native_precheck,
+                    submission_key=(
+                        hashlib.sha256(f"{payload.submission_key}:{analysis_id}".encode("utf-8")).hexdigest()[:48]
+                        if payload.submission_key else None
+                    ),
                 ),
             )
             executions.append({**item, "execution_status": "SUBMITTED", "task_id": submitted.get("task_id"),
@@ -2114,6 +2235,7 @@ def execute_standard_validation_package(project_id: str, design_revision_id: str
         event_type="STANDARD_VALIDATION_EXECUTION", message=f"standard validation package {package_status.lower()}: {package.get('package_id')}",
         payload={"project_id": project_id, "design_revision_id": design_revision_id,
                  "package_id": package.get("package_id"), "status": package_status,
+                 "submission_key": payload.submission_key,
                  "task_ids": [x.get("task_id") for x in executions if x.get("task_id")]},
     )
     return {**package, "execution_status": package_status, "executions": executions}
@@ -3110,6 +3232,38 @@ def import_windows_production_qualification_run(payload: WindowsProductionQualif
     return {"run": imported, "summary": windows_production_qualification.summary()}
 
 
+@app.get("/api/windows-golden-journey-qualification")
+def windows_golden_journey_qualification_summary():
+    return windows_golden_journey_qualification.summary()
+
+
+@app.get("/api/windows-golden-journey-qualification/matrix")
+def windows_golden_journey_qualification_matrix():
+    return golden_journey_qualification_matrix_spec()
+
+
+@app.post("/api/windows-golden-journey-qualification-runs/import", status_code=201)
+def import_windows_golden_journey_qualification_run(payload: WindowsGoldenJourneyQualificationImport):
+    try:
+        imported = windows_golden_journey_qualification.import_run(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    logs.audit(
+        level="INFO" if imported.get("formal_workstation_qualified") else "WARNING",
+        component="windows_golden_journey_qualification",
+        event_type="WINDOWS_NATIVE_GOLDEN_JOURNEY_QUALIFICATION_IMPORTED",
+        message="V0.89-D Windows Native Golden Journey evidence imported",
+        payload={
+            "run_id": imported.get("run_id"),
+            "formal_qualified": imported.get("formal_workstation_qualified"),
+            "qualification_evidence_hash": imported.get("qualification_evidence_hash"),
+            "content_hash": imported.get("content_hash"),
+            "source_windows_qualification_run_id": imported.get("source_windows_qualification_run_id"),
+        },
+    )
+    return {"run": imported, "summary": windows_golden_journey_qualification.summary()}
+
+
 @app.get("/api/runtime/production-hardening/snapshot")
 def production_hardening_runtime_snapshot():
     return production_hardening_runtime.snapshot()
@@ -3146,6 +3300,60 @@ def import_production_soak_qualification_run(payload: ProductionSoakQualificatio
         },
     )
     return {"run": imported, "summary": production_soak_qualification.summary()}
+
+
+@app.get("/api/ui-soak-qualification")
+def ui_soak_qualification_summary():
+    return ui_soak_qualification.summary()
+
+
+@app.get("/api/ui-soak-qualification/matrix")
+def ui_soak_qualification_matrix():
+    return ui_soak_matrix_spec()
+
+
+@app.post("/api/ui-soak-qualification-runs/import", status_code=201)
+def import_ui_soak_qualification_run(payload: UISoakQualificationImport):
+    try:
+        imported = ui_soak_qualification.import_run(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    logs.audit(
+        level="INFO" if imported.get("formal_ui_resilience_qualified") or imported.get("local_browser_qualified") else "WARNING",
+        component="ui_soak_qualification",
+        event_type="UI_SOAK_RECOVERY_FAULT_QUALIFICATION_IMPORTED",
+        message="V0.89-E UI soak/recovery/fault evidence imported",
+        payload={
+            "run_id": imported.get("run_id"),
+            "mode": imported.get("mode"),
+            "formal_qualified": imported.get("formal_ui_resilience_qualified"),
+            "local_browser_qualified": imported.get("local_browser_qualified"),
+            "qualification_evidence_hash": imported.get("qualification_evidence_hash"),
+            "content_hash": imported.get("content_hash"),
+        },
+    )
+    return {"run": imported, "summary": ui_soak_qualification.summary()}
+
+
+@app.get("/api/release-candidate-gate")
+def release_candidate_gate_summary():
+    return release_candidate_gate.summary()
+
+
+@app.get("/api/release-candidate-gate/checklist")
+def release_candidate_gate_checklist():
+    return human_acceptance_checklist_spec()
+
+
+@app.post("/api/release-candidate-gate/human-acceptance", status_code=201)
+def record_release_candidate_human_acceptance(payload: ReleaseCandidateHumanAcceptanceImport):
+    accepted = release_candidate_gate.record_human_acceptance(payload)
+    logs.audit(
+        level="INFO", component="release_candidate_gate", event_type="RC_HUMAN_ACCEPTANCE_RECORDED",
+        message="V0.89-F engineer human acceptance recorded",
+        payload={"reviewer": accepted.get("reviewer"), "formal_human_acceptance": accepted.get("formal_human_acceptance"), "content_hash": accepted.get("content_hash")},
+    )
+    return {"acceptance": accepted, "summary": release_candidate_gate.summary()}
 
 
 @app.get("/api/tasks/{task_id}/optimization-contract")
@@ -4541,13 +4749,38 @@ def get_design(design_id: str):
     return payload
 
 
+def _editor_transaction_state(solution_id: str, *, draft: dict[str, Any] | None = None) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    solution = solutions.get_solution(solution_id)
+    if solution is None:
+        raise KeyError(solution_id)
+    if draft is None:
+        draft = solutions.get_draft(solution_id)
+    base_id = str((draft or {}).get("base_revision_id") or "")
+    if not base_id:
+        latest = (solution.get("revisions") or [None])[0]
+        base_id = str((latest or {}).get("id") or "")
+    base = solutions.get_revision(base_id) if base_id else None
+    if not base:
+        raise ValueError("editor transaction base revision is unavailable")
+    schema = registry.parameter_schema(str(solution.get("template_id") or ""))
+    transaction = build_editor_transaction(solution=solution, base_revision=base, draft=draft, parameter_schema=schema)
+    if draft is not None:
+        draft = dict(draft)
+        draft["editor_transaction"] = transaction
+    return transaction, draft
+
+
 @app.get("/api/designs/{design_id}/draft")
 def get_design_draft(design_id: str):
     try:
         draft = solutions.get_draft(design_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="solution not found") from exc
-    return {"exists": bool(draft), "draft": draft}
+    try:
+        transaction, draft = _editor_transaction_state(design_id, draft=draft)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"exists": bool(draft), "draft": draft, "editor_transaction": transaction}
 
 
 @app.put("/api/designs/{design_id}/draft")
@@ -4564,7 +4797,8 @@ def save_design_draft(design_id: str, payload: DesignDraftUpdate):
             explicit_parameter_ids=payload.explicit_parameter_ids, active_view=payload.active_view, notes=payload.notes,
             expected_version=payload.expected_version,
         )
-        return {"exists": True, "draft": draft}
+        transaction, draft = _editor_transaction_state(design_id, draft=draft)
+        return {"exists": True, "draft": draft, "editor_transaction": transaction}
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="design not found") from exc
     except DesignDraftConflictError as exc:
@@ -4611,6 +4845,69 @@ def save_solution_draft(solution_id: str, payload: DesignDraftUpdate):
 @app.delete("/api/solutions/{solution_id}/draft")
 def delete_solution_draft(solution_id: str, expected_version: int | None = Query(default=None, ge=0)):
     return delete_design_draft(solution_id, expected_version)
+
+
+@app.get("/api/solutions/{solution_id}/editor-transaction")
+def get_solution_editor_transaction(solution_id: str):
+    try:
+        transaction, draft = _editor_transaction_state(solution_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="solution not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"solution_id": solution_id, "draft_exists": bool(draft), "editor_transaction": transaction}
+
+
+def _run_design_draft_native_check(solution_id: str, payload: DesignDraftNativeCheckRequest):
+    try:
+        draft = solutions.get_draft(solution_id)
+        if not draft:
+            raise HTTPException(status_code=404, detail="design draft not found")
+        transaction, draft = _editor_transaction_state(solution_id, draft=draft)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="solution not found") from exc
+    if int(draft.get("version") or 0) != int(payload.expected_version):
+        raise HTTPException(status_code=409, detail={"code":"DESIGN_DRAFT_STALE","message":"原生检查启动前草稿版本已经变化，请重新读取当前设计。","current_version":draft.get("version")})
+    if str(transaction.get("transaction_hash") or "") != payload.transaction_hash or str(transaction.get("intent_hash") or "") != payload.intent_hash:
+        raise HTTPException(status_code=409, detail={"code":"EDITOR_TRANSACTION_STALE","message":"当前编辑事务已经变化；旧事务不能用于 Motor-CAD 原生检查。","editor_transaction":transaction})
+    solution = solutions.get_solution(solution_id) or {}
+    template_id = str(solution.get("template_id") or "")
+    runtime_request = GeometryRuntimeCheckRequest(
+        parameters=dict(draft.get("parameters") or {}),
+        explicit_parameter_ids=list(draft.get("explicit_parameter_ids") or []),
+        materials=dict(draft.get("materials") or {}),
+        timeout_s=payload.timeout_s, force=payload.force, repair_policy=payload.repair_policy,
+    )
+    # Native execution can be slow. Evidence is attached only after an atomic second
+    # transaction/intent check, so edits made in another tab during Motor-CAD execution
+    # cannot bless a newer draft with an older native result.
+    result = template_geometry_runtime_check(template_id, runtime_request)
+    reconciliation = native_reconciliation_record(
+        transaction_hash=payload.transaction_hash, intent_hash=payload.intent_hash, result=result
+    )
+    try:
+        persisted = solutions.record_native_reconciliation(
+            solution_id, expected_transaction_hash=payload.transaction_hash, expected_intent_hash=payload.intent_hash,
+            reconciliation=reconciliation,
+        )
+    except DesignDraftConflictError as exc:
+        raise HTTPException(status_code=409, detail={
+            "code":"EDITOR_TRANSACTION_CHANGED_DURING_NATIVE_CHECK",
+            "message":"Motor-CAD 检查期间设计已发生变化；本次结果已保留为运行证据，但不会绑定到当前草稿。",
+            "current_version":exc.current.get("version"),
+        }) from exc
+    refreshed_tx, persisted = _editor_transaction_state(solution_id, draft=persisted)
+    return {**result, "editor_transaction": refreshed_tx, "native_reconciliation": refreshed_tx.get("native_reconciliation"), "draft": persisted}
+
+
+@app.post("/api/solutions/{solution_id}/draft/native-check")
+def run_solution_draft_native_check(solution_id: str, payload: DesignDraftNativeCheckRequest):
+    return _run_design_draft_native_check(solution_id, payload)
+
+
+@app.post("/api/designs/{design_id}/draft/native-check")
+def run_design_draft_native_check(design_id: str, payload: DesignDraftNativeCheckRequest):
+    return _run_design_draft_native_check(design_id, payload)
 
 
 @app.get("/api/motor-domain/catalog")
@@ -4841,6 +5138,22 @@ def commit_design_draft(design_id: str, payload: DesignDraftCommit):
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="solution not found") from exc
         if not draft:
+            # V0.89-C durable idempotent replay. A commit can have succeeded in the
+            # database while the HTTP response was lost. The Draft is then gone, but
+            # the immutable Revision retains the commit_key inside editor evidence.
+            # Retrying the same key returns that exact Revision and never creates a
+            # second history entry.
+            if payload.commit_key:
+                design_state = solutions.get_solution(design_id) or {}
+                for revision in (design_state.get("revisions") or []):
+                    transaction = dict(revision.get("editor_transaction") or {})
+                    if str(transaction.get("commit_key") or "") == str(payload.commit_key):
+                        replay = dict(revision)
+                        replay["editor_transaction"] = transaction
+                        replay["native_reconciliation"] = dict(revision.get("native_reconciliation") or {})
+                        replay["linked_analysis_definition_id"] = transaction.get("linked_analysis_definition_id")
+                        replay["idempotent_replay"] = True
+                        return replay
             raise HTTPException(status_code=404, detail="design draft not found")
         current_version = int(draft.get("version") or 0)
         if payload.expected_version is not None and current_version != int(payload.expected_version):
@@ -4860,6 +5173,11 @@ def commit_design_draft(design_id: str, payload: DesignDraftCommit):
         latest = (design.get("revisions") or [None])[0]
         if latest and str(latest.get("id") or "") != str(base.get("id") or ""):
             raise HTTPException(status_code=409, detail="该电机已产生更新的 Design Revision，请重新打开最新版本后再继续编辑")
+        editor_transaction, _ = _editor_transaction_state(design_id, draft=draft)
+        editor_transaction = dict(editor_transaction or {})
+        if payload.commit_key:
+            editor_transaction["commit_key"] = str(payload.commit_key)
+            editor_transaction["commit_contract_version"] = "0.89-C"
         linked_analysis_id = None
         if payload.analysis_definition_id:
             analysis = engineering_platform.get_analysis_definition(payload.analysis_definition_id)
@@ -4877,10 +5195,19 @@ def commit_design_draft(design_id: str, payload: DesignDraftCommit):
         )
         created = create_design_revision(design_id, revision_payload)
         if linked_analysis_id:
+            editor_transaction["linked_analysis_definition_id"] = linked_analysis_id
+        solutions.persist_revision_editor_evidence(
+            str(created.get("id") or ""), editor_transaction=editor_transaction,
+            native_reconciliation=dict(draft.get("native_reconciliation") or {}),
+        )
+        created["editor_transaction"] = editor_transaction
+        created["native_reconciliation"] = dict(draft.get("native_reconciliation") or {})
+        if linked_analysis_id:
             engineering_platform.set_analysis_design_revision(linked_analysis_id, str(created.get("id") or ""))
         # The lock guarantees this is the same draft version checked above.
         solutions.delete_draft(design_id, expected_version=current_version)
         created["linked_analysis_definition_id"] = linked_analysis_id
+        created["idempotent_replay"] = False
         return created
 
 
@@ -6353,9 +6680,11 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
             "work_dir": None, "blocked_before_motorcad": True,
         }
     model_fingerprint = _model_runtime_check_key(
-        template_id, merged, payload.explicit_parameter_ids, payload.materials.model_dump(mode="json")
+        template_id, merged, payload.explicit_parameter_ids, payload.materials.model_dump(mode="json"), payload.repair_policy
     )
-    if not payload.force:
+    # safe_auto is a live mutation of the current Motor-CAD session toward an already
+    # frozen Design Snapshot. It must never be satisfied from a cached diagnosis.
+    if not payload.force and payload.repair_policy != "safe_auto":
         cached = _cached_model_runtime_check(model_fingerprint)
         if cached is not None:
             logs.audit(
@@ -6364,9 +6693,43 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
                 payload={"template_id": template_id, "model_fingerprint": model_fingerprint, "cache_age_s": cached.get("cache_age_s")},
             )
             return cached
-    work_dir = settings.runtime_dir / "geometry_checks" / template_id / str(int(time.time()))
+    is_leader, inflight_event = _claim_model_runtime_check(model_fingerprint)
+    if not is_leader:
+        wait_s = min(960.0, max(30.0, float(payload.timeout_s) + float(settings.solver_cancel_grace_s) + 20.0))
+        logs.audit(
+            level="INFO", component="model_validation", event_type="MODEL_RUNTIME_CHECK_JOINED",
+            message=f"joined in-flight Motor-CAD feasibility check for {template_id}",
+            payload={"template_id": template_id, "model_fingerprint": model_fingerprint, "wait_timeout_s": wait_s},
+        )
+        if not inflight_event.wait(wait_s):
+            raise HTTPException(status_code=504, detail={
+                "code": "MODEL_RUNTIME_CHECK_JOIN_TIMEOUT",
+                "message": "相同 Motor-CAD 模型检查仍在运行，等待超时；请查看运行日志后重试。",
+                "model_fingerprint": model_fingerprint,
+            })
+        cached = _cached_model_runtime_check(model_fingerprint)
+        if cached is not None:
+            cached["coalesced_inflight"] = True
+            logs.audit(
+                level="INFO", component="model_validation", event_type="MODEL_RUNTIME_CHECK_JOIN_RESULT",
+                message=f"reused freshly completed in-flight Motor-CAD check for {template_id}",
+                payload={"template_id": template_id, "model_fingerprint": model_fingerprint},
+            )
+            return cached
+        # The prior leader exited before producing evidence. One waiter takes over;
+        # additional waiters will join that retry rather than fan out new Motor-CADs.
+        is_leader, inflight_event = _claim_model_runtime_check(model_fingerprint)
+        if not is_leader:
+            raise HTTPException(status_code=503, detail={
+                "code": "MODEL_RUNTIME_CHECK_LEADER_FAILED",
+                "message": "前一个 Motor-CAD 模型检查未形成结果，系统已开始一次受控重试，请稍后刷新。",
+                "model_fingerprint": model_fingerprint,
+            })
+
+    work_dir = settings.runtime_dir / "geometry_checks" / template_id / f"{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
     runner = MotorCADQualificationRunner(timeout_s=float(payload.timeout_s), terminate_grace_s=settings.solver_cancel_grace_s)
-    result = runner.run({
+    try:
+        result = runner.run({
         "config_dir": str(settings.config_dir),
         "runtime_dir": str(settings.runtime_dir),
         "motorcad_exe": tasks.motorcad_exe,
@@ -6376,11 +6739,17 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         "model_policy": settings.model_policy,
         "template": template,
         "parameters": {key: value for key, value in clean_parameters.items() if key in set(payload.explicit_parameter_ids or [])},
+        "effective_parameters": merged,
+        "explicit_parameter_ids": list(payload.explicit_parameter_ids or []),
         "materials": payload.materials.model_dump(mode="json"),
+        "repair_policy": payload.repair_policy,
         "analysis": "emag",
         "run_solver_smoke": False,
         "work_dir": str(work_dir),
-    })
+        })
+    except Exception:
+        _release_model_runtime_check(model_fingerprint, inflight_event)
+        raise
     geometry = next((row for row in result.get("checks", []) if row.get("id") == "geometry"), None)
     winding_native = next((row for row in result.get("checks", []) if row.get("id") == "winding"), None)
     roundtrip = next((row for row in result.get("checks", []) if row.get("id") == "parameter_roundtrip"), None)
@@ -6390,7 +6759,9 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         status = "PASS"
     else:
         status = "WARNING"
-    failure_check = next((row for row in result.get("checks", []) if row.get("status") == "FAIL"), None)
+    failure_check = result.get("root_cause") or next((row for row in result.get("checks", []) if row.get("status") == "FAIL"), None)
+    native_snapshot = result.get("native_model_snapshot") or {}
+    native_repair_plan = result.get("native_repair_plan")
     logs.audit(
         level="INFO" if status == "PASS" else "WARNING", component="model_validation", event_type="MODEL_RUNTIME_CHECK",
         message=f"model feasibility check {template_id}: {status}",
@@ -6400,6 +6771,10 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
             "winding": winding_native, "parameter_roundtrip": roundtrip,
             "checks": result.get("checks", []),
             "root_cause": failure_check,
+            "native_model_status": native_snapshot.get("status"),
+            "native_repair_plan_status": (native_repair_plan or {}).get("status") if isinstance(native_repair_plan, dict) else None,
+            "repair_policy": payload.repair_policy,
+            "motorcad_io_artifacts": result.get("io_artifacts") or {},
         },
     )
     response = {
@@ -6408,8 +6783,20 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         "parameter_roundtrip": roundtrip, "checks": result.get("checks", []), "root_cause": failure_check, "work_dir": str(work_dir),
         "blocked_before_motorcad": False, "cache_hit": False, "cache_age_s": 0.0,
         "model_fingerprint": model_fingerprint, "checked_at": db.now(),
+        "repair_policy": payload.repair_policy,
+        "native_model_snapshot": result.get("native_model_snapshot"),
+        "native_model_snapshot_hash": result.get("native_model_snapshot_hash"),
+        "native_model_design_state_hash": result.get("native_model_design_state_hash"),
+        "native_fault_tree": result.get("native_fault_tree") or [],
+        "native_repair_plan": native_repair_plan,
+        "native_repair_plan_hash": result.get("native_repair_plan_hash"),
+        "native_repair_attempts": result.get("native_repair_attempts") or [],
+        "native_binding_plan_hash": result.get("native_binding_plan_hash"),
+        "motorcad_io_artifacts": result.get("io_artifacts") or {},
+        "coalesced_inflight": False,
     }
     _store_model_runtime_check(model_fingerprint, response)
+    _release_model_runtime_check(model_fingerprint, inflight_event)
     return response
 
 
@@ -6729,6 +7116,30 @@ def _case_native_fea_root(case_id: str) -> tuple[dict[str, Any], Path]:
     return row, root
 
 
+
+def _case_post_solve_native_model_snapshot(case_id: str, row: dict[str, Any] | None = None) -> dict[str, Any]:
+    case = row or db.query_one("SELECT id,task_id,work_dir,result_json FROM cases WHERE id=?", (case_id,))
+    if not case:
+        raise HTTPException(status_code=404, detail="Case不存在")
+    result = db.loads(case.get("result_json"), {}) or {}
+    raw = dict(result.get("raw") or {}) if isinstance(result, dict) else {}
+    snapshot = raw.get("native_model_snapshot_post_solve") or raw.get("native_model_snapshot")
+    if isinstance(snapshot, dict) and snapshot:
+        return snapshot
+    work_dir = case.get("work_dir")
+    if work_dir:
+        path = (Path(work_dir) / "native_model_snapshot_post_solve.json").resolve()
+        results_root = settings.results_dir.resolve()
+        if results_root == path or results_root in path.parents:
+            if path.exists():
+                try:
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                except Exception as exc:
+                    raise HTTPException(status_code=500, detail=f"NativeModelSnapshot损坏: {type(exc).__name__}: {exc}") from exc
+                if isinstance(payload, dict) and payload:
+                    return payload
+    raise HTTPException(status_code=404, detail="当前 Case 尚无 post_solve NativeModelSnapshot")
+
 def _verified_fea_frame(root: Path, record: dict[str, Any]) -> tuple[Path, str, str | None]:
     frame = (root / "frames" / str(record.get("file"))).resolve()
     if root not in frame.parents or not frame.exists():
@@ -6792,8 +7203,29 @@ def case_fea_evidence(case_id: str):
         },
         "native_screen_available": native_screen.exists(),
         "native_screen_url": f"/api/cases/{case_id}/native-screen" if native_screen.exists() else None,
-        "evidence_boundary": "仅显示 Motor-CAD save_fea_data 的实际导出点；缺失网格连接时不生成伪等值云图。",
+        "spatial_overlay": manifest.get("spatial_overlay") or {},
+        "spatial_overlay_url": f"/api/cases/{case_id}/spatial-overlay",
+        "evidence_boundary": "场值仅来自 Motor-CAD save_fea_data 原生导出；V0.88-F 仅在线 lineage 与坐标范围通过时叠加 GeometryTree 原生区域边界，缺少有限元连接时不生成插值等值云图。",
     }
+
+
+@app.get("/api/cases/{case_id}/spatial-overlay")
+def case_spatial_overlay(case_id: str):
+    row, root = _case_native_fea_root(case_id)
+    manifest_path = root / "native_fea_manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="当前 Case 尚无 Motor-CAD FEA 导出证据")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"FEA证据清单损坏: {type(exc).__name__}: {exc}") from exc
+    case_row = db.query_one("SELECT id,task_id,work_dir,result_json FROM cases WHERE id=?", (case_id,)) or row
+    snapshot = _case_post_solve_native_model_snapshot(case_id, case_row)
+    contract = NativeSpatialResultOverlayAuthority().build(native_model_snapshot=snapshot, fea_manifest=manifest)
+    contract["case_id"] = case_id
+    contract["task_id"] = row.get("task_id")
+    contract["frame_endpoint"] = f"/api/cases/{case_id}/fea-frames/{{frame_index}}"
+    return contract
 
 
 @app.get("/api/cases/{case_id}/native-screen")

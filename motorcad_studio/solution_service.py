@@ -168,6 +168,23 @@ class SolutionService:
             raise KeyError(solution_id)
         return self.repository.delete_draft(solution_id, expected_version=expected_version)
 
+    def record_native_reconciliation(
+        self, solution_id: str, *, expected_transaction_hash: str, expected_intent_hash: str, reconciliation: dict[str, Any]
+    ) -> dict[str, Any]:
+        if self.repository.get_solution(solution_id, include_revisions=False) is None:
+            raise KeyError(solution_id)
+        return self._canonical_payload(self.repository.record_native_reconciliation(
+            solution_id, expected_transaction_hash=expected_transaction_hash, expected_intent_hash=expected_intent_hash,
+            reconciliation=reconciliation,
+        )) or {}
+
+    def persist_revision_editor_evidence(
+        self, revision_id: str, *, editor_transaction: dict[str, Any], native_reconciliation: dict[str, Any]
+    ) -> None:
+        self.repository.persist_revision_editor_evidence(
+            revision_id, editor_transaction=editor_transaction, native_reconciliation=native_reconciliation
+        )
+
     def create_solution(self, project_id: str, name: str, motor_family: str, template_id: str) -> dict[str, Any]:
         return self._canonical_payload(self.repository.create_solution(project_id, name, motor_family, template_id)) or {}
 

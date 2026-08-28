@@ -210,6 +210,11 @@ def terminate_process_tree(pid: int, grace_s: float = 3.0) -> None:
             process.kill()
         except psutil.Error:
             pass
+    # A kill request is asynchronous.  Reap the killed processes as part of the
+    # ownership boundary so callers do not observe a transient residual PID as a
+    # failed shutdown on a loaded workstation/CI host.
+    if alive:
+        psutil.wait_procs(alive, timeout=max(0.5, min(max(grace_s, 0.1), 2.0)))
 
 
 class SolverProcessRunner:

@@ -120,16 +120,6 @@ contexts:
         - {value: 0, label: 3D model}
         - {value: 1, label: 2D FEA calibration}
       group: model
-    - id: loss_source
-      automation_name: LossSource
-      label: 损耗来源
-      type: enum
-      default: 0
-      options:
-        - {value: 0, label: Steady-state loss}
-        - {value: 1, label: Speed variation table}
-        - {value: 2, label: Imported loss map}
-      group: coupling
     - id: thermal_coupling_mode
       automation_name: ThermalCouplingMode
       label: 电磁—热耦合方式

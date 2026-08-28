@@ -54,6 +54,7 @@ class MotorFamilyPluginRegistry:
         self.studio_version = studio_version
         self.log_store = log_store
         self._plugins: dict[str, MotorFamilyPlugin] = {}
+        self._snapshots: dict[str, PluginContractSnapshot] = {}
         self._topology_owner: dict[str, str] = {}
         self._family_plugins: dict[str, list[str]] = {}
 
@@ -160,6 +161,7 @@ class MotorFamilyPluginRegistry:
             if owner and owner != plugin_id and not replace:
                 raise MotorPluginContractError(f"topology {topology_id} already owned by plugin {owner}")
         self._plugins[plugin_id] = plugin
+        self._snapshots[plugin_id] = snapshot.model_copy(deep=True)
         for topology_id in snapshot.identity.topology_ids:
             self._topology_owner[topology_id] = plugin_id
         for family_id in snapshot.identity.family_ids:
@@ -175,6 +177,7 @@ class MotorFamilyPluginRegistry:
 
     def unregister(self, plugin_id: str) -> None:
         plugin = self._plugins.pop(plugin_id, None)
+        self._snapshots.pop(plugin_id, None)
         if plugin is None:
             return
         identity = plugin.identity()
@@ -315,13 +318,19 @@ class MotorFamilyPluginRegistry:
         return deepcopy(value or {})
 
     def snapshot(self, plugin_id: str) -> PluginContractSnapshot | None:
-        plugin = self._plugins.get(plugin_id)
-        return self.validate(plugin) if plugin else None
+        # Registered plugin contracts are immutable for the lifetime of the registry.
+        # Re-validation is reserved for register/replace, avoiding YAML/provider
+        # reconstruction on hot capability/qualification routes.
+        snapshot = self._snapshots.get(plugin_id)
+        return snapshot.model_copy(deep=True) if snapshot else None
 
     def catalog(self) -> dict[str, Any]:
         rows = []
         for plugin_id in sorted(self._plugins):
-            snapshot = self.validate(self._plugins[plugin_id])
+            snapshot = self._snapshots.get(plugin_id)
+            if snapshot is None:
+                snapshot = self.validate(self._plugins[plugin_id])
+                self._snapshots[plugin_id] = snapshot.model_copy(deep=True)
             rows.append(snapshot.model_dump(mode="json"))
         return {
             "schema_version": 1,

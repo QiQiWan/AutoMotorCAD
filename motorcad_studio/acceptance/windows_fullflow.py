@@ -268,6 +268,9 @@ def execute_analysis(api: Api, project_id: str, revision_id: str, scenario: dict
     if not rb_id:
         raise AcceptanceError(f"{scenario['id']} completed without ResultBundle ID")
     interpretation = api.get(f"/api/result-bundles/{urllib.parse.quote(rb_id)}/engineering-interpretation")
+    spatial_overlay = api.get(f"/api/cases/{urllib.parse.quote(case_id)}/spatial-overlay")
+    if spatial_overlay.get("status") != "QUALIFIED":
+        raise AcceptanceError(f"{scenario['id']} native spatial/result overlay authority blocked: {spatial_overlay.get('blockers')}")
     return {
         "id": scenario["id"], "required": scenario.get("required", True), "family": scenario["family"],
         "template_id": scenario["template_id"], "status": "PASS", "native_motorcad": True,
@@ -276,6 +279,10 @@ def execute_analysis(api: Api, project_id: str, revision_id: str, scenario: dict
         "task_id": task_id, "case_id": case_id, "result_bundle_id": rb_id,
         "result_bundle_hash": bundle.get("result_bundle_hash"), "guidance": guidance,
         "interpretation_status": (interpretation.get("interpretation") or {}).get("status"),
+        "native_spatial_overlay_qualified": True,
+        "native_spatial_overlay_hash": spatial_overlay.get("content_hash"),
+        "native_spatial_geometry_hash": spatial_overlay.get("spatial_geometry_hash"),
+        "native_spatial_coordinate_alignment": (spatial_overlay.get("coordinate_alignment") or {}).get("status"),
         "stale_guard": {"status": "PASS", "http_status": stale_status, "response": stale_body},
     }
 

@@ -1,0 +1,81 @@
+{
+  "reviewer": "",
+  "platform": "Windows-11",
+  "studio_version": "0.89.9",
+  "status": "FAIL",
+  "items": [
+    {
+      "id": "PROJECT_ENTRY_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "STARTER_TO_DESIGN_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "EDITOR_SAVE_CANCEL_BACK",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "VALIDATION_GATE_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "SOLVE_PROGRESS_VISIBILITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "RESULT_DECISION_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "RECOVERY_MESSAGE_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "GUIDED_TERMINOLOGY_CLARITY",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "VISUAL_CONTRAST_LAYOUT",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "NO_DEAD_END_NAVIGATION",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "CONTEXT_ALWAYS_VISIBLE",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    },
+    {
+      "id": "CLEAN_RELAUNCH",
+      "status": "PENDING",
+      "note": "",
+      "evidence_ref": ""
+    }
+  ],
+  "notes": ""
+}

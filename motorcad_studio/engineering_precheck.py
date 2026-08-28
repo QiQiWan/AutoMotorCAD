@@ -80,27 +80,54 @@ def materialize_input_domains(
     if circuit.get("volume_flow_rate_lpm") not in (None, ""):
         effective_scenario["coolant_flow_rate_lpm"] = circuit["volume_flow_rate_lpm"]
 
+    # V0.89-G2.2 ownership closure: component materials belong exclusively to the
+    # immutable Design Revision. Legacy Analysis.materials fields may still exist
+    # in old saved definitions, but they must never overwrite the design here.
     components = deepcopy(effective_materials.get("component_materials") or {})
-    for field, component in MATERIAL_COMPONENT_MAP.items():
-        value = material_domain.get(field)
-        if value not in (None, ""):
-            components[component] = str(value)
     effective_materials["component_materials"] = components
     fluids = deepcopy(effective_materials.get("cooling_fluids") or {})
+    # Coolant is an analysis boundary condition and is sourced from flow_circuit.
+    # Keep legacy coolant_fluid only as a compatibility fallback when no circuit
+    # value exists; the legacy component-material fields remain ignored.
     fluid = circuit.get("fluid") or material_domain.get("coolant_fluid")
     if fluid not in (None, ""):
         fluids["HousingWJFluid"] = str(fluid)
     effective_materials["cooling_fluids"] = fluids
 
-    # LossSource is part of the versioned 2026R1 Therm control registry.
+    # V0.89-G2.3 native-authority closure: ``loss_source`` is a Studio-level
+    # semantic choice.  Motor-CAD 2026R1 does not expose a stable cross-template
+    # raw variable named ``LossSource`` (real workstation evidence returns
+    # ``Could not find LossSource``).  Keep the semantic value in the immutable
+    # physical-input snapshot and let the recipe/coupling implementation decide
+    # how losses are transferred.  Never synthesize an unqualified raw Automation
+    # variable from this field.
     loss_source = str(losses.get("loss_source") or "").strip()
     if loss_source:
-        loss_source_values = {"model": 0, "emag": 0, "measured": 0, "table": 1}
-        automation = deepcopy(effective_solver.get("automation") or {})
-        therm = deepcopy(automation.get("Therm") or {})
-        therm["LossSource"] = loss_source_values.get(loss_source, 0)
-        automation["Therm"] = therm
+        effective_solver["loss_source"] = loss_source
+
+    # Remove the G2.2-era synthetic control from already-saved Analysis Revisions
+    # so an upgrade fixes existing projects as well as newly-created definitions.
+    # Explicit expert overrides live in ``TaskCreate.automation_overrides`` and are
+    # therefore not mutated here.
+    retired_controls: list[str] = []
+    automation = deepcopy(effective_solver.get("automation") or {})
+    therm = deepcopy(automation.get("Therm") or {}) if isinstance(automation.get("Therm"), dict) else {}
+    if "LossSource" in therm:
+        therm.pop("LossSource", None)
+        retired_controls.append("Therm.LossSource")
+        if therm:
+            automation["Therm"] = therm
+        else:
+            automation.pop("Therm", None)
         effective_solver["automation"] = automation
+    direct_therm = effective_solver.get("Therm")
+    if isinstance(direct_therm, dict) and "LossSource" in direct_therm:
+        cleaned_direct = deepcopy(direct_therm)
+        cleaned_direct.pop("LossSource", None)
+        effective_solver["Therm"] = cleaned_direct
+        if "Therm.LossSource" not in retired_controls:
+            retired_controls.append("Therm.LossSource")
+
     effective_solver["physical_input_application"] = {
         "scenario_fields": sorted(key for key in effective_scenario if key in {
             "cooling_type", "coolant_inlet_temperature_c", "coolant_flow_rate_lpm",
@@ -108,7 +135,9 @@ def materialize_input_domains(
         }),
         "material_components": sorted(components),
         "cooling_fluids": sorted(fluids),
-        "motorcad_controls": ["Therm.LossSource"] if loss_source else [],
+        "motorcad_controls": [],
+        "studio_controls": ([f"loss_source={loss_source}"] if loss_source else []),
+        "retired_motorcad_controls": retired_controls,
         "retained_boundary_modules": sorted(set(domains) - {"cooling", "materials", "losses"}),
     }
     return {
@@ -129,8 +158,8 @@ def required_input_domains(module: str | None, recipe_id: str | None = None) -> 
     module_name = str(module or "")
     recipe = str(recipe_id or "")
     if module_name in {"Therm", "Coupled"} or recipe in {"thermal_steady", "thermal_transient", "emag_thermal", "emag_thermal_coupled", "lab_thermal", "lab_duty_cycle"}:
-        return ["cooling", "losses", "materials"]
-    return ["materials"]
+        return ["cooling", "losses"]
+    return []
 
 
 def load_precheck_catalog(path: Path) -> dict[str, Any]:
@@ -305,14 +334,14 @@ def validate_engineering_inputs(
             add("THERMAL_FLOW_PRESSURE_NONNEGATIVE", "BLOCKING", "thermal", f"{key} 不可为负。", [key], "使用非负幅值，并通过流动方向字段定义方向。")
 
     material_domain = domains.get("materials") if isinstance(domains.get("materials"), dict) else {}
-    if material_domain:
-        missing = [key for key in ("stator_material", "rotor_material", "conductor_material", "housing_material") if not str(material_domain.get(key) or "").strip()]
-        if missing:
-            add("MATERIAL_REQUIRED_ASSIGNMENTS", "BLOCKING", "materials", f"缺少关键材料：{', '.join(missing)}。", missing, "在材料模块中为关键部件选择有效的 Motor-CAD 材料。")
+    # Component material completeness is validated against the Design Revision,
+    # which is the single source of truth. Analysis no longer owns these fields.
+    component_materials = (materials or {}).get("component_materials") or {}
+    required_components = ("Stator Lamination", "Rotor Lamination", "Conductor", "Housing")
+    missing_components = [name for name in required_components if not str(component_materials.get(name) or "").strip()]
+    # Missing entries may legitimately be inherited from the native template; do
+    # not create a false Analysis blocker. Native readback remains authoritative.
     flow_fluid = str((domains.get("flow_circuit") or {}).get("fluid") or "").strip()
-    coolant = str(material_domain.get("coolant_fluid") or "").strip()
-    if flow_fluid and coolant and flow_fluid.casefold() != coolant.casefold():
-        add("MATERIAL_COOLANT_MATCH", "WARNING", "materials", "流动回路流体与材料模块中的冷却介质不一致。", ["fluid", "coolant_fluid"], "统一两个模块的冷却介质名称和物性来源。")
     cooling_flow = _number((domains.get("cooling") or {}).get("coolant_flow_rate_lpm"))
     circuit_flow = _number((domains.get("flow_circuit") or {}).get("volume_flow_rate_lpm"))
     if cooling_flow is not None and circuit_flow is not None and abs(cooling_flow - circuit_flow) > max(0.01, abs(cooling_flow) * 0.01):

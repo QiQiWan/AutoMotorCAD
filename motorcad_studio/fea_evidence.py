@@ -586,6 +586,12 @@ def normalize_fea_csv(raw_path: Path, frames_dir: Path, max_points_per_frame: in
         "delimiter": delimiter,
         "coordinate_columns": {"x": x_key, "y": y_key},
         "coordinate_metadata": coordinate_metadata,
+        "coordinate_bounds": ({
+            "xmin": min((point[0] for point in coordinate_pairs), default=None),
+            "xmax": max((point[0] for point in coordinate_pairs), default=None),
+            "ymin": min((point[1] for point in coordinate_pairs), default=None),
+            "ymax": max((point[1] for point in coordinate_pairs), default=None),
+        } if coordinate_pairs else None),
         "field_columns": field_columns,
         "field_metadata": field_metadata,
         "available_fields": available_fields,
@@ -780,6 +786,20 @@ class NativeFEAEvidenceExporter:
             progress("NORMALIZING_FEA", 0.76, "标准化有限元场与时间帧")
         normalized = normalize_fea_csv(raw_path, root / "frames", self.config.max_points_per_frame, used_outputs)
         manifest["normalization"] = normalized
+        if normalized.get("normalized"):
+            actual_outputs = list(normalized.get("exported_output_columns") or [])
+            if actual_outputs:
+                # ``save_fea_data`` may accept a requested field yet omit it from
+                # the native ElementsTable for a particular solution. Record the
+                # file header as export authority so provenance matches the bytes.
+                manifest["exported_outputs"] = ",".join(actual_outputs)
+            missing_requested = list(normalized.get("missing_requested_outputs") or [])
+            if missing_requested:
+                warnings.append(
+                    "Motor-CAD 原生 FEA 未输出请求字段 "
+                    + ", ".join(map(str, missing_requested))
+                    + "；其余已导出的数值场已按文件表头正常标准化。"
+                )
         if progress:
             if normalized.get("normalized"):
                 progress(
@@ -788,10 +808,14 @@ class NativeFEAEvidenceExporter:
                     f"原生 FEA 已标准化：{int(normalized.get('frame_count') or 0)} 帧，{int(normalized.get('source_point_count') or 0):,} 个源单元",
                 )
             else:
-                progress("FEA_NORMALIZATION_WARNING", 0.78, f"原生文件已保存，场坐标解析失败：{normalized.get('reason') or '未知格式'}")
+                progress("FEA_NORMALIZATION_WARNING", 0.78, f"原生文件已保存，标准化失败：{normalized.get('reason') or '未知格式'}")
         if not normalized.get("normalized"):
             manifest["status"] = "RAW_ONLY"
-            warnings.append("已保存 Motor-CAD 原生 FEA 数据，但当前版本未识别其坐标列；可在诊断包中查看原始导出。")
+            warnings.append(
+                "已保存 Motor-CAD 原生 FEA 数据，但标准化失败："
+                + str(normalized.get("reason") or "未知格式")
+                + "；可在诊断包中查看原始导出。"
+            )
         plan = self._validation_plan()
         manifest["validation"] = validate_fea_manifest(manifest, plan)
         if not manifest["validation"]["qualification_eligible"] and self.config.policy == "required":

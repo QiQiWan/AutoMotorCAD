@@ -59,7 +59,7 @@ def _manager(tmp_path: Path) -> TaskManager:
 
 
 def test_v087fa_version_boundary_and_release_contract():
-    assert __version__ == "0.88.1"
+    assert __version__ == "0.89.9"
     source = (ROOT / "motorcad_studio" / "task_manager.py").read_text(encoding="utf-8")
     assert "RuntimeLifecycleShutdownV1" in source
     assert "RUNTIME_INTERRUPTED" in source

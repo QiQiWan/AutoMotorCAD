@@ -16,6 +16,10 @@
     data: null,
     dirtyCount: 0,
     draftStatus: 'saved',
+    transactionHash: null,
+    intentHash: null,
+    nativeStatus: 'UNCHECKED',
+    nativeEvidenceCurrent: false,
     source: 'init',
   };
 
@@ -62,6 +66,10 @@
       data: Object.prototype.hasOwnProperty.call(context, 'data') ? context.data : (identityChanged ? null : state.data),
       dirtyCount: Object.prototype.hasOwnProperty.call(context, 'dirtyCount') ? context.dirtyCount : (identityChanged ? 0 : state.dirtyCount),
       draftStatus: Object.prototype.hasOwnProperty.call(context, 'draftStatus') ? context.draftStatus : (identityChanged ? 'saved' : state.draftStatus),
+      transactionHash: Object.prototype.hasOwnProperty.call(context, 'transactionHash') ? context.transactionHash : (identityChanged ? null : state.transactionHash),
+      intentHash: Object.prototype.hasOwnProperty.call(context, 'intentHash') ? context.intentHash : (identityChanged ? null : state.intentHash),
+      nativeStatus: Object.prototype.hasOwnProperty.call(context, 'nativeStatus') ? context.nativeStatus : (identityChanged ? 'UNCHECKED' : state.nativeStatus),
+      nativeEvidenceCurrent: Object.prototype.hasOwnProperty.call(context, 'nativeEvidenceCurrent') ? Boolean(context.nativeEvidenceCurrent) : (identityChanged ? false : state.nativeEvidenceCurrent),
     }, {source: options.source || 'context', silent: options.silent});
   }
 
@@ -91,6 +99,7 @@
       data: null,
       dirtyCount: 0,
       draftStatus: 'saved',
+      transactionHash: null, intentHash: null, nativeStatus: 'UNCHECKED', nativeEvidenceCurrent: false,
       source: 'reset',
     });
     return options.silent ? snapshot() : notify(previous, options.source || 'reset');

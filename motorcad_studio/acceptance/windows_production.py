@@ -19,6 +19,7 @@ from ..version import __version__
 from ..windows_production_qualification import (
     EXPECTED_PYMOTORCAD_VERSION,
     REQUIRED_SCENARIOS,
+    WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION,
     qualification_matrix_spec,
 )
 
@@ -181,8 +182,31 @@ def enrich_scenarios(state: dict[str, Any], artifact_dir: Path, runtime: dict[st
         row["native_semantic_binding_profile_hash"] = closure_row.get("native_semantic_binding_profile_hash")
         row["native_binding_plan_hash"] = closure_row.get("native_binding_plan_hash") or closure_row.get("binding_plan_hash")
         row["native_snapshot_hash"] = closure_row.get("native_snapshot_hash")
+        native_model = dict(closure_row.get("native_model_snapshot") or {})
+        row["native_model_readback_qualified"] = native_model.get("status") == "QUALIFIED"
+        row["native_model_snapshot_hash"] = closure_row.get("native_model_snapshot_hash")
+        row["native_model_design_state_hash"] = closure_row.get("native_model_design_state_hash") or (native_model.get("metadata") or {}).get("design_state_hash")
+        row["native_model_snapshot_phase"] = closure_row.get("native_model_snapshot_phase") or native_model.get("phase")
+        repair_plan = dict(closure_row.get("native_repair_plan") or native_model.get("repair_plan") or {})
+        row["native_repair_plan_hash"] = closure_row.get("native_repair_plan_hash")
+        row["native_fault_tree_hash"] = closure_row.get("native_fault_tree_hash") or repair_plan.get("fault_tree_hash")
+        row["native_repair_attempt_count"] = int(closure_row.get("native_repair_attempt_count") or len(native_model.get("repair_history") or []))
+        row["native_repair_orchestration_clean"] = bool(
+            closure_row.get("native_repair_orchestration_clean") is True
+            and repair_plan.get("status") == "CLEAN"
+            and row["native_repair_attempt_count"] == 0
+            and bool(str(row.get("native_repair_plan_hash") or "").strip())
+            and bool(str(row.get("native_fault_tree_hash") or "").strip())
+        )
         row["native_binding_readback_pass"] = bool(
-            row["native_closure_qualified"] and row.get("native_binding_plan_hash") and row.get("native_snapshot_hash")
+            row["native_closure_qualified"]
+            and row.get("native_binding_plan_hash")
+            and row.get("native_snapshot_hash")
+            and row.get("native_model_readback_qualified") is True
+            and row.get("native_model_snapshot_hash")
+            and row.get("native_model_design_state_hash")
+            and row.get("native_model_snapshot_phase") == "post_solve"
+            and row.get("native_repair_orchestration_clean") is True
         )
         scenario_pass = str(row.get("status") or "").upper() == "PASS" and row.get("native_motorcad") is True
         row["native_precheck_pass"] = scenario_pass
@@ -198,7 +222,7 @@ def enrich_scenarios(state: dict[str, Any], artifact_dir: Path, runtime: dict[st
         row["license_observed"] = state.get("licensed_motorcad_evidence") is True
         evidence_payload = {
             "authority": "NativeScenarioProductionEvidenceV1",
-            "contract_version": "0.88-A",
+            "contract_version": WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION,
             "captured_at": now_iso(),
             "scenario": {key: value for key, value in row.items() if key != "evidence"},
             "native_closure": closure_row,
@@ -278,7 +302,7 @@ def preflight_phase(args: argparse.Namespace) -> dict[str, Any]:
     result = {
         **payload,
         "authority": "WindowsMotorCADProductionQualificationV2",
-        "contract_version": "0.88-A",
+        "contract_version": WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION,
         "host_fingerprint": host,
         "binary_version_ready": binary_ready,
         "licensed_evidence_declared": bool(args.licensed_evidence),
@@ -319,12 +343,49 @@ def resume_phase(args: argparse.Namespace) -> dict[str, Any]:
         state.get("representative_scenarios")
         and all(row.get("native_semantic_binding_qualified") is True for row in state.get("representative_scenarios") or [])
     )
+    state.setdefault("release_gates", {})["native_model_readback_authority"] = bool(
+        state.get("representative_scenarios")
+        and all(
+            row.get("native_model_readback_qualified") is True
+            and bool(str(row.get("native_model_snapshot_hash") or "").strip())
+            and bool(str(row.get("native_model_design_state_hash") or "").strip())
+            and row.get("native_model_snapshot_phase") == "post_solve"
+            for row in state.get("representative_scenarios") or []
+        )
+    )
+    state.setdefault("release_gates", {})["native_repair_orchestration_authority"] = bool(
+        state.get("representative_scenarios")
+        and all(
+            row.get("native_repair_orchestration_clean") is True
+            and bool(str(row.get("native_repair_plan_hash") or "").strip())
+            and bool(str(row.get("native_fault_tree_hash") or "").strip())
+            and int(row.get("native_repair_attempt_count") or 0) == 0
+            for row in state.get("representative_scenarios") or []
+        )
+    )
+    state.setdefault("release_gates", {})["native_spatial_geometry_result_overlay_authority"] = bool(
+        state.get("representative_scenarios")
+        and all(
+            row.get("native_spatial_overlay_qualified") is True
+            and bool(str(row.get("native_spatial_overlay_hash") or "").strip())
+            and bool(str(row.get("native_spatial_geometry_hash") or "").strip())
+            and row.get("native_spatial_coordinate_alignment") == "CONFIRMED"
+            for row in state.get("representative_scenarios") or []
+        )
+    )
 
     required_scenarios = state.get("representative_scenarios") or []
     scenario_pass = len(required_scenarios) == 4 and all(
         str(row.get("status") or "").upper() == "PASS"
         and row.get("native_motorcad") is True
         and row.get("native_closure_qualified") is True
+        and row.get("native_model_readback_qualified") is True
+        and bool(str(row.get("native_model_snapshot_hash") or "").strip())
+        and bool(str(row.get("native_model_design_state_hash") or "").strip())
+        and row.get("native_model_snapshot_phase") == "post_solve"
+        and row.get("native_repair_orchestration_clean") is True
+        and row.get("native_spatial_overlay_qualified") is True
+        and row.get("native_spatial_coordinate_alignment") == "CONFIRMED"
         and row.get("restart_reopen_pass") is True
         for row in required_scenarios
     )
@@ -334,7 +395,9 @@ def resume_phase(args: argparse.Namespace) -> dict[str, Any]:
     )
     release_pass = all(state.get("release_gates", {}).get(key) is True for key in (
         "latest_only_frontend", "backend_regression", "baseline_fail_closed", "hmi_regression", "wheel_install_smoke",
-        "runtime_lifecycle_qualification", "native_semantic_authority",
+        "runtime_lifecycle_qualification", "native_semantic_authority", "native_model_readback_authority",
+        "native_repair_orchestration_authority", "editor_transaction_reconciliation_authority",
+        "native_preview_visualization_reconciliation_authority", "native_spatial_geometry_result_overlay_authority",
     ))
     state["status"] = "PASS" if scenario_pass and fault_pass and release_pass and state.get("licensed_motorcad_evidence") is True else "PARTIAL"
     state["phase"] = "V087FB_PREQUALIFICATION_EVIDENCE_FROZEN"
@@ -378,11 +441,11 @@ def resume_phase(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="MotorCAD Studio V0.88-A Windows production qualification matrix runner")
+    parser = argparse.ArgumentParser(description="MotorCAD Studio V0.88-F Windows production qualification matrix runner")
     parser.add_argument("--phase", choices=("preflight", "execute", "resume"), default="preflight")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
-    parser.add_argument("--artifact-dir", default="acceptance_evidence/v087fb/evidence")
-    parser.add_argument("--state", default="acceptance_evidence/v087fb/state.json")
+    parser.add_argument("--artifact-dir", default="acceptance_evidence/v088f/evidence")
+    parser.add_argument("--state", default="acceptance_evidence/v088f/state.json")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--target-motorcad", default=TARGET_MOTORCAD)
     parser.add_argument("--task-timeout", type=int, default=1800)
@@ -418,7 +481,7 @@ def main() -> int:
             return 3
         return 0
     except Exception as exc:
-        print(f"V0.88-A production qualification failed: {exc}", file=sys.stderr)
+        print(f"V0.88-F production qualification failed: {exc}", file=sys.stderr)
         return 2
 
 

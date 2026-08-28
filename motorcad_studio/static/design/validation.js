@@ -7,6 +7,8 @@
   function nativeOperatorMessage(native){
     if(!native)return'';
     if(native.status==='PASS')return'当前材料、几何与绕组已取得原生 PASS 证据。';
+    const typed=(native.native_fault_tree||[])[0];
+    if(typed)return`首要故障 ${typed.code||'NATIVE_VALIDATION'}：${typed.message||'原生模型检查未通过'}${typed.repair_hint?` 处理：${typed.repair_hint}`:''}`;
     const root=native.root_cause||(native.checks||[]).find(row=>String(row?.status||'').toUpperCase()==='FAIL')||{},details=root.details||{},id=String(root.id||'').toLowerCase();
     if(id==='materials'){
       const component=details.component||'电机部件',material=details.material||'所选材料';
@@ -26,11 +28,11 @@
     const nativeTone=check.nativeBusy?'running':!native?'pending':native.status==='PASS'?'pass':'blocked';
     const nativeLabel=check.nativeBusy?'检查中':!native?'未运行':native.status==='PASS'?'通过':'未通过';
     const issueRows=(precheck?.issues||[]).map((issue,index)=>`<button type="button" data-workbench-issue="${index}" class="${issue.severity==='BLOCKING'?'blocking':'warning'}"><b>${safe(issue.message||issue.code)}</b><small>${safe((issue.parameter_ids||[]).join(' / ')||'电机模型')}</small></button>`).join('');
-    return`<div class="draft-validation-view-v065"><div class="visual-heading-v031"><div><span class="eyebrow">设计验证 · 当前草稿</span><h3>先完成 Studio 设计检查，再按需运行 Motor-CAD 原生检查</h3><p>检查操作只在明确触发时执行，不会在参数输入过程中持续启动网络请求或 Motor-CAD。</p></div><span class="status ${studioTone==='pass'?'VALID':studioTone==='blocked'?'INVALID':'WARNING'}">${safe(studioLabel)}</span></div>
+    return`<div class="draft-validation-view-v065"><div class="visual-heading-v031"><div><span class="eyebrow">设计验证 · 当前草稿</span><h3>先完成设计检查，再运行 Motor-CAD 检查</h3><p>输入参数时不会自动启动 Motor-CAD。</p></div><span class="status ${studioTone==='pass'?'VALID':studioTone==='blocked'?'INVALID':'WARNING'}">${safe(studioLabel)}</span></div>
       <div class="validation-pipeline-v065"><article class="${studioTone}"><span>1</span><div><b>Studio 设计检查</b><small>几何关系、槽极/相/支路约束、参数一致性</small></div><strong>${safe(studioLabel)}</strong></article><i></i><article class="${nativeTone}"><span>2</span><div><b>Motor-CAD 原生模型检查</b><small>真实模型加载、材料绑定、几何与绕组可接受性</small></div><strong>${safe(nativeLabel)}</strong></article></div>
       <div class="validation-action-grid-v065"><button type="button" data-workbench-run-studio-check-v065 ${check.precheckBusy?'disabled':''}><b>${precheck?'重新运行 Studio 设计检查':'运行 Studio 设计检查'}</b><span>快速验证当前草稿参数关系</span></button><button type="button" class="primary" data-workbench-run-native-check-v065 ${!precheck||blocks.length||check.nativeBusy?'disabled':''}><b>${check.nativeBusy?'Motor-CAD 检查中…':'运行 Motor-CAD 原生检查'}</b><span>${blocks.length?'先修复 Studio 阻断项':'启动真实 Motor-CAD 模型验证'}</span></button></div>
       ${issueRows?`<div class="workbench-issue-list-v024 validation-issues-v065">${issueRows}</div>`:'<div class="validation-empty-v065"><b>当前没有需要展示的 Studio 检查问题。</b><span>完成检查后，阻断和提示会在这里直接定位到相关设计参数。</span></div>'}
-      ${native?`<div class="native-validation-result-v065 ${native.status==='PASS'?'pass':'fail'}"><b>${native.status==='PASS'?'✓ 当前草稿已通过 Motor-CAD 原生模型检查':'Motor-CAD 原生模型检查未通过'}</b><span>${safe(nativeOperatorMessage(native))}</span></div>`:''}
+      ${native?`<div class="native-validation-result-v065 ${native.status==='PASS'?'pass':'fail'}"><b>${native.status==='PASS'?'✓ 当前草稿已通过 Motor-CAD 原生模型检查':'Motor-CAD 原生模型检查未通过'}</b><span>${safe(nativeOperatorMessage(native))}</span>${native.status!=='PASS'&&(native.native_repair_plan?.auto_safe_action_ids||[]).length?`<button type="button" class="primary" data-workbench-native-safe-repair-v088c>安全修复并重新检查</button>`:''}</div>`:''}
       <div class="validation-boundary-v065"><b>Revision 保存策略</b><span>允许保存中间设计版本。进入分析计算前，案例级“计算前检查”仍会重新执行完整 Studio + Motor-CAD 门禁。</span></div></div>`;
   }
 

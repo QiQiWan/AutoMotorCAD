@@ -6,7 +6,7 @@ field_sets:
     description: 仅归档 Motor-CAD 真实输出，不生成合成工程结果。
     visibility: system
     fields:
-      - {id: native_screen_capture, key: native_screen_capture, target: solver, type: boolean, label: 保存原生求解画面, default: true}
+      - {id: native_screen_capture, key: native_screen_capture, target: solver, type: boolean, label: 保存原生求解画面（可选）, default: false}
       - {id: native_fea_export, key: native_fea_export, target: solver, type: boolean, label: 导出原生 FEA 场, default: true}
       - {id: native_fea_policy, key: native_fea_policy, target: solver, type: enum, label: FEA 完整度策略, default: auto, options: [{value: auto, label: 按分析配方自动判定}, {value: required, label: 必需（不完整则阻止结果资格）}, {value: optional, label: 可选（记录告警）}, {value: disabled, label: 关闭}]}
   emag_operating_point:

@@ -39,6 +39,27 @@ def _safe_send(conn: Any, payload: dict[str, Any]) -> bool:
         return False
 
 
+def _owned_pid_alive(pid: int, create_time: float | None) -> bool:
+    """Return whether the exact worker process identity is still alive.
+
+    ``multiprocessing.Process.is_alive`` can transiently lag OS process teardown
+    around forced termination.  Production ownership is defined by PID plus
+    creation time, which also prevents a reused PID from being reported as a
+    residual Motor-CAD worker.
+    """
+    if not pid:
+        return False
+    try:
+        process = psutil.Process(int(pid))
+        if create_time is not None and abs(float(process.create_time()) - float(create_time)) > 1e-3:
+            return False
+        if process.status() == psutil.STATUS_ZOMBIE:
+            return False
+        return bool(process.is_running())
+    except psutil.Error:
+        return False
+
+
 def _worker_capability_handshake(base: dict[str, Any]) -> dict[str, Any]:
     pymotorcad_available = False
     pymotorcad_version = None
@@ -732,8 +753,36 @@ class PersistentMotorCADWorkerPool:
                 if slot.process.is_alive():
                     forced = True
                     terminate_process_tree(pid, self.cancel_grace_s)
-                slot.process.join(timeout=1.0)
-                alive_after = bool(slot.process.is_alive())
+                slot.process.join(timeout=max(1.0, min(float(self.cancel_grace_s) + 0.5, 3.0)))
+                if slot.process.is_alive():
+                    # Final direct Process.kill/reap closes the multiprocessing
+                    # owner handle as well as the OS process-tree boundary.
+                    forced = True
+                    try:
+                        slot.process.kill()
+                    except (AttributeError, OSError):
+                        try:
+                            slot.process.terminate()
+                        except OSError:
+                            pass
+                    slot.process.join(timeout=1.5)
+                # Confirm the exact OS process identity after forced teardown.
+                # A stale multiprocessing handle or a reused PID must not be
+                # reported as a residual owned worker.  Conversely, an exact
+                # PID/create-time match remains fail-visible.
+                deadline = time.monotonic() + 2.0
+                owned_alive = _owned_pid_alive(pid, slot.create_time)
+                while owned_alive and time.monotonic() < deadline:
+                    forced = True
+                    try:
+                        slot.process.kill()
+                    except (AttributeError, OSError):
+                        pass
+                    slot.process.join(timeout=0.1)
+                    time.sleep(0.02)
+                    owned_alive = _owned_pid_alive(pid, slot.create_time)
+                process_object_alive = bool(slot.process.is_alive())
+                alive_after = bool(owned_alive)
                 if alive_after and pid:
                     residual_pids.append(pid)
                 worker_evidence.append({
@@ -744,6 +793,8 @@ class PersistentMotorCADWorkerPool:
                     "shutdown_requested": requested,
                     "forced": forced,
                     "alive_after_shutdown": alive_after,
+                    "process_object_alive_after_shutdown": process_object_alive,
+                    "owned_pid_alive_after_shutdown": alive_after,
                 })
             finally:
                 try:

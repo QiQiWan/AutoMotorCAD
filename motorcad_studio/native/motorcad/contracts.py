@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field
 
 
 BINDING_PLAN_SCHEMA_VERSION = 2
-NATIVE_SNAPSHOT_SCHEMA_VERSION = 2
+NATIVE_SNAPSHOT_SCHEMA_VERSION = 3
+NATIVE_MODEL_SNAPSHOT_SCHEMA_VERSION = 2
 SEMANTIC_BINDING_PROFILE_SCHEMA_VERSION = 1
+NATIVE_REPAIR_ORCHESTRATION_SCHEMA_VERSION = 1
 
 
 def _stable_hash(payload: Any) -> str:
@@ -209,21 +211,270 @@ class MotorCADSemanticBindingProfile(BaseModel):
         return _stable_hash(self.model_dump(mode="json"))
 
 
+class NativeReadbackValue(BaseModel):
+    semantic_id: str
+    domain: Literal["topology", "geometry", "magnet", "winding", "material", "other"] = "other"
+    label: str | None = None
+    context: str | None = None
+    native_name: str | None = None
+    authority: str = "UNRESOLVED"
+    required: bool = False
+    expected_canonical: Any = None
+    native_solver: Any = None
+    native_canonical: Any = None
+    canonical_unit: str | None = None
+    solver_unit: str | None = None
+    conversion: str = "identity"
+    matched: bool | None = None
+    delta: float | None = None
+    absolute_tolerance: float | None = None
+    relative_tolerance: float | None = None
+    source: str = "pymotorcad.get_variable"
+    errors: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class NativeTopologyReadback(BaseModel):
+    authority: str = "NativeGeometryWindingReadbackAuthorityV1"
+    topology_id: str | None = None
+    native_motor_type: str | None = None
+    pole_count: int | None = None
+    slot_count: int | None = None
+    phase_count: int | None = None
+    parallel_paths: int | None = None
+    matched: bool | None = None
+    status: Literal["MATCH", "DRIFT", "PARTIAL", "UNAVAILABLE"] = "UNAVAILABLE"
+    errors: list[str] = Field(default_factory=list)
+
+
 class NativeWindingReadback(BaseModel):
     authority: str = "pymotorcad.get_winding_coil"
     supported: bool = False
     phase_count: int | None = None
     parallel_paths: int | None = None
     slot_count: int | None = None
+    layers: int | None = None
+    turns_per_coil: float | None = None
+    slot_fill_factor: float | None = None
+    path_type: str | None = None
+    coil_count: int = 0
+    phase_coverage: list[int] = Field(default_factory=list)
+    path_coverage: dict[str, list[int]] = Field(default_factory=dict)
+    slot_domain: dict[str, Any] = Field(default_factory=dict)
+    topology_matched: bool | None = None
+    status: Literal["MATCH", "DRIFT", "PARTIAL", "UNAVAILABLE"] = "UNAVAILABLE"
+    signature: str | None = None
+    high_level: dict[str, NativeReadbackValue] = Field(default_factory=dict)
+    required_semantics: list[str] = Field(default_factory=list)
+    matched_required: list[str] = Field(default_factory=list)
+    mismatched_required: list[str] = Field(default_factory=list)
+    unresolved_required: list[str] = Field(default_factory=list)
     coils: list[dict[str, Any]] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
 
 class NativeGeometryReadback(BaseModel):
+    authority: str = "NativeGeometryWindingReadbackAuthorityV1"
     api_supported: bool = False
     valid: bool | None = None
     raw_return: Any = None
+    parameter_values: dict[str, NativeReadbackValue] = Field(default_factory=dict)
+    required_semantics: list[str] = Field(default_factory=list)
+    matched_required: list[str] = Field(default_factory=list)
+    mismatched_required: list[str] = Field(default_factory=list)
+    unresolved_required: list[str] = Field(default_factory=list)
+    geometry_tree_supported: bool = False
+    geometry_tree_digest: str | None = None
+    region_names: list[str] = Field(default_factory=list)
+    region_materials: dict[str, str] = Field(default_factory=dict)
+    spatial_geometry: dict[str, Any] = Field(default_factory=dict)
+    matched: bool | None = None
+    status: Literal["MATCH", "DRIFT", "PARTIAL", "UNAVAILABLE"] = "UNAVAILABLE"
     errors: list[str] = Field(default_factory=list)
+
+
+class NativeFaultRecord(BaseModel):
+    schema_version: int = NATIVE_REPAIR_ORCHESTRATION_SCHEMA_VERSION
+    fault_id: str
+    code: str
+    domain: str
+    stage: str
+    severity: Literal["BLOCKING", "WARNING", "INFO"] = "BLOCKING"
+    status: Literal["FAIL", "WARN", "INFO"] = "FAIL"
+    message: str
+    root_cause_rank: int = 100
+    parameter_ids: list[str] = Field(default_factory=list)
+    component_ids: list[str] = Field(default_factory=list)
+    native_targets: list[str] = Field(default_factory=list)
+    repair_hint: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+    repair_action_ids: list[str] = Field(default_factory=list)
+
+
+class NativeRepairAction(BaseModel):
+    schema_version: int = NATIVE_REPAIR_ORCHESTRATION_SCHEMA_VERSION
+    action_id: str
+    fault_id: str
+    kind: Literal[
+        "REAPPLY_PARAMETER",
+        "REAPPLY_MATERIAL",
+        "REAPPLY_CUSTOM_WINDING",
+        "REQUALIFY_SEMANTIC_BINDING",
+        "RELOAD_CANONICAL_MODEL",
+        "OPEN_PARAMETER_EDITOR",
+        "OPEN_MATERIAL_EDITOR",
+        "OPEN_WINDING_EDITOR",
+        "OPEN_MOTORCAD_GEOMETRY",
+        "VERIFY_PYMOTORCAD_API",
+        "DISCARD_RESULT_AND_RELOAD",
+    ]
+    safety: Literal["AUTO_SAFE", "CONFIRM_REQUIRED", "MANUAL_ONLY", "BLOCKED"] = "MANUAL_ONLY"
+    domain: str
+    label: str
+    description: str
+    parameter_ids: list[str] = Field(default_factory=list)
+    component_ids: list[str] = Field(default_factory=list)
+    native_targets: list[str] = Field(default_factory=list)
+    context: str | None = None
+    current_value: Any = None
+    target_value: Any = None
+    target_solver_value: Any = None
+    affects_design_intent: bool = False
+    reversible: bool = True
+    requires_live_motorcad: bool = True
+    preconditions: list[str] = Field(default_factory=list)
+    verification: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class NativeRepairPlan(BaseModel):
+    schema_version: int = NATIVE_REPAIR_ORCHESTRATION_SCHEMA_VERSION
+    authority: str = "NativeValidationFaultTreeAuthorityV1"
+    generated_at: str
+    policy: Literal["suggest", "safe_auto", "manual"] = "suggest"
+    status: Literal["CLEAN", "READY", "AWAITING_CONFIRMATION", "MANUAL", "BLOCKED"] = "CLEAN"
+    binding_plan_hash: str
+    design_snapshot_hash: str | None = None
+    model_source_fingerprint: str | None = None
+    design_state_hash: str | None = None
+    fault_tree_hash: str
+    faults: list[NativeFaultRecord] = Field(default_factory=list)
+    actions: list[NativeRepairAction] = Field(default_factory=list)
+    auto_safe_action_ids: list[str] = Field(default_factory=list)
+    confirmation_action_ids: list[str] = Field(default_factory=list)
+    manual_action_ids: list[str] = Field(default_factory=list)
+    blocked_action_ids: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def content_hash(self) -> str:
+        return _stable_hash(self.model_dump(mode="json"))
+
+
+class NativeRepairAttempt(BaseModel):
+    schema_version: int = NATIVE_REPAIR_ORCHESTRATION_SCHEMA_VERSION
+    authority: str = "NativeRepairOrchestratorV1"
+    attempt_id: str
+    generated_at: str
+    policy: Literal["suggest", "safe_auto", "manual"] = "safe_auto"
+    repair_plan_hash: str
+    binding_plan_hash: str
+    selected_action_ids: list[str] = Field(default_factory=list)
+    action_results: list[dict[str, Any]] = Field(default_factory=list)
+    before_snapshot_hash: str
+    before_design_state_hash: str
+    after_snapshot_hash: str | None = None
+    after_design_state_hash: str | None = None
+    outcome: Literal["NOOP", "REPAIRED", "PARTIAL", "FAILED", "BLOCKED"] = "NOOP"
+    verified: bool = False
+    errors: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def content_hash(self) -> str:
+        return _stable_hash(self.model_dump(mode="json"))
+
+
+class NativeModelSnapshot(BaseModel):
+    schema_version: int = NATIVE_MODEL_SNAPSHOT_SCHEMA_VERSION
+    authority: str = "NativeGeometryWindingReadbackAuthorityV1"
+    generated_at: str
+    phase: Literal["post_binding", "post_native_validation", "post_solve"] = "post_binding"
+    identity: MotorCADBindingIdentity
+    binding_plan_hash: str
+    semantic_profile_hash: str | None = None
+    design_snapshot_hash: str | None = None
+    model_source_fingerprint: str | None = None
+    topology: NativeTopologyReadback = Field(default_factory=NativeTopologyReadback)
+    geometry: NativeGeometryReadback = Field(default_factory=NativeGeometryReadback)
+    winding: NativeWindingReadback = Field(default_factory=NativeWindingReadback)
+    materials: list[NativeMaterialReadback] = Field(default_factory=list)
+    required_mismatches: list[str] = Field(default_factory=list)
+    unresolved_required: list[str] = Field(default_factory=list)
+    status: Literal["QUALIFIED", "DRIFT", "PARTIAL", "UNAVAILABLE"] = "UNAVAILABLE"
+    preview_projection: dict[str, Any] = Field(default_factory=dict)
+    fault_tree: list[dict[str, Any]] = Field(default_factory=list)
+    fault_records: list[NativeFaultRecord] = Field(default_factory=list)
+    repair_plan: NativeRepairPlan | None = None
+    repair_history: list[NativeRepairAttempt] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def design_state_payload(self) -> dict[str, Any]:
+        """Return a time/phase-independent fingerprint of native design state.
+
+        Evidence timestamps and validation phase intentionally do not participate.
+        This allows post-validation and post-solve snapshots to prove that Motor-CAD
+        did not silently mutate canonical geometry/winding/material state during solve.
+        """
+        geometry_values = {
+            semantic_id: {
+                "native_name": value.native_name,
+                "native_canonical": value.native_canonical,
+                "matched": value.matched,
+            }
+            for semantic_id, value in sorted(self.geometry.parameter_values.items())
+        }
+        winding_values = {
+            semantic_id: {
+                "native_name": value.native_name,
+                "native_canonical": value.native_canonical,
+                "matched": value.matched,
+            }
+            for semantic_id, value in sorted(self.winding.high_level.items())
+        }
+        material_values = {
+            row.component_id: {
+                "resolved_components": sorted(row.resolved_components),
+                "readbacks": dict(sorted(row.readbacks.items())),
+                "matched": row.matched,
+            }
+            for row in sorted(self.materials, key=lambda item: item.component_id)
+        }
+        return {
+            "authority": self.authority,
+            "identity": self.identity.model_dump(mode="json"),
+            "binding_plan_hash": self.binding_plan_hash,
+            "semantic_profile_hash": self.semantic_profile_hash,
+            "design_snapshot_hash": self.design_snapshot_hash,
+            "model_source_fingerprint": self.model_source_fingerprint,
+            "topology": {
+                "topology_id": self.topology.topology_id,
+                "native_motor_type": self.topology.native_motor_type,
+                "pole_count": self.topology.pole_count,
+                "slot_count": self.topology.slot_count,
+                "phase_count": self.topology.phase_count,
+                "parallel_paths": self.topology.parallel_paths,
+            },
+            "geometry_parameters": geometry_values,
+            "spatial_geometry_hash": (self.geometry.spatial_geometry or {}).get("content_hash"),
+            "winding_parameters": winding_values,
+            "winding_signature": self.winding.signature,
+            "materials": material_values,
+        }
+
+    def design_state_hash(self) -> str:
+        return _stable_hash(self.design_state_payload())
+
+    def content_hash(self) -> str:
+        return _stable_hash(self.model_dump(mode="json"))
 
 
 class MotorCADNativeSnapshot(BaseModel):
@@ -235,6 +486,7 @@ class MotorCADNativeSnapshot(BaseModel):
     winding_readback: NativeWindingReadback = Field(default_factory=NativeWindingReadback)
     material_readback: list[NativeMaterialReadback] = Field(default_factory=list)
     geometry: NativeGeometryReadback = Field(default_factory=NativeGeometryReadback)
+    native_model_snapshot: NativeModelSnapshot | None = None
     messages: list[str] = Field(default_factory=list)
     unresolved_required_bindings: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

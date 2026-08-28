@@ -20,6 +20,7 @@ from ..checkpoint import CheckpointStore, checkpoint_signature
 from ..geometry_guard import parse_motorcad_geometry_error
 from ..fea_evidence import NativeFEAEvidenceExporter, NativeFEAExportConfig
 from ..fea_pipeline import build_fea_plan, validate_fea_manifest
+from ..native_spatial import bind_fea_manifest_lineage, NativeSpatialResultOverlayAuthority
 from ..result_extraction import build_extraction_contract
 from ..native_tables import parse_native_delimited_table
 from ..native_closure_registry import compare_values, classify_parameter_tolerance, summarize_check, finalize_native_closure_result, native_closure_evidence_hash, native_closure_scope, native_closure_key
@@ -1296,32 +1297,170 @@ class MotorCADSolverAdapter(SolverAdapter):
         *,
         template: dict[str, Any],
         parameters: dict[str, Any] | None = None,
+        effective_parameters: dict[str, Any] | None = None,
+        explicit_parameter_ids: list[str] | None = None,
         materials: dict[str, Any] | None = None,
         analysis: AnalysisType = AnalysisType.EMAG,
         run_solver_smoke: bool = False,
+        repair_policy: str = "suggest",
         work_dir: Path | None = None,
     ) -> dict[str, Any]:
-        """Qualify one template in an isolated Motor-CAD instance.
+        """Run the design-time Motor-CAD feasibility check through V0.88-C authority.
 
-        The qualification path is intentionally separate from normal tasks: it verifies
-        model loading, parameter read/write, material mapping, geometry validation and
-        optionally one real solver checkout/calculation without creating a Task/Case.
+        The browser pre-submit check now uses the same frozen BindingPlan,
+        NativeModelSnapshot and repair authority as normal execution. ``safe_auto`` is
+        bounded to resynchronizing the live Motor-CAD session to the already-frozen
+        Design Snapshot; source templates and the Design Draft are never mutated.
         """
         try:
             import ansys.motorcad.core as pymotorcad
         except Exception as exc:
             return {"ok": False, "level": 0, "checks": [{"id": "pymotorcad", "status": "FAIL", "message": f"PyMotorCAD不可用: {exc}"}]}
-        parameters = parameters or {}
-        materials = materials or {}
+
+        parameters = dict(parameters or {})
+        effective_parameters = dict(effective_parameters or {**(template.get("defaults") or {}), **parameters})
+        explicit_ids = sorted({str(item) for item in (explicit_parameter_ids or list(parameters)) if str(item)})
+        materials = dict(materials or {})
+        repair_policy = repair_policy if repair_policy in {"suggest", "safe_auto", "manual"} else "suggest"
         work_dir = Path(work_dir or (self.runtime_dir / "qualification" / str(template.get("id") or "template")))
         work_dir.mkdir(parents=True, exist_ok=True)
         checks: list[dict[str, Any]] = []
         mc = None
+        installation: dict[str, Any] | Any = None
+        application = None
+        binding_plan = None
+        validation: dict[str, Any] | None = None
+        validation_warnings: list[str] = []
+        native_validation_error: Exception | None = None
+        io_trace_path = work_dir / "motorcad_io.jsonl"
+        io_input_path = work_dir / "motorcad_input.json"
+        io_output_path = work_dir / "motorcad_output.json"
+        post_binding_messages_path = work_dir / "motorcad_messages_post_binding.json"
+
+        def io_trace(event: dict[str, Any]) -> None:
+            """Append one bounded, engineer-readable Motor-CAD I/O/evidence event."""
+            try:
+                row = {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "template_id": template.get("id"),
+                    "analysis": analysis.value,
+                    **dict(event or {}),
+                }
+                with io_trace_path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps(row, ensure_ascii=False, default=str, separators=(",", ":")) + "\n")
+            except Exception:
+                # Diagnostics must never change the qualification result.
+                pass
+
+        input_manifest = {
+            "schema_version": 1,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "template_id": template.get("id"),
+            "template_path": template.get("path"),
+            "template_source": template.get("source") or template.get("source_kind"),
+            "analysis": analysis.value,
+            "explicit_parameter_ids": explicit_ids,
+            "explicit_parameters": parameters,
+            "effective_parameters": effective_parameters,
+            "materials": materials,
+            "repair_policy": repair_policy,
+            "run_solver_smoke": bool(run_solver_smoke),
+            "motorcad_target_version": self.registry.motorcad_version,
+        }
+        try:
+            io_input_path.write_text(json.dumps(input_manifest, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        except Exception:
+            pass
+        io_trace({"level": "INFO", "component": "motorcad_qualification", "event_type": "MODEL_CHECK_INPUT", "message": "Motor-CAD model-check input frozen", "payload": {"input_artifact": str(io_input_path), "explicit_parameter_count": len(explicit_ids), "effective_parameter_count": len(effective_parameters), "material_count": len((materials.get("component_materials") or {}))}})
+
+        def native_surface() -> dict[str, Any]:
+            if application is None:
+                return {
+                    "native_model_snapshot": None,
+                    "native_model_snapshot_hash": None,
+                    "native_model_design_state_hash": None,
+                    "native_fault_tree": [],
+                    "native_repair_plan": None,
+                    "native_repair_plan_hash": None,
+                    "native_repair_attempts": [],
+                }
+            native = application.native_snapshot.native_model_snapshot
+            if native is None:
+                return {
+                    "native_model_snapshot": None,
+                    "native_model_snapshot_hash": None,
+                    "native_model_design_state_hash": None,
+                    "native_fault_tree": [],
+                    "native_repair_plan": None,
+                    "native_repair_plan_hash": None,
+                    "native_repair_attempts": [],
+                }
+            return {
+                "native_model_snapshot": native.model_dump(mode="json"),
+                "native_model_snapshot_hash": native.content_hash(),
+                "native_model_design_state_hash": native.design_state_hash(),
+                "native_fault_tree": [row.model_dump(mode="json") for row in native.fault_records],
+                "native_repair_plan": native.repair_plan.model_dump(mode="json") if native.repair_plan else None,
+                "native_repair_plan_hash": native.repair_plan.content_hash() if native.repair_plan else None,
+                "native_repair_attempts": [row.model_dump(mode="json") for row in native.repair_history],
+            }
+
+        def result_payload(*, level: int) -> dict[str, Any]:
+            surface = native_surface()
+            native = application.native_snapshot.native_model_snapshot if application is not None else None
+            blocking = any(row.get("status") == "FAIL" for row in checks)
+            if native is not None and native.status != "QUALIFIED":
+                blocking = True
+            try:
+                messages = mc.get_messages(0) if mc is not None else []
+            except Exception:
+                messages = []
+            root_fault = surface["native_fault_tree"][0] if surface["native_fault_tree"] else None
+            legacy_failure = next((row for row in checks if row.get("status") == "FAIL"), None)
+            payload = {
+                "ok": not blocking,
+                "level": level,
+                "template_id": template.get("id"),
+                "analysis": analysis.value,
+                "checks": checks,
+                "messages": messages[-100:] if isinstance(messages, list) else [],
+                "installation": installation,
+                "repair_policy": repair_policy,
+                "root_cause": root_fault or legacy_failure,
+                "native_binding_plan_hash": binding_plan.content_hash() if binding_plan is not None else None,
+                "io_artifacts": {
+                    "input": str(io_input_path),
+                    "trace": str(io_trace_path),
+                    "output": str(io_output_path),
+                    "post_binding_messages": str(post_binding_messages_path) if post_binding_messages_path.exists() else None,
+                },
+                **surface,
+            }
+            try:
+                io_output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+            except Exception:
+                pass
+            io_trace({
+                "level": "INFO" if payload["ok"] else "WARNING",
+                "component": "motorcad_qualification",
+                "event_type": "MODEL_CHECK_OUTPUT",
+                "message": f"Motor-CAD model check {'PASS' if payload['ok'] else 'FAIL'}",
+                "payload": {
+                    "ok": payload["ok"], "level": level,
+                    "root_cause": payload.get("root_cause"),
+                    "check_status": [{"id": row.get("id"), "status": row.get("status")} for row in checks],
+                    "output_artifact": str(io_output_path),
+                },
+            })
+            return payload
+
         try:
             installation = self.installation_manager.configure_pymotorcad(self.registry.motorcad_version, auto_select=True)
             mc = pymotorcad.MotorCAD(keep_instance_open=False, use_blackbox_licence=self.use_blackbox_licence)
-            try: mc.set_visible(False)
-            except Exception: pass
+            try:
+                mc.set_visible(False)
+            except Exception:
+                pass
             try:
                 if hasattr(mc, "disable_error_messages"):
                     mc.disable_error_messages(True)
@@ -1340,90 +1479,182 @@ class MotorCADSolverAdapter(SolverAdapter):
             except Exception:
                 pass
             checks.append({"id": "rpc", "status": "PASS", "message": "Motor-CAD实例与RPC连接成功"})
+            io_trace({"level": "INFO", "component": "motorcad_rpc", "event_type": "MC_SESSION_STARTED", "message": "PyMotorCAD session started", "payload": {"installation": installation}})
             model = self._load_model(mc, template)
-            try:
-                mc.display_screen("scripting")
-            except Exception:
-                pass
             checks.append({"id": "template_load", "status": "PASS", "message": f"模板加载成功: {model.get('type')}", "details": model})
+            io_trace({"level": "INFO", "component": "motorcad_model", "event_type": "MODEL_LOAD_RESULT", "message": "Motor-CAD template loaded", "payload": model})
+
             defaults = self._runtime_defaults(mc, template["id"], template.get("parameter_ids", []))
-            resolved = sum(1 for v in defaults.values() if v.get("verified"))
+            resolved = sum(1 for value in defaults.values() if value.get("verified"))
             total = len(template.get("parameter_ids", []))
             checks.append({"id": "parameter_read", "status": "PASS" if resolved else "WARN", "message": f"运行时参数解析 {resolved}/{total}"})
-            if parameters:
-                audit: dict[str, Any] = {}
-                for context in ("EMag", "Therm"):
-                    _, partial = self._apply_parameters(mc, template["id"], parameters, lambda *_: None, context=context, progress_start=0, progress_end=1)
-                    audit.update(partial)
-                dependency_audit, dependency_warnings = self._apply_template_dependencies(mc, template["id"], parameters, set(parameters))
-                audit.update(dependency_audit)
-                if dependency_warnings:
-                    checks.append({"id": "template_dependencies", "status": "INFO", "message": "；".join(dependency_warnings), "audit": dependency_audit})
-                failed = [k for k,v in audit.items() if isinstance(v, dict) and v.get("matched") is False]
-                checks.append({"id": "parameter_roundtrip", "status": "PASS" if not failed else "WARN", "message": f"参数写入/回读 {len(audit)-len(failed)}/{len(audit)}", "failed": failed})
+
+            # Freeze exactly the same typed object/plan authority used by normal runs.
+            domain_snapshot = self.motor_domain.build_snapshot(
+                {
+                    "id": "GEOMETRY-CHECK",
+                    "template_id": template.get("id") or template.get("template_id") or "",
+                    "motor_family": template.get("family_id") or template.get("motor_family") or "",
+                    "motor_type_id": template.get("motor_type_id") or template.get("native_motor_type") or "",
+                    "source_kind": "design_runtime_check",
+                    "source_reference": template.get("id") or "",
+                },
+                {
+                    "id": "GEOMETRY-CHECK-REV",
+                    "parameters": effective_parameters,
+                    "materials": materials,
+                    "explicit_parameter_ids": explicit_ids,
+                    "source_snapshot": {"winding": template.get("winding") or {}},
+                    "capability_snapshot": template.get("capabilities") or {},
+                },
+            )
+            binding_plan = self.binding_planner.plan(
+                snapshot=domain_snapshot,
+                template=template,
+                effective_parameters=effective_parameters,
+                explicit_parameter_ids=explicit_ids,
+                materials=materials,
+                analysis=analysis,
+                requested_outputs=[],
+                solver_settings={},
+            )
+            binding_path = work_dir / "motorcad_binding_plan.json"
+            binding_path.write_text(json.dumps(binding_plan.model_dump(mode="json"), ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+            io_trace({"level": "INFO", "component": "motorcad_binding", "event_type": "BINDING_PLAN_FROZEN", "message": "Native Motor-CAD binding plan frozen", "payload": {"binding_plan_hash": binding_plan.content_hash(), "artifact": str(binding_path)}})
+            binding_executor = MotorCADBindingExecutor(strict=False, visible=False, event_sink=io_trace)
+            application = binding_executor.apply(mc, binding_plan, work_dir=work_dir)
+            io_trace({"level": "INFO", "component": "motorcad_binding", "event_type": "NATIVE_PARAMETER_IO", "message": "Motor-CAD parameter write/readback audit", "payload": application.parameter_audit})
+            io_trace({"level": "INFO", "component": "motorcad_binding", "event_type": "NATIVE_MATERIAL_IO", "message": "Motor-CAD material write/readback audit", "payload": application.material_audit})
+
+            parameter_failures = [
+                row.binding_id for row in application.native_snapshot.parameter_readback
+                if row.required and (row.candidate is None or not row.matched)
+            ]
+            checks.append({
+                "id": "parameter_roundtrip",
+                "status": "PASS" if not parameter_failures else "FAIL",
+                "message": f"V0.88-C 参数写入/回读完成，失败 {len(parameter_failures)} 项",
+                "failed": parameter_failures,
+                "audit": application.parameter_audit,
+            })
+            material_failures = [
+                row.component_id for row in application.native_snapshot.material_readback
+                if not row.matched and any(binding.component_id == row.component_id and binding.required for binding in binding_plan.materials.components)
+            ]
+            inherited_observability_gaps = [
+                row.component_id for row in application.native_snapshot.material_readback
+                if not row.matched and any(
+                    binding.component_id == row.component_id
+                    and not binding.required
+                    and binding.write_policy == "inherit_readback"
+                    for binding in binding_plan.materials.components
+                )
+            ]
+            checks.append({
+                "id": "materials",
+                "status": "PASS" if not material_failures else "FAIL",
+                "message": f"V0.88-C 材料原生赋值/回读完成，失败 {len(material_failures)} 项" + (f"；另有 {len(inherited_observability_gaps)} 项模板继承材料待建立精确原生别名证据" if inherited_observability_gaps else ""),
+                "failed": material_failures,
+                "observability_gaps": inherited_observability_gaps,
+                "audit": application.material_audit,
+            })
+
+            # Binding/readback probes can intentionally query one coil past the native
+            # range to discover winding length. Save those messages as phase evidence,
+            # then reset Motor-CAD's API log so the later native validator only sees
+            # messages produced by validation itself. This prevents probe sentinel
+            # messages such as "Coil index too high" from contaminating diagnosis.
+            post_binding_messages = self._collect_motorcad_messages(mc, work_dir)
             try:
-                material_audit, material_warnings = self._apply_materials(mc, materials, template_id=template["id"])
-                if materials:
-                    failed_materials = [k for k,v in material_audit.items() if isinstance(v, dict) and not v.get("applied", False)]
-                    checks.append({"id": "materials", "status": "PASS" if not failed_materials else "FAIL", "message": f"材料映射检查完成，失败 {len(failed_materials)} 项", "audit": material_audit, "warnings": material_warnings})
-            except MaterialBindingValidationError as exc:
+                post_binding_messages_path.write_text(json.dumps({"messages": post_binding_messages}, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+            io_trace({"level": "INFO", "component": "motorcad_messages", "event_type": "POST_BINDING_MESSAGES", "message": "Captured Motor-CAD messages before native validation", "payload": {"count": len(post_binding_messages), "artifact": str(post_binding_messages_path)}})
+            defaults_ini_warnings = [msg for msg in post_binding_messages if "Defaults.INI" in str(msg) and ("Unable to" in str(msg) or "write access" in str(msg))]
+            if defaults_ini_warnings:
                 checks.append({
-                    "id": "materials", "status": "FAIL", "message": str(exc),
-                    "details": exc.details, "error_type": type(exc).__name__,
+                    "id": "motorcad_user_profile_write",
+                    "status": "WARN",
+                    "message": "Motor-CAD 用户配置目录无法写入 Defaults.INI；这会增加模板初始化/启动不稳定风险。",
+                    "details": {"messages": defaults_ini_warnings[-5:]},
                 })
-                try:
-                    messages = mc.get_messages(0)
-                except Exception:
-                    messages = []
-                return {
-                    "ok": False, "level": 2, "template_id": template.get("id"),
-                    "analysis": analysis.value, "checks": checks,
-                    "messages": messages[-100:] if isinstance(messages, list) else [],
-                    "installation": installation,
-                }
+            try:
+                if hasattr(mc, "clear_message_log"):
+                    mc.clear_message_log()
+                    io_trace({"level": "INFO", "component": "motorcad_messages", "event_type": "MESSAGE_LOG_PHASE_RESET", "message": "Motor-CAD message log reset before native validation", "payload": {}})
+            except Exception as exc:
+                io_trace({"level": "WARNING", "component": "motorcad_messages", "event_type": "MESSAGE_LOG_PHASE_RESET_FAILED", "message": str(exc), "payload": {"error_type": type(exc).__name__}})
+
             try:
                 validation, validation_warnings = self._validate_model(
-                    mc, template, template.get("parameter_ids", []), parameters, list(parameters.keys()), work_dir
+                    mc, template, template.get("parameter_ids", []), effective_parameters, explicit_ids, work_dir
                 )
-            except WindingValidationError as exc:
-                # Keep the native Motor-CAD winding root cause structured.  The generic
-                # qualification_exception wrapper used before V0.20 made the runtime
-                # pre-submit check lose details such as Slot Fill > 1 even though the
-                # child solver log contained them.
+            except (WindingValidationError, GeometryValidationError) as exc:
+                native_validation_error = exc
+                domain = "winding" if isinstance(exc, WindingValidationError) else "geometry"
                 checks.append({
-                    "id": "winding", "status": "FAIL", "message": str(exc),
-                    "details": exc.details, "error_type": type(exc).__name__,
+                    "id": domain,
+                    "status": "FAIL",
+                    "message": str(exc),
+                    "details": getattr(exc, "details", {}),
+                    "error_type": type(exc).__name__,
                 })
-                try:
-                    messages = mc.get_messages(0)
-                except Exception:
-                    messages = []
-                return {
-                    "ok": False, "level": 2, "template_id": template.get("id"),
-                    "analysis": analysis.value, "checks": checks,
-                    "messages": messages[-100:] if isinstance(messages, list) else [],
-                    "installation": installation,
-                }
-            except GeometryValidationError as exc:
+
+            # Always capture post-validation state, even when Motor-CAD rejected the
+            # model. This preserves the exact native fault tree for the engineer.
+            binding_executor.refresh_native_snapshot(mc, application)
+            native = application.native_snapshot.native_model_snapshot
+
+            # One bounded, explicit safe repair pass. Only AUTO_SAFE actions generated
+            # from READ_WRITE_VERIFIED bindings are eligible.
+            if repair_policy == "safe_auto" and native is not None and native.repair_plan and native.repair_plan.auto_safe_action_ids:
+                binding_executor.orchestrate_native_repairs(mc, application, policy="safe_auto")
+                native = application.native_snapshot.native_model_snapshot
+                attempt = native.repair_history[-1] if native and native.repair_history else None
                 checks.append({
-                    "id": "geometry", "status": "FAIL", "message": str(exc),
-                    "details": exc.details, "error_type": type(exc).__name__,
+                    "id": "native_repair_orchestration",
+                    "status": "PASS" if attempt and attempt.outcome == "REPAIRED" else "WARN",
+                    "message": f"安全修复执行结果: {attempt.outcome if attempt else 'NOOP'}",
+                    "details": attempt.model_dump(mode="json") if attempt else {},
                 })
-                try:
-                    messages = mc.get_messages(0)
-                except Exception:
-                    messages = []
-                return {
-                    "ok": False, "level": 2, "template_id": template.get("id"),
-                    "analysis": analysis.value, "checks": checks,
-                    "messages": messages[-100:] if isinstance(messages, list) else [],
-                    "installation": installation,
-                }
-            winding_validation = validation.get("winding_validation") or {}
-            checks.append({"id": "winding", "status": "PASS" if winding_validation.get("valid") is not False else "FAIL", "message": "Motor-CAD绕组可解性检查完成", "details": winding_validation})
-            checks.append({"id": "geometry", "status": "PASS" if validation.get("geometry_api_succeeded") is not False else "FAIL", "message": "Motor-CAD几何校验完成", "details": validation, "warnings": validation_warnings})
+                if attempt and attempt.outcome == "REPAIRED":
+                    # Prove the repaired live model with the native validator again.
+                    try:
+                        validation, validation_warnings = self._validate_model(
+                            mc, template, template.get("parameter_ids", []), effective_parameters, explicit_ids, work_dir
+                        )
+                        native_validation_error = None
+                        checks = [row for row in checks if row.get("id") not in {"geometry", "winding"}]
+                        binding_executor.refresh_native_snapshot(mc, application)
+                        native = application.native_snapshot.native_model_snapshot
+                    except (WindingValidationError, GeometryValidationError) as exc:
+                        native_validation_error = exc
+                        domain = "winding" if isinstance(exc, WindingValidationError) else "geometry"
+                        checks.append({"id": domain, "status": "FAIL", "message": str(exc), "details": getattr(exc, "details", {}), "error_type": type(exc).__name__})
+                        binding_executor.refresh_native_snapshot(mc, application)
+                        native = application.native_snapshot.native_model_snapshot
+
+            if validation is not None and native_validation_error is None:
+                winding_validation = validation.get("winding_validation") or {}
+                checks.append({"id": "winding", "status": "PASS" if winding_validation.get("valid") is not False else "FAIL", "message": "Motor-CAD绕组可解性检查完成", "details": winding_validation})
+                checks.append({"id": "geometry", "status": "PASS" if validation.get("geometry_api_succeeded") is not False else "FAIL", "message": "Motor-CAD几何校验完成", "details": validation, "warnings": validation_warnings})
+
+            native = application.native_snapshot.native_model_snapshot
+            checks.append({
+                "id": "native_model_readback_authority",
+                "status": "PASS" if native and native.status == "QUALIFIED" else "FAIL",
+                "message": f"NativeModelSnapshot: {native.status if native else 'UNAVAILABLE'}",
+                "details": {
+                    "snapshot_hash": native.content_hash() if native else None,
+                    "design_state_hash": native.design_state_hash() if native else None,
+                    "fault_count": len(native.fault_records) if native else None,
+                    "repair_plan_status": native.repair_plan.status if native and native.repair_plan else None,
+                    "repair_plan_hash": native.repair_plan.content_hash() if native and native.repair_plan else None,
+                },
+            })
+
             level = 3
-            if run_solver_smoke:
+            if run_solver_smoke and not any(row.get("status") == "FAIL" for row in checks):
                 if analysis == AnalysisType.EMAG:
                     licence = self._ensure_license(mc, "EMag")
                     mc.do_magnetic_calculation()
@@ -1435,19 +1666,17 @@ class MotorCADSolverAdapter(SolverAdapter):
                     checks.append({"id": "solver_smoke", "status": "PASS", "message": "稳态热真实求解成功", "licence": licence})
                 else:
                     checks.append({"id": "solver_smoke", "status": "WARN", "message": f"当前资格检查尚未为 {analysis.value} 配置轻量Smoke recipe"})
-                level = 4 if not any(c["status"] == "FAIL" for c in checks) else level
-            try:
-                messages = mc.get_messages(0)
-            except Exception:
-                messages = []
-            return {"ok": not any(c["status"] == "FAIL" for c in checks), "level": level, "template_id": template.get("id"), "analysis": analysis.value, "checks": checks, "messages": messages[-100:] if isinstance(messages, list) else [], "installation": installation}
+                level = 4
+            return result_payload(level=level)
         except Exception as exc:
             checks.append({"id": "qualification_exception", "status": "FAIL", "message": f"{type(exc).__name__}: {exc}"})
-            return {"ok": False, "level": 0, "template_id": template.get("id"), "analysis": analysis.value, "checks": checks}
+            return result_payload(level=0)
         finally:
             if mc is not None:
-                try: mc.quit()
-                except Exception: pass
+                try:
+                    mc.quit()
+                except Exception:
+                    pass
 
     @staticmethod
     def _native_winding_coil_payload(value: Any) -> dict[str, Any] | None:
@@ -1973,7 +2202,7 @@ class MotorCADSolverAdapter(SolverAdapter):
                     }
                     for parameter_id in profile.get("required_geometry_parameters") or []
                 },
-                "rendering_authority": "Studio schematic is parameter-driven preview; Motor-CAD native geometry + validation is qualification authority",
+                "rendering_authority": "Draft preview is parameter-driven before validation; after V0.88-B qualification NativeModelSnapshot.preview_projection is the authoritative Studio projection source",
             }
             geometry_contract_path = work_dir / "studio_geometry_contract.json"
             geometry_contract_path.write_text(json.dumps(studio_geometry_contract, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
@@ -2016,6 +2245,43 @@ class MotorCADSolverAdapter(SolverAdapter):
             )
             if str(refreshed_path) not in artifacts:
                 artifacts.append(str(refreshed_path))
+            native_model_snapshot = refreshed_snapshot.native_model_snapshot
+            if native_model_snapshot is not None:
+                result["native_model_snapshot"] = native_model_snapshot.model_dump(mode="json")
+                result["native_model_snapshot_hash"] = native_model_snapshot.content_hash()
+                result["native_model_design_state_hash"] = native_model_snapshot.design_state_hash()
+                result["native_model_snapshot_phase"] = "post_native_validation"
+                result["native_model_snapshot_post_validation"] = native_model_snapshot.model_dump(mode="json")
+                result["native_model_snapshot_post_validation_hash"] = native_model_snapshot.content_hash()
+                result["native_repair_plan_post_validation"] = native_model_snapshot.repair_plan.model_dump(mode="json") if native_model_snapshot.repair_plan else None
+                result["native_repair_plan_post_validation_hash"] = native_model_snapshot.repair_plan.content_hash() if native_model_snapshot.repair_plan else None
+                native_model_path = work_dir / "native_model_snapshot_post_validation.json"
+                native_model_path.write_text(
+                    json.dumps(native_model_snapshot.model_dump(mode="json"), ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8",
+                )
+                if str(native_model_path) not in artifacts:
+                    artifacts.append(str(native_model_path))
+            checks.append({
+                "id": "native_model_readback_authority",
+                "domain": "model",
+                "required": True,
+                "status": "PASS" if native_model_snapshot is not None and native_model_snapshot.status == "QUALIFIED" else "FAIL",
+                "message": (
+                    "V0.88-B NativeModelSnapshot 已确认几何、拓扑、绕组与材料原生回读闭环"
+                    if native_model_snapshot is not None and native_model_snapshot.status == "QUALIFIED"
+                    else "V0.88-B NativeModelSnapshot 存在漂移或证据不完整"
+                ),
+                "native_model_snapshot_hash": native_model_snapshot.content_hash() if native_model_snapshot is not None else None,
+                "native_model_design_state_hash": native_model_snapshot.design_state_hash() if native_model_snapshot is not None else None,
+                "readback_status": native_model_snapshot.status if native_model_snapshot is not None else "UNAVAILABLE",
+                "required_mismatches": native_model_snapshot.required_mismatches if native_model_snapshot is not None else [],
+                "unresolved_required": native_model_snapshot.unresolved_required if native_model_snapshot is not None else ["native_model_snapshot"],
+                "fault_tree": native_model_snapshot.fault_tree if native_model_snapshot is not None else [],
+                "typed_fault_tree": [row.model_dump(mode="json") for row in native_model_snapshot.fault_records] if native_model_snapshot is not None else [],
+                "repair_plan_status": native_model_snapshot.repair_plan.status if native_model_snapshot is not None and native_model_snapshot.repair_plan else None,
+                "repair_plan_hash": native_model_snapshot.repair_plan.content_hash() if native_model_snapshot is not None and native_model_snapshot.repair_plan else None,
+            })
             required_binding_failures = list(refreshed_snapshot.unresolved_required_bindings)
             checks.append({
                 "id": "native_binding_application",
@@ -2040,9 +2306,18 @@ class MotorCADSolverAdapter(SolverAdapter):
                 "phase_count": winding_readback.phase_count,
                 "parallel_paths": winding_readback.parallel_paths,
                 "slot_count": winding_readback.slot_count,
+                "layers": winding_readback.layers,
+                "turns_per_coil": winding_readback.turns_per_coil,
+                "path_type": winding_readback.path_type,
                 "coils": list(winding_readback.coils),
                 "errors": list(winding_readback.errors),
-                "coil_count": len(winding_readback.coils),
+                "coil_count": winding_readback.coil_count,
+                "phase_coverage": list(winding_readback.phase_coverage),
+                "path_coverage": dict(winding_readback.path_coverage),
+                "slot_domain": dict(winding_readback.slot_domain),
+                "topology_matched": winding_readback.topology_matched,
+                "readback_status": winding_readback.status,
+                "signature": winding_readback.signature,
                 "structured": bool(winding_readback.coils),
             }
             result["native_winding_snapshot"] = winding_snapshot
@@ -2231,9 +2506,79 @@ class MotorCADSolverAdapter(SolverAdapter):
                 result["native_pre_calculation_commands"] = pre_calculation_rows
 
             licence = self._ensure_license(mc, "EMag")
-            calculation_audit = MotorCADBindingExecutor(strict=True, visible=True, event_sink=native_trace).invoke_calculation(mc, parity_plan)
+            calculation_audit = binding_executor.invoke_calculation(mc, parity_plan)
             result["native_calculation_binding"] = calculation_audit
             checks.append({"id": "native_emag_solve", "domain": "solver", "required": True, "status": "PASS", "message": "真实 Motor-CAD EMag 求解完成（由当前 BindingPlan 调用）", "licence": licence, "calculation": calculation_audit})
+
+            post_solve_snapshot = binding_executor.capture_post_solve_snapshot(mc, native_application)
+            post_solve_model = post_solve_snapshot.native_model_snapshot
+            if post_solve_model is not None:
+                result["native_model_snapshot_post_solve"] = post_solve_model.model_dump(mode="json")
+                result["native_model_snapshot_post_solve_hash"] = post_solve_model.content_hash()
+                # The final post-solve readback is the primary V0.88-B evidence. The
+                # post-validation snapshot is retained separately for phase comparison.
+                result["native_model_snapshot"] = post_solve_model.model_dump(mode="json")
+                result["native_model_snapshot_hash"] = post_solve_model.content_hash()
+                result["native_model_design_state_hash"] = post_solve_model.design_state_hash()
+                result["native_model_snapshot_phase"] = "post_solve"
+                result["native_repair_plan"] = post_solve_model.repair_plan.model_dump(mode="json") if post_solve_model.repair_plan else None
+                result["native_repair_plan_hash"] = post_solve_model.repair_plan.content_hash() if post_solve_model.repair_plan else None
+                result["native_fault_tree_hash"] = post_solve_model.repair_plan.fault_tree_hash if post_solve_model.repair_plan else None
+                result["native_repair_attempt_count"] = len(post_solve_model.repair_history)
+                result["native_repair_orchestration_clean"] = bool(
+                    post_solve_model.repair_plan
+                    and post_solve_model.repair_plan.status == "CLEAN"
+                    and not post_solve_model.fault_records
+                    and not post_solve_model.repair_history
+                )
+                post_solve_path = work_dir / "native_model_snapshot_post_solve.json"
+                post_solve_path.write_text(
+                    json.dumps(post_solve_model.model_dump(mode="json"), ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8",
+                )
+                if str(post_solve_path) not in artifacts:
+                    artifacts.append(str(post_solve_path))
+            checks.append({
+                "id": "native_model_readback_post_solve",
+                "domain": "model",
+                "required": True,
+                "status": "PASS" if post_solve_model is not None and post_solve_model.status == "QUALIFIED" else "FAIL",
+                "message": (
+                    "求解后 NativeModelSnapshot 仍为 QUALIFIED，模型状态未漂移"
+                    if post_solve_model is not None and post_solve_model.status == "QUALIFIED"
+                    else "求解后原生模型回读发生漂移或证据不足"
+                ),
+                "native_model_snapshot_hash": post_solve_model.content_hash() if post_solve_model is not None else None,
+                "native_model_design_state_hash": post_solve_model.design_state_hash() if post_solve_model is not None else None,
+                "readback_status": post_solve_model.status if post_solve_model is not None else "UNAVAILABLE",
+                "fault_tree": post_solve_model.fault_tree if post_solve_model is not None else [],
+                "typed_fault_tree": [row.model_dump(mode="json") for row in post_solve_model.fault_records] if post_solve_model is not None else [],
+                "repair_plan_status": post_solve_model.repair_plan.status if post_solve_model is not None and post_solve_model.repair_plan else None,
+                "repair_plan_hash": post_solve_model.repair_plan.content_hash() if post_solve_model is not None and post_solve_model.repair_plan else None,
+            })
+            repair_clean = bool(
+                post_solve_model is not None
+                and post_solve_model.repair_plan is not None
+                and post_solve_model.repair_plan.status == "CLEAN"
+                and not post_solve_model.fault_records
+                and not post_solve_model.repair_history
+            )
+            checks.append({
+                "id": "native_repair_orchestration_authority",
+                "domain": "validation",
+                "required": True,
+                "status": "PASS" if repair_clean else "FAIL",
+                "message": (
+                    "V0.88-C Validation Fault Tree 为 CLEAN，正式 Native Closure 未依赖隐式自动修复"
+                    if repair_clean
+                    else "V0.88-C Validation Fault Tree/RepairPlan 尚未达到正式 CLEAN 状态"
+                ),
+                "repair_plan_hash": post_solve_model.repair_plan.content_hash() if post_solve_model is not None and post_solve_model.repair_plan else None,
+                "fault_tree_hash": post_solve_model.repair_plan.fault_tree_hash if post_solve_model is not None and post_solve_model.repair_plan else None,
+                "repair_plan_status": post_solve_model.repair_plan.status if post_solve_model is not None and post_solve_model.repair_plan else None,
+                "fault_count": len(post_solve_model.fault_records) if post_solve_model is not None else None,
+                "repair_attempt_count": len(post_solve_model.repair_history) if post_solve_model is not None else None,
+            })
 
             required_results = [row.output_id for row in parity_plan.results]
             output_schema = self._result_contract_schema(parity_plan.results)
@@ -2757,7 +3102,7 @@ class MotorCADSolverAdapter(SolverAdapter):
         def export_native_screen_frame(stage: str, screen_name: str = "E-Magnetics;FEA") -> None:
             """Capture a native Motor-CAD result frame when the target UI supports it."""
             nonlocal warnings
-            capture = solver_settings.get("native_screen_capture", True)
+            capture = solver_settings.get("native_screen_capture", False)
             def enabled_value(value: Any, default: bool = True) -> bool:
                 if value is None:
                     return default
@@ -2772,10 +3117,10 @@ class MotorCADSolverAdapter(SolverAdapter):
                     return True
                 return default
             if isinstance(capture, dict):
-                enabled = enabled_value(capture.get("enabled"), True)
+                enabled = enabled_value(capture.get("enabled"), False)
                 screen_name = str(capture.get("screen") or screen_name)
             else:
-                enabled = enabled_value(capture, True)
+                enabled = enabled_value(capture, False)
             if not enabled:
                 return
             root = work_dir / "native_screens"
@@ -2949,8 +3294,47 @@ class MotorCADSolverAdapter(SolverAdapter):
             validation_path = work_dir / "model_validation.json"
             validation_path.write_text(json.dumps(model_validation, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
             artifacts.append(str(validation_path))
+
+            # V0.88-B: native validation may rebuild geometry and winding. Read the
+            # loaded model back after that operation and make this one snapshot the
+            # authority for solver gating, result provenance and UI projection.
+            refreshed_native = binding_executor.refresh_native_snapshot(mc, native_application)
+            native_model = refreshed_native.native_model_snapshot
+            post_validation_snapshot_path = work_dir / "native_model_snapshot_post_validation.json"
+            if native_model is not None:
+                post_validation_snapshot_path.write_text(
+                    json.dumps(native_model.model_dump(mode="json"), ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8",
+                )
+                artifacts.append(str(post_validation_snapshot_path))
+                if self.model_policy in {"validation", "production"} and native_model.status != "QUALIFIED":
+                    raise NativeBindingError(
+                        "V0.88-C 原生模型存在未闭环故障；validation/production 模式禁止继续求解。",
+                        details={
+                            "template_id": domain_snapshot.identity.template_id,
+                            "model_policy": self.model_policy,
+                            "native_model_snapshot_hash": native_model.content_hash(),
+                            "status": native_model.status,
+                            "required_mismatches": native_model.required_mismatches,
+                            "unresolved_required": native_model.unresolved_required,
+                            "fault_tree": native_model.fault_tree,
+                            "fault_records": [row.model_dump(mode="json") for row in native_model.fault_records],
+                            "repair_plan": native_model.repair_plan.model_dump(mode="json") if native_model.repair_plan else None,
+                            "repair_plan_hash": native_model.repair_plan.content_hash() if native_model.repair_plan else None,
+                            "operator_action": "按 typed fault tree 定位问题；仅对 RepairPlan 中 AUTO_SAFE 动作使用安全修复，其余进入参数/绕组/材料或 Motor-CAD 原生编辑后重新检查。",
+                        },
+                    )
+                if native_model.status != "QUALIFIED":
+                    warnings.append(
+                        f"V0.88-C 原生模型状态为 {native_model.status} / RepairPlan {native_model.repair_plan.status if native_model.repair_plan else 'UNAVAILABLE'}；development 模式允许继续，但该结果不可用于正式 qualification。"
+                    )
             update_session("VALIDATED")
-            update_lease("MODEL_VALIDATED", validated_at=datetime.now(timezone.utc).isoformat())
+            update_lease(
+                "MODEL_VALIDATED",
+                validated_at=datetime.now(timezone.utc).isoformat(),
+                native_model_snapshot_hash=native_model.content_hash() if native_model is not None else None,
+                native_model_readback_status=native_model.status if native_model is not None else "UNAVAILABLE",
+            )
 
             output_ids = [row.output_id for row in binding_plan.results]
             therm_analyses = {
@@ -2976,6 +3360,14 @@ class MotorCADSolverAdapter(SolverAdapter):
                 "material_audit": material_audit,
                 "native_binding_plan_hash": binding_plan.content_hash(),
                 "native_snapshot_hash": native_application.native_snapshot.content_hash(),
+                "native_model_snapshot_hash": (
+                    native_application.native_snapshot.native_model_snapshot.content_hash()
+                    if native_application.native_snapshot.native_model_snapshot is not None else None
+                ),
+                "native_model_readback_status": (
+                    native_application.native_snapshot.native_model_snapshot.status
+                    if native_application.native_snapshot.native_model_snapshot is not None else "UNAVAILABLE"
+                ),
                 "analysis": analysis.value,
             })
             update_lease(
@@ -3228,6 +3620,64 @@ class MotorCADSolverAdapter(SolverAdapter):
             fea_plan = build_fea_plan(analysis.value, solver_settings)
             fea_contract = validate_fea_manifest(native_fea_manifest, fea_plan)
 
+            # Final readback confirms the calculation path did not mutate model
+            # geometry or winding state. This is especially important for resumed
+            # coupled runs that may reload a checkpoint MOT.
+            post_solve_native = binding_executor.capture_post_solve_snapshot(mc, native_application)
+            final_native_model = post_solve_native.native_model_snapshot
+            post_solve_snapshot_path = work_dir / "native_model_snapshot_post_solve.json"
+            if final_native_model is not None:
+                post_solve_snapshot_path.write_text(
+                    json.dumps(final_native_model.model_dump(mode="json"), ensure_ascii=False, indent=2, default=str),
+                    encoding="utf-8",
+                )
+                artifacts.append(str(post_solve_snapshot_path))
+                if native_fea_manifest is not None:
+                    bind_fea_manifest_lineage(native_fea_manifest, final_native_model)
+                    overlay_contract = NativeSpatialResultOverlayAuthority().build(
+                        native_model_snapshot=final_native_model, fea_manifest=native_fea_manifest,
+                    )
+                    native_fea_manifest["spatial_overlay"] = {
+                        key: value for key, value in overlay_contract.items()
+                        if key != "native_spatial_geometry"
+                    }
+                    fea_manifest_path = work_dir / "native_fea" / "native_fea_manifest.json"
+                    fea_manifest_path.write_text(json.dumps(native_fea_manifest, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+                    overlay_path = work_dir / "native_fea" / "native_spatial_overlay_contract.json"
+                    overlay_path.write_text(json.dumps(overlay_contract, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+                    if str(overlay_path) not in artifacts:
+                        artifacts.append(str(overlay_path))
+                    if (
+                        self.model_policy in {"validation", "production"}
+                        and bool(fea_plan.get("required_for_qualification"))
+                        and overlay_contract.get("status") != "QUALIFIED"
+                    ):
+                        raise NativeBindingError(
+                            "V0.88-F 原生空间几何与有限元结果无法建立同源空间叠加合同，正式结果禁止归档。",
+                            details={
+                                "authority": overlay_contract.get("authority"),
+                                "status": overlay_contract.get("status"),
+                                "blockers": overlay_contract.get("blockers"),
+                                "coordinate_alignment": overlay_contract.get("coordinate_alignment"),
+                                "spatial_geometry_hash": overlay_contract.get("spatial_geometry_hash"),
+                            },
+                        )
+                if self.model_policy in {"validation", "production"} and final_native_model.status != "QUALIFIED":
+                    raise NativeBindingError(
+                        "V0.88-C 求解后原生模型状态或验证故障树不再 CLEAN，正式结果禁止归档。",
+                        details={
+                            "native_model_snapshot_hash": final_native_model.content_hash(),
+                            "status": final_native_model.status,
+                            "required_mismatches": final_native_model.required_mismatches,
+                            "unresolved_required": final_native_model.unresolved_required,
+                            "fault_tree": final_native_model.fault_tree,
+                            "fault_records": [row.model_dump(mode="json") for row in final_native_model.fault_records],
+                            "repair_plan": final_native_model.repair_plan.model_dump(mode="json") if final_native_model.repair_plan else None,
+                            "repair_plan_hash": final_native_model.repair_plan.content_hash() if final_native_model.repair_plan else None,
+                            "repair_attempt_count": len(final_native_model.repair_history),
+                        },
+                    )
+
             try:
                 messages = [str(item) for item in mc.get_messages(0)]
             except Exception:
@@ -3260,6 +3710,57 @@ class MotorCADSolverAdapter(SolverAdapter):
                 "native_binding_plan_hash": binding_plan.content_hash(),
                 "native_snapshot": native_application.native_snapshot.model_dump(mode="json"),
                 "native_snapshot_hash": native_application.native_snapshot.content_hash(),
+                "native_model_snapshot": (
+                    native_application.native_snapshot.native_model_snapshot.model_dump(mode="json")
+                    if native_application.native_snapshot.native_model_snapshot is not None else None
+                ),
+                "native_model_snapshot_hash": (
+                    native_application.native_snapshot.native_model_snapshot.content_hash()
+                    if native_application.native_snapshot.native_model_snapshot is not None else None
+                ),
+                "native_model_design_state_hash": (
+                    native_application.native_snapshot.native_model_snapshot.design_state_hash()
+                    if native_application.native_snapshot.native_model_snapshot is not None else None
+                ),
+                "native_model_snapshot_phase": (
+                    native_application.native_snapshot.native_model_snapshot.phase
+                    if native_application.native_snapshot.native_model_snapshot is not None else None
+                ),
+                "native_model_readback_status": (
+                    native_application.native_snapshot.native_model_snapshot.status
+                    if native_application.native_snapshot.native_model_snapshot is not None else "UNAVAILABLE"
+                ),
+                "native_model_fault_tree": (
+                    native_application.native_snapshot.native_model_snapshot.fault_tree
+                    if native_application.native_snapshot.native_model_snapshot is not None else []
+                ),
+                "native_fault_tree": (
+                    [row.model_dump(mode="json") for row in native_application.native_snapshot.native_model_snapshot.fault_records]
+                    if native_application.native_snapshot.native_model_snapshot is not None else []
+                ),
+                "native_repair_plan": (
+                    native_application.native_snapshot.native_model_snapshot.repair_plan.model_dump(mode="json")
+                    if native_application.native_snapshot.native_model_snapshot is not None and native_application.native_snapshot.native_model_snapshot.repair_plan is not None else None
+                ),
+                "native_repair_plan_hash": (
+                    native_application.native_snapshot.native_model_snapshot.repair_plan.content_hash()
+                    if native_application.native_snapshot.native_model_snapshot is not None and native_application.native_snapshot.native_model_snapshot.repair_plan is not None else None
+                ),
+                "native_fault_tree_hash": (
+                    native_application.native_snapshot.native_model_snapshot.repair_plan.fault_tree_hash
+                    if native_application.native_snapshot.native_model_snapshot is not None and native_application.native_snapshot.native_model_snapshot.repair_plan is not None else None
+                ),
+                "native_repair_attempt_count": (
+                    len(native_application.native_snapshot.native_model_snapshot.repair_history)
+                    if native_application.native_snapshot.native_model_snapshot is not None else 0
+                ),
+                "native_repair_orchestration_clean": bool(
+                    native_application.native_snapshot.native_model_snapshot is not None
+                    and native_application.native_snapshot.native_model_snapshot.repair_plan is not None
+                    and native_application.native_snapshot.native_model_snapshot.repair_plan.status == "CLEAN"
+                    and not native_application.native_snapshot.native_model_snapshot.fault_records
+                    and not native_application.native_snapshot.native_model_snapshot.repair_history
+                ),
                 "output_audit": output_audit,
                 "motorcad_target_version": self.registry.motorcad_version,
                 "pymotorcad_version": pymotorcad_version if available else None,
@@ -3269,6 +3770,7 @@ class MotorCADSolverAdapter(SolverAdapter):
                 "resumed_from": resumed_from,
                 "checkpoint_manifest": str(checkpoint_store.path),
                 "native_fea_evidence": native_fea_manifest,
+                "native_spatial_overlay": (native_fea_manifest or {}).get("spatial_overlay") if isinstance(native_fea_manifest, dict) else None,
                 "fea_plan": fea_plan,
                 "fea_contract": fea_contract,
                 "result_extraction_contract": extraction_contract,

@@ -25,6 +25,14 @@ class BuiltinPMFamilyPlugin:
             for key, value in dict(payload.get("topologies") or {}).items()
             if key in PM_TOPOLOGIES
         }
+        # V0.88-C: qualification/status routes can ask for the plugin contract many
+        # times in one browser operation. Cache the immutable topology overrides read
+        # at startup instead of reparsing the ~500 KB YAML on every contract snapshot.
+        self.template_overrides = {
+            str(template_id): str(topology_id)
+            for template_id, topology_id in dict(payload.get("template_overrides") or {}).items()
+            if topology_id in self.topologies
+        }
         closure_path = self.config_dir / "native_closure_profiles.yaml"
         closure = yaml.safe_load(closure_path.read_text(encoding="utf-8")) if closure_path.exists() else {}
         raw_profiles = dict((closure or {}).get("profiles") or {})
@@ -117,10 +125,8 @@ class BuiltinPMFamilyPlugin:
                 continue
             for template_id in family.get("representative_templates") or []:
                 template_to_topology[str(template_id)] = str(family_id)
-        overrides = yaml.safe_load((self.config_dir / "motor_topologies.yaml").read_text(encoding="utf-8")) or {}
-        for template_id, topology_id in dict(overrides.get("template_overrides") or {}).items():
-            if topology_id in self.topologies:
-                template_to_topology[str(template_id)] = str(topology_id)
+        for template_id, topology_id in self.template_overrides.items():
+            template_to_topology[str(template_id)] = str(topology_id)
         result: list[dict[str, Any]] = []
         for row in self.closure_profiles:
             if not isinstance(row, dict):

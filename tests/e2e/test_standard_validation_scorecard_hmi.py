@@ -47,7 +47,7 @@ def test_v087d_standard_validation_is_one_primary_action_with_complete_scorecard
         ''')
         page.add_script_tag(content=(STATIC / "analysis" / "standard-validation.js").read_text(encoding="utf-8"))
         page.evaluate("MCSStandardValidation.refresh({force:true})")
-        page.wait_for_function("document.body.innerText.includes('Engineering Scorecard 8/8')")
+        page.wait_for_function("document.body.innerText.includes('工程指标 8/8')")
         text = page.locator("#standardValidationPackageV087D").inner_text()
         primary_count = page.locator("#standardValidationPackageV087D [data-svp-run]").count()
         page.locator("[data-svp-run]").click()
@@ -55,7 +55,7 @@ def test_v087d_standard_validation_is_one_primary_action_with_complete_scorecard
         payload = page.evaluate("window.__post")
         browser.close()
     assert "额定工况下能否达到目标转矩" in text
-    assert "8/8 指标已被标准验证包覆盖" in text
+    assert "工程指标 8/8 已覆盖" in text
     assert primary_count == 1
     assert payload["run_native_precheck"] is True
     assert payload["reuse_cache"] is True

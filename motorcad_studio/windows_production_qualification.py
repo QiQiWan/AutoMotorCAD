@@ -13,7 +13,7 @@ from .db import Database
 from .version import __version__
 
 WINDOWS_PRODUCTION_QUALIFICATION_AUTHORITY = "WindowsMotorCADProductionQualificationV2"
-WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION = "0.88-A"
+WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION = "0.88-F"
 EXPECTED_STUDIO_VERSION = __version__
 EXPECTED_MOTORCAD_VERSION = "2026R1"
 EXPECTED_PYMOTORCAD_VERSION = "0.8.8"
@@ -143,12 +143,20 @@ REQUIRED_RELEASE_GATES = {
     "wheel_install_smoke",
     "runtime_lifecycle_qualification",
     "native_semantic_authority",
+    "native_model_readback_authority",
+    "native_repair_orchestration_authority",
+    "editor_transaction_reconciliation_authority",
+    "native_preview_visualization_reconciliation_authority",
+    "native_spatial_geometry_result_overlay_authority",
 }
 
 SCENARIO_BOOLEAN_GATES = (
     "native_motorcad",
     "native_closure_qualified",
     "native_semantic_binding_qualified",
+    "native_model_readback_qualified",
+    "native_repair_orchestration_clean",
+    "native_spatial_overlay_qualified",
     "native_binding_readback_pass",
     "native_precheck_pass",
     "solver_pass",
@@ -222,7 +230,7 @@ def qualification_matrix_spec() -> dict[str, Any]:
             for fault_id, group in REQUIRED_FAULT_GROUPS.items()
         ],
         "release_gates": sorted(REQUIRED_RELEASE_GATES),
-        "formal_gate": "4/4 native scenarios with V0.88-A semantic authority + 17/17 observed faults + clean runtime lifecycle + complete immutable evidence package",
+        "formal_gate": "4/4 native scenarios with V0.88-A semantic authority + V0.88-B native model readback + V0.88-C clean fault/repair authority + V0.88-D editor transaction reconciliation + V0.88-E native preview visualization reconciliation + V0.88-F native spatial geometry/result overlay authority release gates + 17/17 observed faults + clean runtime lifecycle + complete immutable evidence package",
         "soak_boundary": "100/500 Case soak remains V0.87-F-C and does not get inferred by this contract.",
     }
 
@@ -231,8 +239,9 @@ class WindowsProductionQualificationService:
     """Current fail-closed Windows production qualification authority.
 
     It deliberately stores V2 evidence in the existing workstation_acceptance_runs table so
-    Schema 44 remains stable. V0.88-A extends the V2 contract with source-compatible native
-    semantic authority evidence while preserving binary/restart/runtime qualification evidence.
+    Schema 45 retains persisted editor transaction/reconciliation evidence. V0.88-F extends the V2 contract with a fail-closed
+    native spatial geometry/result-overlay release gate while preserving V0.88-A semantic authority, V0.88-B native readback,
+    V0.88-C fault/repair authority, V0.88-D editor transaction lineage, V0.88-E visualization reconciliation, and binary/restart/runtime evidence.
     """
 
     def __init__(self, db: Database):
@@ -341,7 +350,10 @@ class WindowsProductionQualificationService:
                 blockers.append(f"SCENARIO:{row.get('id')}_EVIDENCE_AUTHORITY")
             compare_keys = (
                 "id", "template_id", "result_bundle_id", "result_bundle_hash", "native_closure_profile_id",
-                "native_binding_plan_hash", "native_snapshot_hash", "native_semantic_binding_profile_hash",
+                "native_binding_plan_hash", "native_snapshot_hash", "native_semantic_binding_profile_hash", "native_model_snapshot_hash",
+                "native_model_design_state_hash", "native_model_snapshot_phase",
+                "native_repair_plan_hash", "native_fault_tree_hash", "native_repair_attempt_count",
+                "native_spatial_overlay_hash", "native_spatial_geometry_hash", "native_spatial_coordinate_alignment",
                 *SCENARIO_BOOLEAN_GATES,
             )
             for key in compare_keys:
@@ -389,6 +401,24 @@ class WindowsProductionQualificationService:
             issues.append("NATIVE_SNAPSHOT_HASH")
         if not str(row.get("native_semantic_binding_profile_hash") or "").strip():
             issues.append("NATIVE_SEMANTIC_BINDING_PROFILE_HASH")
+        if not str(row.get("native_model_snapshot_hash") or "").strip():
+            issues.append("NATIVE_MODEL_SNAPSHOT_HASH")
+        if not str(row.get("native_model_design_state_hash") or "").strip():
+            issues.append("NATIVE_MODEL_DESIGN_STATE_HASH")
+        if str(row.get("native_model_snapshot_phase") or "") != "post_solve":
+            issues.append("NATIVE_MODEL_SNAPSHOT_PHASE")
+        if not str(row.get("native_repair_plan_hash") or "").strip():
+            issues.append("NATIVE_REPAIR_PLAN_HASH")
+        if not str(row.get("native_fault_tree_hash") or "").strip():
+            issues.append("NATIVE_FAULT_TREE_HASH")
+        if int(row.get("native_repair_attempt_count") or 0) != 0:
+            issues.append("NATIVE_REPAIR_ATTEMPT_COUNT")
+        if not str(row.get("native_spatial_overlay_hash") or "").strip():
+            issues.append("NATIVE_SPATIAL_OVERLAY_HASH")
+        if not str(row.get("native_spatial_geometry_hash") or "").strip():
+            issues.append("NATIVE_SPATIAL_GEOMETRY_HASH")
+        if str(row.get("native_spatial_coordinate_alignment") or "") != "CONFIRMED":
+            issues.append("NATIVE_SPATIAL_COORDINATE_ALIGNMENT")
         if not cls._portable_evidence(row.get("evidence")):
             issues.append("PORTABLE_EVIDENCE")
         return not issues, issues

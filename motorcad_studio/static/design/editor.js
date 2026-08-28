@@ -15,11 +15,15 @@
     selected: null,
     group: 'topology',
     view: 'radial',
+    visualSource: 'design',
     materials: {},
     baseMaterials: {},
     materialDirty: false,
     explicitIds: new Set(),
     saveBusy: false,
+    commitKey: null,
+    commitFingerprint: null,
+    leavePrepared: false,
     windingText: null,
     previewFrame: 0,
     editVersion: 0,
@@ -79,12 +83,33 @@
   });
   const verification = window.MCSDesignPrecheck?.create?.({
     getRevisionId: () => wb.revisionId,
+    getDesignId: () => state.workspaceDesign?.id || null,
     getTemplateId: () => wb.data?.revision?.template_id,
     getParameters: () => wb.values,
     getChangedIds: changedIds,
     getMaterials: () => wb.materials,
     getExplicitIds: () => [...new Set([...(state.workspaceRevision?.explicit_parameter_ids || []), ...changedIds()])],
     getEditVersion: () => wb.editVersion,
+    getDraft: () => draftService?.state?.draft || null,
+    getEditorTransaction: () => draftService?.state?.draft?.editor_transaction || null,
+    ensurePersisted: async () => {
+      const currentDraft = draftService?.state?.draft || null;
+      const tx = currentDraft?.editor_transaction || null;
+      // Native check needs a persisted editor transaction even when the user has
+      // made no value changes. A legacy/clean draft therefore gets a forced PUT
+      // that materializes transaction_hash + intent_hash without creating a new
+      // immutable motor revision.
+      if (!currentDraft || !tx?.transaction_hash || !tx?.intent_hash) {
+        await draftService?.persist?.({silent: true, reason: 'native-reconciliation-bootstrap', force: true});
+      } else if (totalChangeCount() || draftService?.hasUnpersistedChanges?.()) {
+        await draftService?.flush?.({silent: true, reason: 'native-reconciliation'});
+      }
+      return draftService?.state?.draft || null;
+    },
+    onNativeResult: result => {
+      if (result?.draft) draftService?.acceptServerState?.(result.draft);
+      renderTransactionState(); renderVisual();
+    },
     onStateChange: () => {
       renderPrecheck();
       if (wb.view === 'native' || wb.view === 'evidence') renderVisual();
@@ -103,6 +128,11 @@
   }
   function markEdited() {
     wb.editVersion += 1;
+    // Any new local intent must use a new immutable commit identity. A key is
+    // deliberately retained across a failed/unknown commit response so the exact
+    // same request can be replayed safely.
+    wb.commitKey = null; wb.commitFingerprint = null;
+    wb.visualSource = 'design';
     verification?.invalidateNative?.();
     if (!totalChangeCount()) verification?.begin?.(wb.data?.precheck || null);
   }
@@ -115,6 +145,40 @@
     if (state.lastError) return '草稿保存失败 · 需要处理';
     if (state.lastSavedAt) return `草稿已保存 ${new Date(state.lastSavedAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
     return totalChangeCount() ? '草稿等待自动保存' : '基于已保存版本';
+  }
+
+  function transactionProjection() {
+    const draftState = draftService?.snapshot?.() || {};
+    const draft = draftState.draft || null;
+    const tx = draft?.editor_transaction || null;
+    const native = tx?.native_reconciliation || {};
+    const check = verification?.snapshot?.() || {};
+    const unsaved = Boolean(draftState.busy || draftState.queued || draftState.lastError || (totalChangeCount() && !draftState.lastSavedAt));
+    const localState = totalChangeCount() ? (unsaved ? '已修改未保存' : '草稿已保存') : '未修改';
+    const localTone = draftState.lastError ? 'error' : unsaved ? 'dirty' : totalChangeCount() ? 'saved' : 'clean';
+    const nativeStale = Boolean(check.nativeStale || (unsaved && (native.status && native.status !== 'UNCHECKED')));
+    const nativeStatus = nativeStale ? 'STALE' : String(native.status || 'UNCHECKED').toUpperCase();
+    const nativeLabel = nativeStale ? 'Native Evidence 已过期' : (native.label || ({CURRENT:'已应用到 Motor-CAD',DRIFT:'Native 已漂移',PARTIAL:'Native 证据不完整',FAILED:'Native 检查失败',UNCHECKED:'待 Motor-CAD 检查'})[nativeStatus] || '待 Motor-CAD 检查');
+    const nativeTone = nativeStatus === 'CURRENT' ? 'current' : nativeStatus === 'DRIFT' || nativeStatus === 'FAILED' ? 'error' : nativeStatus === 'STALE' ? 'stale' : 'pending';
+    return {draftState,draft,tx,native,localState,localTone,nativeStatus,nativeLabel,nativeTone};
+  }
+
+  function editorVisualizationReconciliation() {
+    const p = transactionProjection(), base = wb.data?.visualization_reconciliation || {};
+    if (p.nativeStatus === 'STALE') return {...base, status:'STALE_NATIVE_EVIDENCE', default_source:'design', native_render_allowed:false, native_authoritative:false, compare_allowed:false, reason:'当前草稿在最近一次 Motor-CAD 检查后已经变化；旧原生投影不会套用到新设计。'};
+    if (p.native?.native_preview_projection) return window.MCSDesignRenderer?.runtimeReconciliation?.(wb.data, p.native) || base;
+    return base;
+  }
+
+  function renderTransactionState() {
+    const box = $q('#editorTransactionStateV088D'); if (!box) return;
+    const p = transactionProjection(), tx = p.tx || {};
+    const txLabel = tx.transaction_id ? String(tx.transaction_id).replace(/^EDT-/, '').slice(-8) : '等待首次草稿保存';
+    box.innerHTML = `<div class="editor-transaction-cell-v088d"><span>编辑事务</span><b>${safe(txLabel)}</b><small>${tx.intent_version ? `Intent v${safe(tx.intent_version)}` : '几何 / 绕组 / 材料共享'}</small></div><div class="editor-transaction-cell-v088d ${safe(p.localTone)}"><span>设计状态</span><b>${safe(p.localState)}</b><small>${p.draftState.lastSavedAt ? `最近保存 ${safe(new Date(p.draftState.lastSavedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}` : '自动保存草稿'}</small></div><div class="editor-transaction-cell-v088d ${safe(p.nativeTone)}"><span>Motor-CAD 状态</span><b>${safe(p.nativeLabel)}</b><small>${p.nativeStatus === 'CURRENT' && p.native.native_model_design_state_hash ? `状态 ${safe(String(p.native.native_model_design_state_hash).slice(0,10))}` : p.nativeStatus === 'STALE' ? '设计变化后必须重新检查' : '检查结果对应当前设计'}</small></div><div class="editor-transaction-cell-v088d readonly"><span>起始模板</span><b>只读</b><small>保存后形成新的电机版本</small></div>`;
+    window.MCSDesignStore?.patch?.({
+      transactionHash: tx.transaction_hash || null, intentHash: tx.intent_hash || null,
+      nativeStatus: p.nativeStatus, nativeEvidenceCurrent: p.nativeStatus === 'CURRENT',
+    }, {source: 'editor-transaction'});
   }
 
   function renderConflictBanner() {
@@ -144,6 +208,7 @@
     renderConflictBanner();
     const storeStatus = status.conflict ? 'conflict' : status.lastError ? 'error' : status.busy ? 'saving' : status.lastSavedAt ? 'saved' : totalChangeCount() ? 'dirty' : 'saved';
     window.MCSDesignStore?.patch?.({draftStatus: storeStatus, dirtyCount: totalChangeCount()}, {source: 'draft-status'});
+    renderTransactionState();
   }
 
   function renderShell() {
@@ -151,8 +216,10 @@
     const canvas = $q('#workspaceCanvas'), inspector = $q('#workspaceInspector');
     if (!canvas || !revision) return;
     document.body.classList.add('design-editing-v062');
-    canvas.innerHTML = `<div class="workspace-object-header model-workbench-header-v024 workbench-draft-header-v062"><div><span class="eyebrow">电机设计草稿</span><h2>${safe(revision.design_name)} · 基于 Rev.${safe(revision.revision)}</h2><p>几何、绕组和材料修改会自动保存为草稿。点击“保存设计”后回到参数总览；底层模板始终保持只读。</p><div class="draft-status-line-v065"><span id="workbenchDraftStatusV062" class="draft-save-status-v062">${safe(draftStatusText())}</span><button id="workbenchDraftRetryV065" type="button" class="link-button-v065 hidden">重试保存</button></div></div><div class="actions"><button id="workbenchDiscardV062" type="button" class="danger-quiet">放弃草稿</button><button id="workbenchCancelV024" type="button">退出编辑（保留草稿）</button><button id="workbenchSaveV024" class="primary" type="button">保存设计</button></div></div>
+    canvas.innerHTML = `<div class="workspace-object-header model-workbench-header-v024 workbench-draft-header-v062"><div><span class="eyebrow">电机设计草稿</span><h2>${safe(revision.design_name)} · 基于 Rev.${safe(revision.revision)}</h2><p>几何、绕组和材料修改会自动保留为草稿；确认后点击“保存设计”。</p><div class="draft-status-line-v065"><span id="workbenchDraftStatusV062" class="draft-save-status-v062">${safe(draftStatusText())}</span><button id="workbenchDraftRetryV065" type="button" class="link-button-v065 hidden">重试保存</button></div></div><div class="actions"><button id="workbenchDiscardV062" type="button" class="danger-quiet">放弃草稿</button><button id="workbenchCancelV024" type="button">退出编辑（保留草稿）</button><button id="workbenchSaveV024" class="primary" type="button">保存设计</button></div></div>
     <div id="workbenchDraftConflictV065" class="hidden"></div>
+    <div id="editorTransactionStateV088D" class="editor-transaction-state-v088d" aria-label="设计事务与 Motor-CAD 状态"></div>
+    <div class="editor-transaction-rule-v088d">几何、绕组和材料属于同一份未保存设计；切换步骤不会创建新的设计分支。保存后系统会自动关联当前 Motor-CAD 检查证据。</div>
     <div class="model-workbench-v024 ${draftConflict() ? 'draft-conflict-locked-v062' : ''}">
       <aside class="workbench-tree-v024">
         <div class="workbench-search-v024"><label for="workbenchSearchV024">设计参数</label><input id="workbenchSearchV024" placeholder="搜索参数名称或部件"><div class="parameter-coverage-v066"><span>结构化核心参数用于高频设计；完整参数来自当前 Motor-CAD 版本的 Automation Parameter Names。</span><button id="workbenchOpenParameterCatalogV066" type="button">高级：全部 Motor-CAD 参数</button></div></div>
@@ -177,7 +244,7 @@
       </aside>
     </div>`;
     if (inspector) inspector.innerHTML = `<div class="inspector-block"><span class="eyebrow">当前电机</span><h3>${safe(revision.design_name)}</h3><div class="property-grid"><span>设计版本</span><b>版本 ${safe(revision.revision)}</b><span>草稿修改</span><b id="workbenchChangeCountV024">0 项</b><span>起始模板</span><b>${safe(revision.template_id)}</b><span>验证状态</span><b id="workbenchInspectorStatusV024">—</b></div><div class="inspector-note">参数示意随输入实时更新；Studio 设计检查和 Motor-CAD 原生检查只在明确触发时运行。</div></div>`;
-    renderGroups(); renderRegions(); renderParameters(); renderVisual(); renderSelected(); renderEvidence(); renderPrecheck(); bindShell(); updateDraftStatus();
+    renderGroups(); renderRegions(); renderParameters(); renderVisual(); renderSelected(); renderEvidence(); renderPrecheck(); bindShell(); updateDraftStatus(); renderTransactionState();
   }
 
   function renderGroups(filter = '') {
@@ -219,11 +286,15 @@
     renderWorkbenchNavigation();
     $$q('[data-workbench-view]').forEach(button => button.classList.toggle('active', button.dataset.workbenchView === wb.view));
     const check = verification?.snapshot?.() || {};
-    const draftData = {...wb.data, effective_parameters: wb.values, materials: wb.materials, draft_validation: check, editable: true};
-    const ctx = {data: wb.data, values: wb.values, materials: wb.materials, precheck: check.precheckCurrent ? check.precheck : null, selected: wb.selected, editable: true};
+    const reconciliation = editorVisualizationReconciliation();
+    const effectiveSource = window.MCSDesignRenderer?.resolveVisualSource?.(reconciliation, wb.visualSource, 'edit') || 'design';
+    if (wb.visualSource !== 'design' && effectiveSource === 'design' && !reconciliation.native_render_allowed) wb.visualSource = 'design';
+    const draftData = {...wb.data, effective_parameters: wb.values, materials: wb.materials, draft_validation: check, editable: true, visualization_reconciliation: reconciliation};
+    const ctx = {data: draftData, values: wb.values, materials: wb.materials, precheck: check.precheckCurrent ? check.precheck : null, selected: wb.selected, editable: true, visualSource: effectiveSource, visualizationReconciliation: reconciliation};
     const auxiliary = window.MCSDesignRenderer?.renderAuxiliaryView?.(wb.view, draftData);
+    const toolbar = ['radial','axial','winding','slot','materials'].includes(wb.view) ? (window.MCSDesignRenderer?.toolbar?.(draftData,{source:wb.visualSource,mode:'edit',reconciliation}) || '') : '';
     const viewHtml = auxiliary ?? window.MCSDesignRenderer?.renderWorkbenchView?.(wb.view, ctx);
-    box.innerHTML = viewHtml ?? '<div class="native-empty-v031">当前设计视图不可用。</div>';
+    box.innerHTML = toolbar + (viewHtml ?? '<div class="native-empty-v031">当前设计视图不可用。</div>');
     const next = window.MCSDesignNavigation?.next?.(wb.view, wb.data, {mode: 'edit'});
     if (next) box.insertAdjacentHTML('beforeend', `<div class="design-next-step-v063 design-next-step-v064 design-next-step-v065"><div><span>编辑流程</span><b>${safe(next.label)}</b><small>${next.target === 'commit' ? '保存前可先运行设计验证；草稿会持续自动保存。' : '草稿会自动保存，可在各设计阶段之间直接切换。'}</small></div><button type="button" class="primary" data-workbench-next-v063="${safe(next.target)}">${safe(next.label)} →</button></div>`);
     highlightSelectedRegion();
@@ -270,6 +341,16 @@
   }
 
   function nativeFailureSummary(result) {
+    const typedFaults = Array.isArray(result?.native_fault_tree) ? result.native_fault_tree : [];
+    const repairPlan = result?.native_repair_plan || {};
+    if (typedFaults.length) {
+      const root = typedFaults[0] || {}, actions = Array.isArray(repairPlan.actions) ? repairPlan.actions.filter(action => action.fault_id === root.fault_id) : [];
+      const parameters = (root.parameter_ids || []).filter(id => recordFor(id));
+      const components = root.component_ids || [];
+      const autoCount = (repairPlan.auto_safe_action_ids || []).length;
+      const manualLabels = actions.filter(action => action.safety !== 'AUTO_SAFE').slice(0, 3).map(action => action.label).filter(Boolean);
+      return `<div class="native-failure-summary-v024 native-fault-tree-v088c"><div class="native-root-cause-v088"><div class="native-fault-code-v088c"><b>首要故障 · ${safe(root.code || 'NATIVE_VALIDATION')}</b><span>${safe(root.domain || 'native_model')} · ${safe(root.stage || 'post_native_validation')}</span></div><span>${safe(root.message || 'Motor-CAD 原生模型检查未通过')}</span>${root.repair_hint ? `<small>${safe(root.repair_hint)}</small>` : ''}</div>${parameters.length ? `<div class="native-fault-locators-v088c">${parameters.map(id => `<button type="button" data-workbench-select="${safe(id)}">定位 ${safe(parameterLabel(id))}</button>`).join('')}</div>` : ''}${components.length ? `<div class="native-fault-components-v088c"><small>涉及部件：${safe(components.join(' / '))}</small></div>` : ''}${autoCount ? `<div class="native-repair-callout-v088c"><div><b>检测到 ${autoCount} 项安全同步动作</b><small>只同步当前 Motor-CAD 会话，不改变已保存设计。</small></div><button type="button" class="primary" data-workbench-native-safe-repair-v088c>安全修复并重新检查</button></div>` : manualLabels.length ? `<div class="native-repair-callout-v088c manual"><div><b>需要工程师确认</b><small>${safe(manualLabels.join('；'))}</small></div></div>` : ''}</div>`;
+    }
     const geometry = result?.geometry?.details || result?.geometry || {}, winding = result?.winding?.details || result?.winding || {};
     const root = result?.root_cause || (result?.checks || []).find(row => String(row?.status || '').toUpperCase() === 'FAIL') || {};
     const details = root?.details || {};
@@ -288,13 +369,9 @@
         ? '该材料来自模板继承；Studio 会沿用模板原生绑定，不再重复写入。若仍出现此错误，请重新运行检查并确认当前模板/数据库版本。'
         : '请确认材料存在于当前 Motor-CAD 数据库；若材料名称正确，检查下方组件候选别名与 Motor-CAD 返回错误。';
       technical = [...(details.candidate_targets || []).map(x => `候选组件：${x}`), ...(details.errors || []).slice(0, 2)].join(' · ');
-    } else if (rootId === 'winding') {
-      action = '检查槽数/相数/并联支路、槽满率及线圈连接。下方可直接定位已绑定的绕组参数。';
-    } else if (rootId === 'geometry') {
-      action = '根据 Motor-CAD 返回的几何原因定位槽口、齿宽、槽深、气隙或相交部位，再运行一次原生检查。';
-    } else if (rootId === 'parameter_roundtrip') {
-      action = '恢复失败参数到模板值后逐项修改，并确认 Motor-CAD 2026R1 参数映射与单位回读一致。';
-    }
+    } else if (rootId === 'winding') action = '检查槽数/相数/并联支路、槽满率及线圈连接。下方可直接定位已绑定的绕组参数。';
+    else if (rootId === 'geometry') action = '根据 Motor-CAD 返回的几何原因定位槽口、齿宽、槽深、气隙或相交部位，再运行一次原生检查。';
+    else if (rootId === 'parameter_roundtrip') action = '恢复失败参数到模板值后逐项修改，并确认 Motor-CAD 2026R1 参数映射与单位回读一致。';
     return `<div class="native-failure-summary-v024"><div class="native-root-cause-v088"><b>失败阶段：${safe(stage)}</b><span>${safe(primary)}</span>${action ? `<small>${safe(action)}</small>` : ''}${technical ? `<code>${safe(technical)}</code>` : ''}</div>${binding.length ? `<div>${binding.map(id => `<button type="button" data-workbench-select="${safe(id)}">定位 ${safe(parameterLabel(id))}</button>`).join('')}</div>` : ''}</div>`;
   }
   function firstNativeBinding(codes) {
@@ -308,12 +385,18 @@
     const box = $q('#workbenchEvidenceV024'); if (!box || !wb.data) return;
     const evidence = wb.data.native_evidence, check = verification?.snapshot?.() || {}, native = check.nativeCurrent ? check.nativeCheck : null, previous = wb.data.previous_feasible;
     let nativePart = '';
-    if (check.nativeBusy) nativePart = '<div class="native-check-result-v024 history"><b>Motor-CAD 原生检查正在运行…</b></div>';
-    else if (native) {
+    if (check.nativeBusy) nativePart = '<div class="native-check-result-v024 history"><b>Motor-CAD 原生检查正在运行…</b><small>检查对象已经冻结为当前持久化 Editor Transaction；检查期间的新编辑不会继承本次结果。</small></div>';
+    else if (check.nativeStale && check.nativeCheck) {
+      nativePart = '<div class="native-check-result-v024 fail native-stale-v088d"><b>Native Evidence 已过期</b><small>最近一次 Motor-CAD 结果对应旧的设计意图。保存当前草稿后重新运行原生检查。</small></div>';
+    } else if (native) {
       const pass = native.status === 'PASS';
       nativePart = `<div class="native-check-result-v024 ${pass ? 'pass' : 'fail'}"><b>${pass ? '✓ 当前草稿已通过 Motor-CAD 原生材料、几何与绕组检查' : '当前草稿未通过 Motor-CAD 原生模型检查'}</b>${pass ? '' : nativeFailureSummary(native)}</div>`;
-    } else if (evidence) nativePart = `<div class="native-check-result-v024 history"><b>冻结版本最近一次模型检查：${['SUCCEEDED', 'COMPLETED'].includes(evidence.execution_status || evidence.task_status) ? '已完成' : '需要关注'}</b><small>${safe(evidence.finished_at || '')}</small></div>`;
-    else nativePart = '<p class="hint">当前设计版本还没有 Motor-CAD 模型检查记录。</p>';
+    } else {
+      const txNative = transactionProjection().native || {};
+      if (txNative.status && txNative.status !== 'UNCHECKED') nativePart = `<div class="native-check-result-v024 ${txNative.status === 'CURRENT' ? 'pass' : 'history'}"><b>${safe(txNative.label || txNative.status)}</b><small>该状态由服务器端 Editor Transaction 与 Native Evidence Hash 协调得到。</small></div>`;
+      else if (evidence) nativePart = `<div class="native-check-result-v024 history"><b>冻结版本最近一次模型检查：${['SUCCEEDED', 'COMPLETED'].includes(evidence.execution_status || evidence.task_status) ? '已完成' : '需要关注'}</b><small>${safe(evidence.finished_at || '')}</small></div>`;
+      else nativePart = '<p class="hint">当前设计版本还没有 Motor-CAD 模型检查记录。</p>';
+    }
     box.innerHTML = `<span class="eyebrow">模型检查记录</span><h3>${previous?.source === 'revision' ? `上一可行版本 ${safe(previous.revision)}` : previous ? '起始模板可行' : '等待首次检查'}</h3>${nativePart}<div class="evidence-rule-v024"><b>验证顺序</b><span>Studio 参数关系 → Motor-CAD 材料、几何与绕组 → 分析工况检查 → 正式计算 → 结果验证</span></div>`;
   }
 
@@ -366,15 +449,20 @@
     } catch (error) { toast(`Studio 设计检查失败：${error.message}`, 'ERROR', 7000); }
     finally { renderPrecheck(); renderEvidence(); renderVisual(); }
   }
-  async function runNativeCheck() {
+  async function runNativeCheck({repairPolicy = 'suggest'} = {}) {
     try {
-      const result = await verification?.runNative?.();
+      const result = await verification?.runNative?.({repairPolicy});
       if (!result) return;
-      toast(result.status === 'PASS' ? '当前草稿已通过 Motor-CAD 原生材料、几何与绕组检查。' : 'Motor-CAD 原生模型检查未通过；已显示对应工程约束。', result.status === 'PASS' ? 'SUCCESS' : 'ERROR', 7000);
+      const attempts = result.native_repair_attempts || [], lastAttempt = attempts[attempts.length - 1];
+      if (repairPolicy === 'safe_auto' && lastAttempt) {
+        toast(lastAttempt.outcome === 'REPAIRED' ? '安全同步已完成，Motor-CAD 原生模型已重新验证。' : `安全同步结果：${lastAttempt.outcome}。请查看首要故障。`, lastAttempt.outcome === 'REPAIRED' ? 'SUCCESS' : 'WARNING', 8000);
+      } else {
+        toast(result.status === 'PASS' ? '当前草稿已通过 Motor-CAD 原生材料、几何与绕组检查。' : 'Motor-CAD 原生模型检查未通过；已显示首要故障和修复动作。', result.status === 'PASS' ? 'SUCCESS' : 'ERROR', 7000);
+      }
     } catch (error) {
       if (error?.code === 'STUDIO_PRECHECK_BLOCKED') toast(error.message, 'WARNING', 6500);
       else toast(`Motor-CAD 原生检查失败：${error.message}`, 'ERROR', 8000);
-    } finally { renderPrecheck(); renderEvidence(); renderVisual(); }
+    } finally { renderPrecheck(); renderEvidence(); renderVisual(); renderTransactionState(); }
   }
 
   function activeAnalysisForDesign() {
@@ -385,10 +473,10 @@
     const candidate = activeAnalysisForDesign();
     if (!window.StudioDialog?.sheet) return {notes: `基于 Rev.${state.workspaceRevision?.revision} 的设计工作台修改`, analysis_definition_id: null};
     const check = verification?.snapshot?.() || {};
-    const verificationNote = check.nativeCurrent && check.nativeCheck?.status === 'PASS' ? '当前草稿已通过 Motor-CAD 原生检查。' : check.precheckCurrent ? '当前草稿已完成 Studio 设计检查；Motor-CAD 原生检查尚未取得 PASS。' : '当前草稿尚未执行设计验证；仍可保存为中间 Revision。';
+    const verificationNote = check.nativeCurrent && check.nativeCheck?.status === 'PASS' ? '当前草稿已通过 Motor-CAD 原生检查。' : check.precheckCurrent ? '当前草稿已完成 Studio 设计检查；Motor-CAD 原生检查尚未取得 PASS。' : '当前草稿尚未执行设计验证；仍可保存为中间电机版本。';
     const value = await StudioDialog.sheet({
-      title: '保存新的 Design Revision',
-      html: `<div class="step-help-sheet"><p>将当前 ${totalChangeCount()} 组修改冻结为新的不可变设计版本。已有 Task 和其他分析案例继续指向原 Revision。</p><p class="revision-verification-note-v065">${safe(verificationNote)}</p>${candidate ? `<label class="revision-analysis-link-v062"><input id="workbenchLinkAnalysisV062" type="checkbox" checked><span><b>让当前分析案例采用新版本</b><small>${safe(candidate.name || candidate.id)} 将切换到新 Revision；其他分析案例保持原版本。</small></span></label>` : '<p class="hint">当前没有与此电机匹配的活动分析案例；保存设计不会改变任何分析案例的版本引用。</p>'}<label>Revision 说明<textarea id="workbenchRevisionNotesV024" rows="4" placeholder="例如：调整槽口和齿宽以降低槽满率风险"></textarea></label></div>`,
+      title: '保存新的电机版本',
+      html: `<div class="step-help-sheet"><p>将当前 ${totalChangeCount()} 组修改保存为新的电机版本。已有计算任务和其他分析配置继续使用原版本。</p><p class="revision-verification-note-v065">${safe(verificationNote)}</p>${candidate ? `<label class="revision-analysis-link-v062"><input id="workbenchLinkAnalysisV062" type="checkbox" checked><span><b>让当前分析案例采用新版本</b><small>${safe(candidate.name || candidate.id)} 将切换到新电机版本；其他分析配置保持原版本。</small></span></label>` : '<p class="hint">当前没有与此电机匹配的活动分析案例；保存设计不会改变任何分析案例的版本引用。</p>'}<label>版本说明<textarea id="workbenchRevisionNotesV024" rows="4" placeholder="例如：调整槽口和齿宽以降低槽满率风险"></textarea></label></div>`,
       actions: [
         {label: '取消', value: null},
         {label: '确认保存', primary: true, getValue: box => ({notes: box.querySelector('#workbenchRevisionNotesV024')?.value.trim() || '', analysis_definition_id: candidate && box.querySelector('#workbenchLinkAnalysisV062')?.checked ? candidate.id : null})},
@@ -396,70 +484,101 @@
     });
     return value === false ? null : value;
   }
-  async function saveRevision(options = {}) {
-    if (wb.saveBusy || !totalChangeCount() || draftConflict()) return;
-    // Product-facing save is intentionally simple. Internally we still commit an
-    // immutable Revision so solver/task lineage remains reproducible, but the user
-    // no longer has to manage revision bookkeeping for an ordinary parameter edit.
+  function newCommitKey() {
+    return `EDC-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`.replace(/[^A-Za-z0-9-]/g, '').slice(0, 120);
+  }
+  function commitKeyForDraft(designId) {
+    const draft = draftService?.state?.draft || {};
+    const tx = draft.editor_transaction || {};
+    const fingerprint = [designId, draft.version || 0, tx.transaction_hash || tx.intent_hash || '', tx.intent_version || 0].join(':');
+    if (!wb.commitKey || wb.commitFingerprint !== fingerprint) {
+      wb.commitKey = newCommitKey(); wb.commitFingerprint = fingerprint;
+    }
+    return wb.commitKey;
+  }
+  function actionLock(key, operation) {
+    return window.MCSNavigationTransaction?.withActionLock ? window.MCSNavigationTransaction.withActionLock(key, operation) : Promise.resolve().then(operation);
+  }
+  function saveRevision(options = {}) {
+    const designId = state.workspaceDesign?.id || 'none';
+    return actionLock(`design-commit:${designId}`, () => saveRevisionImpl(options));
+  }
+  async function saveRevisionImpl(options = {}) {
+    if (wb.saveBusy || !totalChangeCount() || draftConflict()) return false;
+    // Product-facing save is intentionally simple. Internally the immutable commit
+    // carries a durable commit_key. If the server completed but the browser lost the
+    // response, a retry returns the exact same Revision instead of creating another.
     const withNotes = options?.withNotes === true;
     const commit = withNotes ? await revisionNotesSheet() : {
       notes: `设计参数保存（自动历史）· 基于 Rev.${state.workspaceRevision?.revision}`,
       analysis_definition_id: null,
     };
-    if (commit === null) return;
+    if (commit === null) return false;
     const notes = typeof commit === 'object' ? (commit.notes || '') : String(commit || '');
     const analysisDefinitionId = typeof commit === 'object' ? (commit.analysis_definition_id || null) : null;
     wb.saveBusy = true; updateChangeCount();
     const buttons = [$q('#workbenchSaveV024'), $q('#workbenchQuickSaveV088')].filter(Boolean);
-    buttons.forEach(button => { button.dataset.saveLabelV088 = button.textContent; button.textContent = '正在保存设计…'; });
+    buttons.forEach(button => { button.dataset.saveLabelV088 = button.textContent; button.textContent = '正在保存设计…'; button.disabled = true; });
     try {
       const design = state.workspaceDesign; if (!design) throw new Error('当前电机设计不存在');
       await draftService?.flush?.({silent: true, reason: 'commit'});
       const expectedVersion = Number(draftService?.state?.draft?.version || 0);
-      const created = await api(`/api/solutions/${encodeURIComponent(design.id)}/draft/commit`, {method: 'POST', body: JSON.stringify({expected_version: expectedVersion, notes: notes || `设计参数保存（自动历史）`, analysis_definition_id: analysisDefinitionId})});
+      const commitKey = commitKeyForDraft(design.id);
+      const created = await api(`/api/solutions/${encodeURIComponent(design.id)}/draft/commit`, {method: 'POST', body: JSON.stringify({expected_version: expectedVersion, commit_key: commitKey, notes: notes || `设计参数保存（自动历史）`, analysis_definition_id: analysisDefinitionId})});
+      wb.commitKey = null; wb.commitFingerprint = null;
       draftService?.begin?.({}); verification?.dispose?.(); wb.saveBusy = false;
       state.workspaceProject = await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}`);
       document.body.classList.remove('design-editing-v062');
       window.MCSDesignStore?.setMode?.('read', {source: 'editor-save'});
       window.MCSDesignStore?.selectParameter?.(null, {source: 'editor-save'});
       window.MCSUnifiedAnalysis?.refresh?.().catch?.(()=>{});
-      toast(`设计已保存。模板基线未改动；Rev.${created.revision} 已作为自动历史快照保留。`, 'SUCCESS', 6200);
+      toast(created.idempotent_replay ? `已恢复先前完成的保存；仍为 Rev.${created.revision}，未重复创建版本。` : `设计已保存。模板基线未改动；Rev.${created.revision} 已作为自动历史快照保留。`, 'SUCCESS', 6200);
       await openWorkspaceDesign(design.id);
       if (created.id) await Promise.resolve(selectWorkspaceRevision(created.id));
       window.MCSDesignStore?.selectParameter?.(null, {source: 'editor-save-overview'});
       window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true});
       window.MCSRouter?.syncDesignView?.(wb.view, {replace: true});
+      return true;
     } catch (error) {
       if (error?.status === 409 && error?.detail?.code === 'DESIGN_DRAFT_STALE') {
+        wb.commitKey = null; wb.commitFingerprint = null;
         draftService?.setConflict?.({kind: 'stale_same_revision', current_version: error.detail.current_version, updated_at: error.detail.updated_at});
         renderConflictBanner(); renderPrecheck(); renderEvidence();
       }
+      // For transport/unknown failures the key is intentionally retained. The next
+      // click replays the same immutable commit request and the backend can recover it.
       toast(error.message, 'ERROR', 8500); wb.saveBusy = false;
       buttons.forEach(button => { button.textContent = button.dataset.saveLabelV088 || (button.id === 'workbenchQuickSaveV088' ? '保存修改并返回参数总览' : '保存设计'); });
       updateChangeCount();
+      return false;
     }
   }
 
   async function confirmDestructive(title, message, confirmLabel = '确认') {
     if (!window.StudioDialog?.sheet) { toast('确认对话框尚未加载，已取消该操作。', 'WARNING', 4200); return false; }
-    const result = await StudioDialog.sheet({title, html: `<div class="step-help-sheet"><p>${safe(message)}</p><p class="hint">此操作不会影响已经冻结的 Design Revision。</p></div>`, actions: [{label: '取消', value: false}, {label: confirmLabel, value: true, primary: true}]});
+    const result = await StudioDialog.sheet({title, html: `<div class="step-help-sheet"><p>${safe(message)}</p><p class="hint">此操作不会影响已保存的电机版本。</p></div>`, actions: [{label: '取消', value: false}, {label: confirmLabel, value: true, primary: true}]});
     return result === true;
   }
-  async function exitWorkbenchPreservingDraft() {
-    try { await draftService?.flush?.({silent: true, reason: 'editor-exit'}); }
-    catch (error) { toast(`草稿尚未安全保存：${error.message}`, 'ERROR', 7000); return; }
-    verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
-    window.MCSDesignStore?.setMode?.('read', {source: 'editor-exit'}); window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true});
-    await openWorkspaceDesign(state.workspaceDesign.id); window.MCSRouter?.syncDesignView?.(wb.view, {replace: true});
+  function exitWorkbenchPreservingDraft() {
+    const designId = state.workspaceDesign?.id || 'none';
+    return actionLock(`design-exit:${designId}`, async () => {
+      try { await draftService?.flush?.({silent: true, reason: 'editor-exit'}); }
+      catch (error) { toast(`草稿尚未安全保存：${error.message}`, 'ERROR', 7000); return false; }
+      verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
+      window.MCSDesignStore?.setMode?.('read', {source: 'editor-exit'}); window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true});
+      await openWorkspaceDesign(state.workspaceDesign.id); window.MCSRouter?.syncDesignView?.(wb.view, {replace: true}); return true;
+    });
   }
-  async function discardDraft() {
-    const design = state.workspaceDesign; if (!design) return;
-    const ok = await confirmDestructive('放弃当前设计草稿', '未冻结的参数和材料修改将被删除。', '放弃草稿'); if (!ok) return;
-    try {
-      await draftService?.delete?.({silent: true, force: true, reason: 'discard'}); verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
-      window.MCSDesignStore?.setMode?.('read', {source: 'editor-discard'}); toast('设计草稿已放弃。', 'SUCCESS', 3200);
-      window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true}); await openWorkspaceDesign(design.id); window.MCSRouter?.syncDesignView?.(wb.view, {replace: true});
-    } catch (error) { toast(`草稿删除失败：${error.message}`, 'ERROR', 6500); }
+  function discardDraft() {
+    const design = state.workspaceDesign; if (!design) return Promise.resolve(false);
+    return actionLock(`design-discard:${design.id}`, async () => {
+      const ok = await confirmDestructive('放弃当前设计草稿', '未冻结的参数和材料修改将被删除。', '放弃草稿'); if (!ok) return false;
+      try {
+        await draftService?.delete?.({silent: true, force: true, reason: 'discard'}); wb.commitKey = null; wb.commitFingerprint = null; verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
+        window.MCSDesignStore?.setMode?.('read', {source: 'editor-discard'}); toast('设计草稿已放弃。', 'SUCCESS', 3200);
+        window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true}); await openWorkspaceDesign(design.id); window.MCSRouter?.syncDesignView?.(wb.view, {replace: true}); return true;
+      } catch (error) { toast(`草稿删除失败：${error.message}`, 'ERROR', 6500); return false; }
+    });
   }
   async function reloadStaleDraft() {
     const ok = await confirmDestructive('重新加载最新设计草稿', '当前窗口尚未保存到服务器的修改将被丢弃，并重新读取另一窗口保存的最新草稿。', '重新加载'); if (!ok) return;
@@ -496,6 +615,7 @@
       const reload = event.target.closest('[data-reload-stale-draft-v065]'); if (reload) { await reloadStaleDraft(); return; }
       const existing = event.target.closest('[data-open-existing-draft-v062]'); if (existing) { const target = draftConflict()?.base_revision_id || draftConflict(); if (!target) return; await Promise.resolve(window.selectWorkspaceRevision?.(target)); await open(); return; }
       const replace = event.target.closest('[data-replace-existing-draft-v062]'); if (replace) { const ok = await confirmDestructive('替换现有设计草稿', `将删除基于 ${conflictRevisionLabel()} 的现有草稿，并从当前版本重新开始编辑。`, '删除旧草稿并继续'); if (!ok) return; try { await draftService?.delete?.({silent: true, force: true, reason: 'replace-conflict'}); draftService?.begin?.({}); renderConflictBanner(); updateChangeCount(); toast('旧草稿已放弃，现在可以编辑当前版本。', 'SUCCESS', 3800); } catch (error) { toast(`旧草稿删除失败：${error.message}`, 'ERROR', 6500); } return; }
+      const visualSource = event.target.closest('[data-visual-source-v088e]'); if (visualSource) { wb.visualSource = visualSource.dataset.visualSourceV088e || 'design'; renderVisual(); return; }
       const group = event.target.closest('[data-workbench-group]'); if (group) { wb.group = group.dataset.workbenchGroup; renderGroups($q('#workbenchSearchV024')?.value || ''); renderParameters(); return; }
       const region = event.target.closest('[data-workbench-region]'); if (region) { selectRegion(region.dataset.workbenchRegion); return; }
       const select = event.target.closest('[data-workbench-select]'); if (select) { selectParameter(select.dataset.workbenchSelect); return; }
@@ -517,6 +637,7 @@
       const issue = event.target.closest('[data-workbench-issue]'); if (issue) { const row = currentPrecheck()?.issues?.[Number(issue.dataset.workbenchIssue)], id = (row?.parameter_ids || []).find(parameterId => recordFor(parameterId)); if (id) selectParameter(id); return; }
       if (event.target.closest('[data-workbench-run-studio-check-v065]')) { await runStudioCheck(); return; }
       if (event.target.closest('[data-workbench-run-native-check-v065]')) { await runNativeCheck(); return; }
+      if (event.target.closest('[data-workbench-native-safe-repair-v088c]')) { await runNativeCheck({repairPolicy: 'safe_auto'}); return; }
       if (event.target.closest('#loadNativeWindingV024')) { await loadNativeWinding(); return; }
       const schematic = event.target.closest('[data-schematic-part]'); if (schematic) { const tags = String(schematic.dataset.schematicPart || '').split(/\s+/), regionId = tags.find(tag => wb.data?.regions?.[tag]); if (regionId) selectRegion(regionId); }
     }, {signal});
@@ -534,7 +655,7 @@
 
   async function open(routeCtx = null) {
     const design = state.workspaceDesign, revision = state.workspaceRevision;
-    if (!design || !revision) { toast('请先选择 Design Revision', 'WARNING'); return false; }
+    if (!design || !revision) { toast('请先选择电机版本', 'WARNING'); return false; }
     const canvas = $q('#workspaceCanvas'); if (canvas) canvas.innerHTML = '<div class="workspace-empty"><span class="connection-pulse"></span><b>正在加载电机设计…</b><p>读取设计参数、材料、影响关系、草稿和模型检查状态。</p></div>';
     try {
       const options = routeCtx?.signal ? {signal: routeCtx.signal} : {};
@@ -544,11 +665,11 @@
       ]);
       if (routeCtx && !window.MCSPageRuntime?.isContextActive?.(routeCtx)) return false;
       wb.shellAbort?.abort(); verification?.dispose?.();
-      wb.revisionId = revision.id; wb.data = data; wb.values = {...(data.effective_parameters || {})};
+      wb.revisionId = revision.id; wb.data = data; wb.values = {...(data.effective_parameters || {})}; wb.visualSource = 'design';
       (data.parameters || []).forEach(row => { if (!(row.id in wb.values)) wb.values[row.id] = row.value; });
       wb.baseMaterials = editableMaterials(data, revision);
       wb.materials = cloneValue(wb.baseMaterials);
-      wb.changed = new Set(); wb.materialDirty = false; wb.explicitIds = new Set(revision.explicit_parameter_ids || []); wb.windingText = null; wb.editVersion = 0;
+      wb.changed = new Set(); wb.materialDirty = false; wb.explicitIds = new Set(revision.explicit_parameter_ids || []); wb.windingText = null; wb.editVersion = 0; wb.commitKey = null; wb.commitFingerprint = null; wb.leavePrepared = false;
       const draft = draftResult?.draft || null; let conflict = null;
       if (draft && draft.base_revision_id === revision.id) {
         wb.values = {...wb.values, ...(draft.parameters || {})}; wb.materials = draft.materials || wb.materials; wb.explicitIds = new Set(draft.explicit_parameter_ids || revision.explicit_parameter_ids || []);
@@ -591,7 +712,7 @@
     }
     try {
       await draftService?.flush?.({silent: true, reason: 'route-change'});
-      verification?.dispose?.(); wb.shellAbort?.abort();
+      wb.leavePrepared = true;
       return true;
     } catch (error) { toast(`草稿未能安全保存，已取消页面跳转：${error.message}`, 'ERROR', 8000); return false; }
   }
@@ -609,5 +730,26 @@
     }
   });
 
-  window.MCSDesignEditor = {open, openView, applyRouteView, prepareRouteChange, selectParameter, setValue, runStudioCheck, runNativeCheck, state: wb, draftService, verification};
+  function editorGuardState() {
+    const mode = window.MCSDesignStore?.getState?.()?.mode;
+    const draft = draftService?.snapshot?.() || {};
+    return {active: mode === 'edit' && Boolean(wb.data), design_id: state.workspaceDesign?.id || null, revision_id: wb.revisionId, dirty_count: totalChangeCount(), unpersisted: Boolean(draftService?.hasUnpersistedChanges?.()), conflict: draft.conflict || null, save_busy: wb.saveBusy};
+  }
+  window.MCSNavigationTransaction?.registerGuard?.({
+    id: 'design-editor', priority: 100,
+    isActive: () => editorGuardState().active,
+    unsafe: () => editorGuardState().unpersisted,
+    inspect: editorGuardState,
+    prepare: prepareRouteChange,
+  });
+  window.addEventListener('mcs:navigation-transaction-committed', event => {
+    if (!wb.leavePrepared) return;
+    const route = event.detail?.meta?.route || null;
+    const sameEditor = route?.tab === 'workspace' && route?.editRevision && route?.designId === state.workspaceDesign?.id && route?.revisionId === wb.revisionId;
+    if (sameEditor) { wb.leavePrepared = false; return; }
+    wb.leavePrepared = false; verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
+    window.MCSDesignStore?.setMode?.('read', {source: 'navigation-transaction-commit'});
+  });
+
+  window.MCSDesignEditor = {open, openView, applyRouteView, prepareRouteChange, inspectTransaction: editorGuardState, selectParameter, setValue, runStudioCheck, runNativeCheck, saveRevision, discardDraft, exitWorkbenchPreservingDraft, state: wb, draftService, verification};
 })();

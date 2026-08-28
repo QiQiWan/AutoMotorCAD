@@ -49,6 +49,9 @@ def _qualified_payload(tmp_path: Path) -> dict:
             "native_motorcad": True,
             "native_closure_qualified": True,
             "native_semantic_binding_qualified": True,
+            "native_model_readback_qualified": True,
+            "native_repair_orchestration_clean": True,
+            "native_spatial_overlay_qualified": True,
             "native_binding_readback_pass": True,
             "native_precheck_pass": True,
             "solver_pass": True,
@@ -61,6 +64,15 @@ def _qualified_payload(tmp_path: Path) -> dict:
             "native_binding_plan_hash": f"PLAN-{sid}",
             "native_snapshot_hash": f"SNAP-{sid}",
             "native_semantic_binding_profile_hash": f"SEM-{sid}",
+            "native_model_snapshot_hash": f"MODEL-{sid}",
+            "native_model_design_state_hash": f"STATE-{sid}",
+            "native_model_snapshot_phase": "post_solve",
+            "native_repair_plan_hash": f"REPAIR-{sid}",
+            "native_fault_tree_hash": f"FAULT-{sid}",
+            "native_repair_attempt_count": 0,
+            "native_spatial_overlay_hash": f"OVERLAY-{sid}",
+            "native_spatial_geometry_hash": f"GEOMETRY-{sid}",
+            "native_spatial_coordinate_alignment": "CONFIRMED",
             "result_bundle_id": f"RB-{sid}",
             "result_bundle_hash": f"HASH-{sid}",
             "evidence": {
@@ -93,7 +105,7 @@ def _qualified_payload(tmp_path: Path) -> dict:
         evidence_file = root / row["evidence"]["packaged_path"]
         evidence_file.write_text(json.dumps({
             "authority": "NativeScenarioProductionEvidenceV1",
-            "contract_version": "0.88-A",
+            "contract_version": "0.88-F",
             "scenario": {key: value for key, value in row.items() if key != "evidence"},
         }, sort_keys=True), encoding="utf-8")
         row["evidence"]["sha256"] = _sha256(evidence_file)
@@ -185,6 +197,11 @@ def _qualified_payload(tmp_path: Path) -> dict:
             "wheel_install_smoke": True,
             "runtime_lifecycle_qualification": True,
             "native_semantic_authority": True,
+            "native_model_readback_authority": True,
+            "native_repair_orchestration_authority": True,
+            "editor_transaction_reconciliation_authority": True,
+            "native_preview_visualization_reconciliation_authority": True,
+            "native_spatial_geometry_result_overlay_authority": True,
         },
         "artifacts": {
             "evidence_complete": True,
@@ -199,15 +216,23 @@ def _qualified_payload(tmp_path: Path) -> dict:
     }
 
 
-def test_v088a_matrix_is_fixed_at_four_native_scenarios_seventeen_faults_and_semantic_authority():
+def test_v088c_matrix_is_fixed_at_four_native_scenarios_seventeen_faults_and_repair_authority():
     spec = qualification_matrix_spec()
     assert spec["authority"] == "WindowsMotorCADProductionQualificationV2"
-    assert spec["contract_version"] == "0.88-A"
+    assert spec["contract_version"] == "0.88-F"
     assert [row["id"] for row in spec["representative_scenarios"]] == ["SPM", "IPM", "AFPM", "IM"]
     assert len(spec["failure_injections"]) == 17
-    assert len(spec["release_gates"]) == 7
+    assert len(spec["release_gates"]) == 12
     assert "native_semantic_authority" in spec["release_gates"]
+    assert "native_model_readback_authority" in spec["release_gates"]
+    assert "native_repair_orchestration_authority" in spec["release_gates"]
+    assert "editor_transaction_reconciliation_authority" in spec["release_gates"]
+    assert "native_preview_visualization_reconciliation_authority" in spec["release_gates"]
+    assert "native_spatial_geometry_result_overlay_authority" in spec["release_gates"]
     assert all("native_semantic_binding_qualified" in row["required_gates"] for row in spec["representative_scenarios"])
+    assert all("native_model_readback_qualified" in row["required_gates"] for row in spec["representative_scenarios"])
+    assert all("native_repair_orchestration_clean" in row["required_gates"] for row in spec["representative_scenarios"])
+    assert all("native_spatial_overlay_qualified" in row["required_gates"] for row in spec["representative_scenarios"])
     assert "100/500" in spec["soak_boundary"]
     assert MotorCADInstallationManager.normalize_motorcad_version("2026.1.0.0") == "2026R1"
     assert MotorCADInstallationManager.normalize_motorcad_version("Motor-CAD 2026 R1") == "2026R1"
@@ -254,6 +279,44 @@ def test_v088a_release_contract_is_fail_closed_for_missing_semantic_authority(tm
     assert "RELEASE_GATE_MATRIX_INCOMPLETE" in imported["qualification_blockers"]
     assert "NATIVE_SEMANTIC_BINDING_QUALIFIED" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
     assert "NATIVE_SEMANTIC_BINDING_PROFILE_HASH" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
+
+
+def test_v088b_release_contract_is_fail_closed_for_missing_native_model_readback(tmp_path: Path):
+    service = WindowsProductionQualificationService(Database(tmp_path / "studio.db"))
+    payload = _qualified_payload(tmp_path)
+    payload["representative_scenarios"][0]["native_model_readback_qualified"] = False
+    payload["representative_scenarios"][0]["native_model_snapshot_hash"] = ""
+    payload["representative_scenarios"][0]["native_model_design_state_hash"] = ""
+    payload["representative_scenarios"][0]["native_model_snapshot_phase"] = "post_native_validation"
+    payload["release_gates"]["native_model_readback_authority"] = False
+    imported = service.import_run(WindowsProductionQualificationImport.model_validate(payload))
+    assert imported["formal_workstation_qualified"] is False
+    assert "REPRESENTATIVE_NATIVE_SCENARIO_FAILED" in imported["qualification_blockers"]
+    assert "RELEASE_GATE_MATRIX_INCOMPLETE" in imported["qualification_blockers"]
+    assert "NATIVE_MODEL_READBACK_QUALIFIED" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
+    assert "NATIVE_MODEL_SNAPSHOT_HASH" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
+    assert "NATIVE_MODEL_DESIGN_STATE_HASH" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
+    assert "NATIVE_MODEL_SNAPSHOT_PHASE" in imported["coverage"]["scenario_results"]["SPM"]["issues"]
+
+
+def test_v088c_release_contract_is_fail_closed_for_missing_repair_orchestration_authority(tmp_path: Path):
+    service = WindowsProductionQualificationService(Database(tmp_path / "studio.db"))
+    payload = _qualified_payload(tmp_path)
+    row = payload["representative_scenarios"][0]
+    row["native_repair_orchestration_clean"] = False
+    row["native_repair_plan_hash"] = ""
+    row["native_fault_tree_hash"] = ""
+    row["native_repair_attempt_count"] = 1
+    payload["release_gates"]["native_repair_orchestration_authority"] = False
+    imported = service.import_run(WindowsProductionQualificationImport.model_validate(payload))
+    assert imported["formal_workstation_qualified"] is False
+    assert "REPRESENTATIVE_NATIVE_SCENARIO_FAILED" in imported["qualification_blockers"]
+    assert "RELEASE_GATE_MATRIX_INCOMPLETE" in imported["qualification_blockers"]
+    issues = imported["coverage"]["scenario_results"]["SPM"]["issues"]
+    assert "NATIVE_REPAIR_ORCHESTRATION_CLEAN" in issues
+    assert "NATIVE_REPAIR_PLAN_HASH" in issues
+    assert "NATIVE_FAULT_TREE_HASH" in issues
+    assert "NATIVE_REPAIR_ATTEMPT_COUNT" in issues
 
 
 def test_v087fb_requires_exact_pymotorcad_and_verified_motorcad_binary_version(tmp_path: Path):
@@ -334,14 +397,46 @@ def test_v087fb_release_truth_and_api_registration():
     manifest = json.loads((root / "RELEASE_MANIFEST.json").read_text(encoding="utf-8"))
     main = (root / "motorcad_studio" / "main.py").read_text(encoding="utf-8")
     html = (root / "motorcad_studio" / "static" / "index.html").read_text(encoding="utf-8")
-    assert __version__ == "0.88.1"
-    assert manifest["version"] == "0.88.1"
+    assert __version__ == "0.89.9"
+    assert manifest["version"] == "0.89.9"
     assert manifest["release_track"] == "current_clean_release"
     assert manifest["native_motorcad_workstation_qualification_percent"] == 0
-    assert 'data-studio-version="0.88.1"' in html
-    assert '<span class="version">0.88.1</span>' in html
+    assert 'data-studio-version="0.89.9"' in html
+    assert '<span class="version">0.89.9</span>' in html
     assert '/api/windows-production-qualification' in main
     assert '/api/windows-production-qualification/matrix' in main
     assert '/api/windows-production-qualification-runs/import' in main
     assert '"windows_motorcad_production_qualification_v2": True' in main
     assert '"windows_production_qualification_matrix_v087fb": True' in main
+
+
+def test_v088d_release_contract_is_fail_closed_for_missing_editor_transaction_reconciliation_authority(tmp_path):
+    payload = _qualified_payload(tmp_path)
+    payload["release_gates"]["editor_transaction_reconciliation_authority"] = False
+    request = WindowsProductionQualificationImport.model_validate(payload)
+    qualified, blockers, coverage = WindowsProductionQualificationService._evaluate(request.model_dump(mode="json"))
+    assert qualified is False
+    assert "RELEASE_GATE_MATRIX_INCOMPLETE" in blockers
+    assert coverage["release_gate_required"] == 12
+
+
+def test_v088e_release_contract_is_fail_closed_for_missing_native_preview_visualization_reconciliation_authority(tmp_path):
+    payload = _qualified_payload(tmp_path)
+    payload["release_gates"]["native_preview_visualization_reconciliation_authority"] = False
+    request = WindowsProductionQualificationImport.model_validate(payload)
+    qualified, blockers, coverage = WindowsProductionQualificationService._evaluate(request.model_dump(mode="json"))
+    assert qualified is False
+    assert "RELEASE_GATE_MATRIX_INCOMPLETE" in blockers
+    assert coverage["release_gate_required"] == 12
+    assert coverage["release_gate_passed"] == 11
+
+
+def test_v088f_release_contract_is_fail_closed_for_missing_native_spatial_geometry_result_overlay_authority(tmp_path):
+    payload = _qualified_payload(tmp_path)
+    payload["release_gates"]["native_spatial_geometry_result_overlay_authority"] = False
+    request = WindowsProductionQualificationImport.model_validate(payload)
+    qualified, blockers, coverage = WindowsProductionQualificationService._evaluate(request.model_dump(mode="json"))
+    assert qualified is False
+    assert "RELEASE_GATE_MATRIX_INCOMPLETE" in blockers
+    assert coverage["release_gate_required"] == 12
+    assert coverage["release_gate_passed"] == 11

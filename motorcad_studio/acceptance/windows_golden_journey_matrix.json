@@ -1,0 +1,13 @@
+{
+  "authority": "WindowsNativeGoldenJourneyQualificationV1",
+  "contract_version": "0.89-D",
+  "predecessor": "WindowsMotorCADProductionQualificationV2",
+  "target_motorcad_version": "2026R1",
+  "browser": "Chromium live Studio shell",
+  "journeys": [
+    {"id": "SPM", "starter_id": "golden_spm_servo", "template_id": "i5_Industrial_SPM_Servo_Tooth_Wound"},
+    {"id": "IPM", "starter_id": "golden_ipm_emobility", "template_id": "e9_eMobility_IPM"},
+    {"id": "AFPM", "starter_id": "golden_afpm_ssdr", "template_id": "e14_eMobility_AFM"}
+  ],
+  "formal_gate": "V0.88-F formal Native qualification PASS + 3/3 live UI Golden Journeys PASS + V0.89-A/B/C release gates + immutable screenshots/Playwright trace/summary manifest"
+}

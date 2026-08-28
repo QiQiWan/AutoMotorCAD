@@ -34,5 +34,5 @@ def test_analysis_creation_requires_existing_solution_revision():
 
 def test_canonical_assets_are_loaded_after_router_owner_boundary():
     html=read('index.html')
-    assert '/static/canonical-project-flow.css?v=0.88.1' in html
+    assert '/static/canonical-project-flow.css?v=0.89.9' in html
     assert html.index('/static/canonical-project-flow.js?v=')>html.index('/static/router.js?v=')

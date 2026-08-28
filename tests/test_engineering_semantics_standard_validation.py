@@ -63,53 +63,53 @@ def test_v087c_starter_scorecards_use_only_canonical_result_ids_and_guard_unqual
 
 
 def test_v087b_starter_revision_persists_authoritative_product_provenance():
-    client = TestClient(app)
-    project_id, revision_id, created = _create_revision(client, "golden_spm_servo")
-    revision = created["revisions"][0]
-    assert revision["id"] == revision_id
-    assert revision["source_snapshot"]["authority"] == "GoldenMotorDesignStarterV1"
-    assert revision["source_snapshot"]["design_starter_id"] == "golden_spm_servo"
-    assert revision["source_snapshot"]["design_starter_contract_version"] == "0.87-D"
-    assert revision["capability_snapshot"]["golden_starter"] is True
-    assert revision["capability_snapshot"]["qualification_status"] == "windows_pending"
-    assert project_id
+    with TestClient(app) as client:
+        project_id, revision_id, created = _create_revision(client, "golden_spm_servo")
+        revision = created["revisions"][0]
+        assert revision["id"] == revision_id
+        assert revision["source_snapshot"]["authority"] == "GoldenMotorDesignStarterV1"
+        assert revision["source_snapshot"]["design_starter_id"] == "golden_spm_servo"
+        assert revision["source_snapshot"]["design_starter_contract_version"] == "0.87-D"
+        assert revision["capability_snapshot"]["golden_starter"] is True
+        assert revision["capability_snapshot"]["qualification_status"] == "windows_pending"
+        assert project_id
 
 
 def test_v087d_all_golden_starters_have_ready_standard_validation_and_complete_scorecard_coverage():
-    client = TestClient(app)
     expected_steps = {"golden_spm_servo": 4, "golden_ipm_emobility": 5, "golden_afpm_ssdr": 4}
     expected_metrics = {"golden_spm_servo": 8, "golden_ipm_emobility": 9, "golden_afpm_ssdr": 8}
-    for starter_id in STARTERS:
-        project_id, revision_id, _ = _create_revision(client, starter_id)
-        response = client.get(f"/api/projects/{project_id}/design-revisions/{revision_id}/standard-validation-package")
-        assert response.status_code == 200, response.text
-        package = response.json()
-        assert package["authority"] == "StandardValidationPackageV1"
-        assert package["contract_version"] == "0.87-D"
-        assert package["ready_to_materialize"] is True
-        assert package["blocking_step_count"] == 0
-        assert len(package["steps"]) == expected_steps[starter_id]
-        assert all(step["ready"] is True for step in package["steps"])
-        coverage = package["scorecard_coverage"]
-        assert coverage["complete"] is True
-        assert coverage["missing_metric_ids"] == []
-        assert coverage["metric_count"] == expected_metrics[starter_id]
-        assert coverage["covered_count"] == expected_metrics[starter_id]
-        assert all(coverage["providers"][row["metric_id"]] for row in package["scorecard_contract"])
+    with TestClient(app) as client:
+        for starter_id in STARTERS:
+            project_id, revision_id, _ = _create_revision(client, starter_id)
+            response = client.get(f"/api/projects/{project_id}/design-revisions/{revision_id}/standard-validation-package")
+            assert response.status_code == 200, response.text
+            package = response.json()
+            assert package["authority"] == "StandardValidationPackageV1"
+            assert package["contract_version"] == "0.87-D"
+            assert package["ready_to_materialize"] is True
+            assert package["blocking_step_count"] == 0
+            assert len(package["steps"]) == expected_steps[starter_id]
+            assert all(step["ready"] is True for step in package["steps"])
+            coverage = package["scorecard_coverage"]
+            assert coverage["complete"] is True
+            assert coverage["missing_metric_ids"] == []
+            assert coverage["metric_count"] == expected_metrics[starter_id]
+            assert coverage["covered_count"] == expected_metrics[starter_id]
+            assert all(coverage["providers"][row["metric_id"]] for row in package["scorecard_contract"])
 
 
 def test_v087d_engineering_scorecard_exists_before_results_and_uses_canonical_contract():
-    client = TestClient(app)
-    project_id, revision_id, _ = _create_revision(client, "golden_spm_servo")
-    response = client.get(f"/api/projects/{project_id}/design-revisions/{revision_id}/engineering-scorecard")
-    assert response.status_code == 200, response.text
-    scorecard = response.json()
-    assert scorecard["authority"] == "EngineeringScorecardV1"
-    assert scorecard["contract_version"] == "0.87-D"
-    assert scorecard["overall_status"] == "NO_RESULTS"
-    assert scorecard["summary"]["metric_count"] == 8
-    assert scorecard["summary"]["missing_count"] == 8
-    assert scorecard["summary"]["observed_count"] == 0
-    assert scorecard["next_action"]["stage"] == "validate"
-    assert {row["metric_id"] for row in scorecard["cards"]} == set(design_starters.get("golden_spm_servo")["result_scorecard"])
-    assert all(row["description"] for row in scorecard["cards"])
+    with TestClient(app) as client:
+        project_id, revision_id, _ = _create_revision(client, "golden_spm_servo")
+        response = client.get(f"/api/projects/{project_id}/design-revisions/{revision_id}/engineering-scorecard")
+        assert response.status_code == 200, response.text
+        scorecard = response.json()
+        assert scorecard["authority"] == "EngineeringScorecardV1"
+        assert scorecard["contract_version"] == "0.87-D"
+        assert scorecard["overall_status"] == "NO_RESULTS"
+        assert scorecard["summary"]["metric_count"] == 8
+        assert scorecard["summary"]["missing_count"] == 8
+        assert scorecard["summary"]["observed_count"] == 0
+        assert scorecard["next_action"]["stage"] == "validate"
+        assert {row["metric_id"] for row in scorecard["cards"]} == set(design_starters.get("golden_spm_servo")["result_scorecard"])
+        assert all(row["description"] for row in scorecard["cards"])

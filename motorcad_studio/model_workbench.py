@@ -11,6 +11,7 @@ from .db import Database
 from .geometry_guard import validate_geometry_relations
 from .winding_guard import validate_winding_relations
 from .motor_domain import MotorSnapshot
+from .native_preview import NativePreviewReconciliationAuthority
 
 
 class ModelWorkbenchService:
@@ -34,6 +35,7 @@ class ModelWorkbenchService:
         self.regions: dict[str, dict[str, Any]] = dict(payload.get("regions") or {})
         self.category_order: list[str] = list(payload.get("category_order") or ["topology", "geometry", "magnet", "winding"])
         self.category_labels: dict[str, str] = dict(payload.get("category_labels") or {})
+        self.native_preview_authority = NativePreviewReconciliationAuthority()
 
     @staticmethod
     def _loads(value: str | None, default: Any) -> Any:
@@ -65,6 +67,8 @@ class ModelWorkbenchService:
         row["capability_snapshot"] = self._loads(row.pop("capability_snapshot_json", None), {})
         row["source_snapshot"] = self._loads(row.pop("source_snapshot_json", None), {})
         row["motor_snapshot"] = self._loads(row.pop("motor_snapshot_json", None), {})
+        row["editor_transaction"] = self._loads(row.pop("editor_transaction_json", None), {})
+        row["native_reconciliation"] = self._loads(row.pop("native_reconciliation_json", None), {})
         row["motor_snapshot_schema_version"] = int(row.get("motor_snapshot_schema_version") or 1)
         row["motor_snapshot_hash"] = str(row.get("motor_snapshot_hash") or "")
         return row
@@ -184,8 +188,12 @@ class ModelWorkbenchService:
             except (OSError, json.JSONDecodeError, TypeError):
                 winding_definition = None
         native_fea = next((a for a in artifact_rows if a.get("name") == "native_fea_manifest.json"), None)
+        raw_payload = raw if isinstance(raw, dict) else {}
+        native_model_snapshot = dict(raw_payload.get("native_model_snapshot") or {})
+        native_preview_projection = dict(native_model_snapshot.get("preview_projection") or {})
         return {
             "task_id": row["task_id"],
+            "design_revision_id": revision_id,
             "task_name": row.get("task_name"),
             "task_status": row.get("task_status"),
             "case_id": row["id"],
@@ -199,6 +207,11 @@ class ModelWorkbenchService:
             "winding_definition_artifact": winding_definition_artifact,
             "winding_definition": winding_definition,
             "native_fea_artifact": native_fea,
+            "native_model_snapshot": native_model_snapshot or None,
+            "native_model_snapshot_hash": raw_payload.get("native_model_snapshot_hash"),
+            "native_model_design_state_hash": raw_payload.get("native_model_design_state_hash"),
+            "native_model_snapshot_phase": raw_payload.get("native_model_snapshot_phase") or native_model_snapshot.get("phase"),
+            "native_preview_projection": native_preview_projection or None,
             "artifacts": artifact_rows,
         }
 
@@ -415,6 +428,22 @@ class ModelWorkbenchService:
             })
         effective_materials = {**recorded_materials, "component_materials": effective_components, "material_provenance": material_provenance,
                                "inherited_component_materials": inherited_components, "template_component_materials": template_components}
+        def native_motor_object_builder(native_values: dict[str, Any]):
+            if self.motor_domain is None:
+                return None
+            snapshot_payload = record.get("motor_snapshot") or self.motor_domain.build_snapshot(record, record).model_dump(mode="json")
+            snapshot = MotorSnapshot.model_validate(snapshot_payload)
+            return self.motor_domain.motor_object(snapshot, native_values)
+
+        visualization_reconciliation = self.native_preview_authority.build(
+            revision={**record, "motor_snapshot_hash": record.get("motor_snapshot_hash")},
+            effective_parameters=merged,
+            parameter_rows=rows,
+            winding_design=winding_design,
+            native_evidence=native_evidence,
+            native_reconciliation=record.get("native_reconciliation") or {},
+            native_motor_object_builder=native_motor_object_builder,
+        )
         groups = []
         for category in self.category_order:
             members = [row for row in rows if row["category"] == category]
@@ -460,8 +489,12 @@ class ModelWorkbenchService:
             "precheck": current_check,
             "previous_feasible": previous,
             "native_evidence": native_evidence,
+            "editor_transaction": record.get("editor_transaction") or None,
+            "native_reconciliation": record.get("native_reconciliation") or None,
+            "visualization_reconciliation": visualization_reconciliation,
             "authority": {
                 "instant_preview": "studio_parameter_model",
+                "native_preview": "NativePreviewReconciliationAuthorityV1",
                 "static_constraints": "studio_precheck",
                 "native_model": "motorcad_case_evidence",
                 "winding_pattern": "motorcad_winding_pattern_artifact",

@@ -5,7 +5,7 @@
 (() => {
   const $q=(selector,root=document)=>root.querySelector(selector);
   const safe=value=>window.MCSDesignRenderUtils?.safe?.(value)??String(value??'');
-  const visualState={designId:null,revisionId:null,data:null,view:'radial',selectedParameter:null,requestedView:null,requestToken:0,abortController:null};
+  const visualState={designId:null,revisionId:null,data:null,view:'radial',visualSource:'auto',selectedParameter:null,requestedView:null,requestToken:0,abortController:null};
 
   function designStageForView(view){return window.MCSAppCore?.stageForView?.(view)||(view==='winding'||view==='slot'?'winding':view==='materials'?'materials':['evidence','native'].includes(view)?'validation':view==='compare'?'compare':'geometry')}
   function availableDesignViews(data){return new Set((data?.design_views||[]).filter(row=>row.available).map(row=>row.id))}
@@ -30,13 +30,25 @@
     return`<div class="design-next-step-v061 design-next-step-v062 design-next-step-v063 design-next-step-v064"><div><span>推荐下一步</span><b>${safe(next.label)}</b><small>按“几何 → 绕组 → 材料 → 设计验证 → 分析设置”的单一路径继续。</small></div><button type="button" class="primary" data-design-next-v061="${safe(next.target)}">${safe(next.label)} →</button></div>`;
   }
 
+  function savedTransactionStrip(data){
+    const tx=data?.editor_transaction||{},native=data?.native_reconciliation||{};
+    const status=String(native.status||'UNCHECKED').toUpperCase();
+    const label={CURRENT:'保存时已与 Motor-CAD 对齐',DRIFT:'保存时 Native 存在漂移',PARTIAL:'保存时 Native 证据不完整',FAILED:'保存时 Native 检查失败',UNCHECKED:'保存时未取得 Native 证据'}[status]||status;
+    const tone=status==='CURRENT'?'current':(['DRIFT','FAILED'].includes(status)?'error':'pending');
+    return `<div class="saved-transaction-strip-v088d"><div><span>当前设计</span><b>已保存 · 不可变历史</b></div><div class="${safe(tone)}"><span>Motor-CAD 协调状态</span><b>${safe(label)}</b></div><div><span>来源事务</span><b>${tx.transaction_id?safe(String(tx.transaction_id).replace(/^EDT-/,'').slice(-8)):'历史版本'}</b></div><div><span>模板</span><b>只读</b></div></div>`;
+  }
+
   function renderDesignView(){
     const data=visualState.data,stage=$q('#designViewStageV031'),panel=$q('#designParamPanelV031');if(!data||!stage||!panel)return;
     window.MCSDesignStore?.setContext?.({projectId:state.activeProjectId||null,designId:visualState.designId,revisionId:visualState.revisionId,mode:'read',view:visualState.view,selectedParameter:visualState.selectedParameter,data},{source:'viewer-render'});
     renderDesignNavigation();
-    const ctx={data,values:data.effective_parameters||{},precheck:data.precheck||{},editable:false,selected:visualState.selectedParameter};
+    const reconciliation=data.visualization_reconciliation||{};
+    const effectiveSource=window.MCSDesignRenderer?.resolveVisualSource?.(reconciliation,visualState.visualSource,'read')||'design';
+    const ctx={data,values:data.effective_parameters||{},precheck:data.precheck||{},editable:false,selected:visualState.selectedParameter,visualSource:effectiveSource,visualizationReconciliation:reconciliation};
     const auxiliary=window.MCSDesignRenderer?.renderAuxiliaryView?.(visualState.view,data);
-    stage.innerHTML=auxiliary??window.MCSDesignRenderer?.renderWorkbenchView?.(visualState.view,ctx)??'<div class="native-empty-v031">当前视图不可用。</div>';
+    const toolbar=['radial','axial','winding','slot','materials'].includes(visualState.view)?(window.MCSDesignRenderer?.toolbar?.(data,{source:visualState.visualSource,mode:'read',reconciliation})||''):'';
+    const rendered=auxiliary??window.MCSDesignRenderer?.renderWorkbenchView?.(visualState.view,ctx)??'<div class="native-empty-v031">当前视图不可用。</div>';
+    stage.innerHTML=toolbar+rendered;
     panel.innerHTML=window.MCSDesignRenderer?.renderReadOnlyPanel?.(visualState.view,data,{selectedParameter:visualState.selectedParameter})||'';
     stage.insertAdjacentHTML('beforeend',designNextStep(visualState.view,data));
     window.MCSAppCore?.emit?.('mcs:workspace-rendered',{designId:visualState.designId,revisionId:visualState.revisionId,view:visualState.view,editing:false});
@@ -63,6 +75,7 @@
   function bindDesignViewer(root){
     if(root.dataset.designViewerBoundV064)return;root.dataset.designViewerBoundV064='1';
     root.addEventListener('click',event=>{
+      const sourceButton=event.target.closest('[data-visual-source-v088e]');if(sourceButton){visualState.visualSource=sourceButton.dataset.visualSourceV088e||'auto';renderDesignView();return;}
       const caseButton=event.target.closest('[data-open-evidence-case-v057]');if(caseButton){openEvidenceCase(caseButton.dataset.openEvidenceCaseV057);return;}
       const stageButton=event.target.closest('[data-design-stage-v062]');if(stageButton){const target=chooseStage(stageButton.dataset.designStageV062,visualState.data);if(target)setView(target,{source:'viewer-stage'});return;}
       const tab=event.target.closest('[data-design-view-v031]');if(tab){setView(tab.dataset.designViewV031,{source:'viewer-tab'});return;}
@@ -87,12 +100,13 @@
       const routed=available.has(window.MCSDesignStore?.currentView?.())?window.MCSDesignStore.currentView():null;
       const preserved=visualState.designId===designId&&visualState.revisionId===revisionId&&available.has(visualState.view)?visualState.view:null;
       const identityChanged=visualState.designId!==designId||visualState.revisionId!==revisionId;
+      if(identityChanged)visualState.visualSource='auto';
       visualState.designId=designId;visualState.revisionId=revisionId;visualState.data=data;visualState.view=requested||routed||preserved||preferred;visualState.requestedView=null;if(identityChanged)visualState.selectedParameter=null;
       window.MCSDesignStore?.setContext?.({projectId:state.activeProjectId||null,designId,revisionId,mode:'read',view:visualState.view,selectedParameter:visualState.selectedParameter,data},{source:'viewer-load'});
       const oldCard=layout.querySelector('.design-schematic-card');let root=$q('#designViewerV031');
       if(!root){root=document.createElement('section');root.id='designViewerV031';root.className='design-viewer-v031 design-viewer-v064';oldCard?.replaceWith(root);bindDesignViewer(root)}
       layout.classList.add('design-visual-layout-v031');
-      root.innerHTML=`<div class="design-navigation-v062"><div id="designStageNavV062" class="design-stage-nav-v062" aria-label="电机设计步骤"></div><div id="designSubviewNavV062" class="design-subview-nav-v062" aria-label="当前设计步骤视图"></div></div><div class="design-view-body-v031"><div id="designViewStageV031" class="design-view-stage-v031"></div><div id="designParamPanelV031"></div></div>`;
+      root.innerHTML=`${savedTransactionStrip(data)}<div class="design-navigation-v062"><div id="designStageNavV062" class="design-stage-nav-v062" aria-label="电机设计步骤"></div><div id="designSubviewNavV062" class="design-subview-nav-v062" aria-label="当前设计步骤视图"></div></div><div class="design-view-body-v031"><div id="designViewStageV031" class="design-view-stage-v031"></div><div id="designParamPanelV031"></div></div>`;
       const summary=$q('#workspaceRevisionSummary');if(summary&&!summary.dataset.v031Wrapped){const original=summary.innerHTML;summary.innerHTML=`<details class="revision-trace-v031"><summary><span><b>设计版本参数与追溯信息</b><small>完整参数快照、内容哈希与创建时间</small></span></summary><div>${original}</div></details>`;summary.dataset.v031Wrapped='1'}
       renderDesignView();
     }catch(error){if(controller.signal.aborted||window.MCSPageRuntime?.isAbortError?.(error))return;console.warn('design visual workspace',error)}

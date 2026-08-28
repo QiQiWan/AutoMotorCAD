@@ -16,6 +16,9 @@ from .contracts import (
     NativeParameterReadback,
     NativeWindingReadback,
 )
+from .readback_authority import NativeGeometryWindingReadbackAuthority
+from .fault_tree import NativeValidationFaultTreeAuthority
+from .repair_orchestration import NativeRepairOrchestrator
 
 
 class NativeBindingError(RuntimeError):
@@ -39,6 +42,9 @@ class MotorCADBindingExecutor:
         self.strict = bool(strict)
         self.visible = bool(visible)
         self.event_sink = event_sink
+        self.readback_authority = NativeGeometryWindingReadbackAuthority()
+        self.fault_tree_authority = NativeValidationFaultTreeAuthority()
+        self.repair_orchestrator = NativeRepairOrchestrator(readback_authority=self.readback_authority)
 
     def _emit(self, event_type: str, message: str, *, level: str = "INFO", payload: dict[str, Any] | None = None) -> None:
         if self.event_sink is None:
@@ -178,58 +184,9 @@ class MotorCADBindingExecutor:
         return None
 
     def _capture_winding(self, mc: Any, plan: MotorCADBindingPlan) -> NativeWindingReadback:
-        winding = plan.winding
-        row = NativeWindingReadback(
-            supported=hasattr(mc, "get_winding_coil"),
-            phase_count=winding.expected_phase_count,
-            parallel_paths=winding.expected_parallel_paths,
-            slot_count=winding.expected_slot_count,
-        )
-        if not row.supported:
-            row.errors.append("PyMotorCAD get_winding_coil is unavailable")
-            return row
-
-        # Custom winding has an exact addressing contract, so read back exactly those
-        # coils.  Template/high-level winding is sampled by phase/path until the API
-        # reports consecutive misses, matching the legacy parity evidence policy.
-        if winding.coils:
-            targets = [(c.phase, c.path, c.coil) for c in winding.coils]
-        else:
-            phases = max(1, int(winding.expected_phase_count or 3))
-            paths = max(1, int(winding.expected_parallel_paths or 1))
-            slot_count = max(0, int(winding.expected_slot_count or 0))
-            max_coils = max(8, min(512, slot_count * 2 if slot_count else 64))
-            targets = []
-            for phase in range(1, phases + 1):
-                for path in range(1, paths + 1):
-                    for coil in range(1, max_coils + 1):
-                        targets.append((phase, path, coil))
-
-        seen_by_pair: dict[tuple[int, int], int] = {}
-        misses_by_pair: dict[tuple[int, int], int] = {}
-        stopped: set[tuple[int, int]] = set()
-        for phase, path, coil in targets:
-            pair = (phase, path)
-            if pair in stopped:
-                continue
-            try:
-                payload = self._native_coil_payload(mc.get_winding_coil(phase, path, coil))
-                if payload:
-                    row.coils.append({"phase": phase, "path": path, "coil": coil, **payload})
-                    seen_by_pair[pair] = seen_by_pair.get(pair, 0) + 1
-                    misses_by_pair[pair] = 0
-                else:
-                    misses_by_pair[pair] = misses_by_pair.get(pair, 0) + 1
-            except Exception as exc:
-                misses_by_pair[pair] = misses_by_pair.get(pair, 0) + 1
-                if coil <= 2 and seen_by_pair.get(pair, 0) == 0:
-                    row.errors.append(f"phase={phase}, path={path}, coil={coil}: {type(exc).__name__}: {exc}")
-            if not winding.coils:
-                if seen_by_pair.get(pair, 0) and misses_by_pair.get(pair, 0) >= 2:
-                    stopped.add(pair)
-                elif not seen_by_pair.get(pair, 0) and coil >= 3:
-                    stopped.add(pair)
-        return row
+        # V0.88-B owns winding readback centrally so runtime, qualification and UI
+        # evidence cannot disagree about coil topology.
+        return self.readback_authority.capture_winding(mc, plan)
 
     def _apply_custom_winding(self, mc: Any, plan: MotorCADBindingPlan) -> dict[str, Any]:
         audit: dict[str, Any] = {"mode": plan.winding.mode, "authority": plan.winding.authority, "coils": []}
@@ -402,21 +359,10 @@ class MotorCADBindingExecutor:
                     raise NativeBindingError(f"Motor-CAD fluid binding failed: {fluid.cooling_type}") from exc
         return rows, audit
 
-    @staticmethod
-    def _geometry_readback(mc: Any) -> NativeGeometryReadback:
-        row = NativeGeometryReadback(api_supported=hasattr(mc, "check_if_geometry_is_valid"))
-        if not row.api_supported:
-            return row
-        try:
-            # Motor-CAD raises when geometry is invalid; the production solver owns the
-            # edit/recovery pass and therefore this snapshot deliberately requests no edit.
-            raw = mc.check_if_geometry_is_valid(0)
-            row.raw_return = raw
-            row.valid = True
-        except Exception as exc:
-            row.valid = False
-            row.errors.append(f"{type(exc).__name__}: {exc}")
-        return row
+    def _geometry_readback(self, mc: Any, plan: MotorCADBindingPlan) -> NativeGeometryReadback:
+        # Compatibility facade for callers that still consume the legacy field. The
+        # authoritative payload is NativeModelSnapshot.geometry.
+        return self.readback_authority.capture_geometry(mc, plan)
 
     def _collect_required_failures(
         self,
@@ -482,18 +428,30 @@ class MotorCADBindingExecutor:
         return sorted(set(failures))
 
     def refresh_native_snapshot(self, mc: Any, application: NativeBindingApplication) -> MotorCADNativeSnapshot:
-        """Refresh state that Motor-CAD may rebuild during native validation.
+        """Capture authoritative post-validation native geometry/winding state.
 
-        ``create_winding_pattern`` and geometry validation can update native state after
-        the initial write/readback. V0.73-A therefore captures winding and geometry a
-        second time before qualification is evaluated, while preserving the exact
-        parameter/material readback produced by the frozen BindingPlan application.
+        Motor-CAD can regenerate geometry and winding when native checks are run.
+        V0.88-B therefore re-reads the loaded model after validation and stores one
+        canonical NativeModelSnapshot. Downstream production gates consume this object
+        instead of reconstructing parity independently.
         """
         plan = application.plan
         snapshot = application.native_snapshot.model_copy(deep=True)
-        snapshot.winding_readback = self._capture_winding(mc, plan)
-        snapshot.geometry = self._geometry_readback(mc)
-        snapshot.unresolved_required_bindings = self._collect_required_failures(
+        prior_native_model = snapshot.native_model_snapshot
+        native_model = self.readback_authority.capture(
+            mc, plan, materials=list(snapshot.material_readback), phase="post_native_validation",
+        )
+        if prior_native_model is not None and prior_native_model.repair_history:
+            native_model.repair_history = list(prior_native_model.repair_history)
+            native_model.metadata["native_repair_history_preserved"] = True
+            native_model.metadata["native_repair_attempt_count"] = len(native_model.repair_history)
+            native_model.metadata["last_native_repair_attempt_hash"] = native_model.repair_history[-1].content_hash()
+            native_model.metadata["last_native_repair_outcome"] = native_model.repair_history[-1].outcome
+        snapshot.native_model_snapshot = native_model
+        snapshot.winding_readback = native_model.winding
+        snapshot.geometry = native_model.geometry
+        snapshot.material_readback = list(native_model.materials)
+        failures = self._collect_required_failures(
             plan,
             list(snapshot.parameter_readback),
             list(snapshot.material_readback),
@@ -501,6 +459,143 @@ class MotorCADBindingExecutor:
             snapshot.winding_readback,
             snapshot.geometry,
         )
+        failures.extend(native_model.required_mismatches)
+        failures.extend(native_model.unresolved_required)
+        snapshot.unresolved_required_bindings = sorted(set(failures))
+        snapshot.metadata["native_model_snapshot_hash"] = native_model.content_hash()
+        snapshot.metadata["native_model_design_state_hash"] = native_model.design_state_hash()
+        snapshot.metadata["native_model_readback_status"] = native_model.status
+        snapshot.metadata["native_repair_plan_hash"] = native_model.repair_plan.content_hash() if native_model.repair_plan else None
+        snapshot.metadata["native_repair_plan_status"] = native_model.repair_plan.status if native_model.repair_plan else None
+        application.native_snapshot = snapshot
+        self._emit(
+            "NATIVE_MODEL_READBACK_REFRESH",
+            "captured authoritative native model snapshot after validation",
+            level="INFO" if native_model.status == "QUALIFIED" else "WARNING",
+            payload={
+                "status": native_model.status,
+                "native_model_snapshot_hash": native_model.content_hash(),
+                "required_mismatches": native_model.required_mismatches,
+                "unresolved_required": native_model.unresolved_required,
+                "fault_tree": native_model.fault_tree,
+            },
+        )
+        return snapshot
+
+    def orchestrate_native_repairs(
+        self,
+        mc: Any,
+        application: NativeBindingApplication,
+        *,
+        policy: str = "safe_auto",
+    ) -> MotorCADNativeSnapshot:
+        """Run one bounded V0.88-C safe repair cycle and refresh parent evidence.
+
+        This method only synchronizes the live Motor-CAD session back to the frozen
+        BindingPlan. It never mutates DesignDraft or the source template.
+        """
+        snapshot = application.native_snapshot.model_copy(deep=True)
+        native_model = snapshot.native_model_snapshot
+        if native_model is None:
+            native_model = self.readback_authority.capture(
+                mc, application.plan, materials=list(snapshot.material_readback), phase="post_native_validation",
+            )
+        fresh, attempt = self.repair_orchestrator.orchestrate(
+            mc, application.plan, native_model, policy=policy, phase="post_native_validation",
+        )
+        snapshot.native_model_snapshot = fresh
+        snapshot.winding_readback = fresh.winding
+        snapshot.geometry = fresh.geometry
+        snapshot.material_readback = list(fresh.materials)
+        failures = self._collect_required_failures(
+            application.plan, list(snapshot.parameter_readback), list(snapshot.material_readback),
+            dict(application.material_audit or {}), snapshot.winding_readback, snapshot.geometry,
+        )
+        failures.extend(fresh.required_mismatches)
+        failures.extend(fresh.unresolved_required)
+        snapshot.unresolved_required_bindings = sorted(set(failures))
+        snapshot.metadata.update({
+            "native_model_snapshot_hash": fresh.content_hash(),
+            "native_model_design_state_hash": fresh.design_state_hash(),
+            "native_model_readback_status": fresh.status,
+            "native_repair_plan_hash": fresh.repair_plan.content_hash() if fresh.repair_plan else None,
+            "native_repair_plan_status": fresh.repair_plan.status if fresh.repair_plan else None,
+            "native_repair_attempt_hash": attempt.content_hash(),
+            "native_repair_outcome": attempt.outcome,
+            "native_repair_verified": attempt.verified,
+        })
+        application.native_snapshot = snapshot
+        self._emit(
+            "NATIVE_REPAIR_ORCHESTRATION",
+            f"native repair orchestration {attempt.outcome}",
+            level="INFO" if attempt.outcome in {"NOOP", "REPAIRED"} else "WARNING",
+            payload={
+                "attempt": attempt.model_dump(mode="json"),
+                "status": fresh.status,
+                "repair_plan": fresh.repair_plan.model_dump(mode="json") if fresh.repair_plan else None,
+            },
+        )
+        return snapshot
+
+    def capture_post_solve_snapshot(self, mc: Any, application: NativeBindingApplication) -> MotorCADNativeSnapshot:
+        """Reconfirm that solving did not mutate authoritative design state."""
+        plan = application.plan
+        snapshot = application.native_snapshot.model_copy(deep=True)
+        pre_solve_model = snapshot.native_model_snapshot
+        pre_solve_state_hash = pre_solve_model.design_state_hash() if pre_solve_model is not None else None
+        native_model = self.readback_authority.capture(
+            mc, plan, materials=list(snapshot.material_readback), phase="post_solve",
+        )
+        if pre_solve_model is not None and pre_solve_model.repair_history:
+            native_model.repair_history = list(pre_solve_model.repair_history)
+            native_model.metadata["native_repair_history_preserved"] = True
+            native_model.metadata["native_repair_attempt_count"] = len(native_model.repair_history)
+            native_model.metadata["last_native_repair_attempt_hash"] = native_model.repair_history[-1].content_hash()
+            native_model.metadata["last_native_repair_outcome"] = native_model.repair_history[-1].outcome
+        post_solve_state_hash = native_model.design_state_hash()
+        state_stable = pre_solve_state_hash is None or pre_solve_state_hash == post_solve_state_hash
+        if not state_stable:
+            token = "native_model:post_solve_state_drift"
+            native_model.required_mismatches = sorted(set([*native_model.required_mismatches, token]))
+            native_model.status = "DRIFT"
+            native_model.fault_tree.append({
+                "code": "NATIVE_POST_SOLVE_DESIGN_STATE_DRIFT",
+                "domain": "native_model",
+                "severity": "BLOCKING",
+                "status": "FAIL",
+                "message": "Motor-CAD 求解后原生设计状态指纹发生变化。",
+                "repair_hint": "比较 post_native_validation 与 post_solve NativeModelSnapshot；定位被求解过程改写的几何、绕组或材料状态。",
+                "details": {
+                    "pre_solve_design_state_hash": pre_solve_state_hash,
+                    "post_solve_design_state_hash": post_solve_state_hash,
+                },
+            })
+        # The post-solve drift is appended after the normal readback capture, so
+        # rebuild V0.88-C typed faults/repair actions to include this lifecycle fault.
+        self.fault_tree_authority.decorate_snapshot(native_model, plan, policy="suggest")
+        native_model.metadata["pre_solve_design_state_hash"] = pre_solve_state_hash
+        native_model.metadata["post_solve_design_state_hash"] = post_solve_state_hash
+        native_model.metadata["design_state_stable_after_solve"] = state_stable
+        native_model.preview_projection["qualified_for_native_preview"] = (
+            native_model.status == "QUALIFIED"
+            and bool(native_model.preview_projection.get("lineage_complete"))
+        )
+        snapshot.native_model_snapshot = native_model
+        snapshot.winding_readback = native_model.winding
+        snapshot.geometry = native_model.geometry
+        snapshot.material_readback = list(native_model.materials)
+        failures = self._collect_required_failures(
+            plan, list(snapshot.parameter_readback), list(snapshot.material_readback),
+            dict(application.material_audit or {}), snapshot.winding_readback, snapshot.geometry,
+        )
+        failures.extend(native_model.required_mismatches)
+        failures.extend(native_model.unresolved_required)
+        snapshot.unresolved_required_bindings = sorted(set(failures))
+        snapshot.metadata["native_model_snapshot_hash"] = native_model.content_hash()
+        snapshot.metadata["native_model_design_state_hash"] = post_solve_state_hash
+        snapshot.metadata["native_model_readback_status"] = native_model.status
+        snapshot.metadata["native_repair_plan_hash"] = native_model.repair_plan.content_hash() if native_model.repair_plan else None
+        snapshot.metadata["native_repair_plan_status"] = native_model.repair_plan.status if native_model.repair_plan else None
         application.native_snapshot = snapshot
         return snapshot
 
@@ -571,15 +666,21 @@ class MotorCADBindingExecutor:
 
         winding_audit = self._apply_custom_winding(mc, plan)
         material_rows, material_audit = self._apply_materials(mc, plan)
-        winding_readback = self._capture_winding(mc, plan)
-        geometry = self._geometry_readback(mc)
+        native_model = self.readback_authority.capture(
+            mc, plan, materials=material_rows, phase="post_binding",
+        )
+        winding_readback = native_model.winding
+        geometry = native_model.geometry
+        material_rows = list(native_model.materials)
 
-        # V0.73-A Native Closure: unresolved_required_bindings describes the whole
-        # native model, not parameters only. Qualification and trust UI consume this
-        # single L2 closure signal.
+        # V0.88-B: unresolved_required_bindings now includes the complete authoritative
+        # model readback contract. This makes geometry/winding/material drift visible
+        # before native validation and prevents separate parity implementations.
         required_failures = self._collect_required_failures(
             plan, parameter_rows, material_rows, material_audit, winding_readback, geometry,
         )
+        required_failures.extend(native_model.required_mismatches)
+        required_failures.extend(native_model.unresolved_required)
 
         model_file: str | None = None
         if save_model_path is not None and hasattr(mc, "save_to_file"):
@@ -596,6 +697,7 @@ class MotorCADBindingExecutor:
             winding_readback=winding_readback,
             material_readback=material_rows,
             geometry=geometry,
+            native_model_snapshot=native_model,
             messages=[],
             unresolved_required_bindings=sorted(set(required_failures)),
             metadata={
@@ -604,6 +706,11 @@ class MotorCADBindingExecutor:
                 "calculation_command": plan.calculation.command,
                 "result_contract_count": len(plan.results),
                 "native_semantic_authority": dict(plan.metadata.get("native_semantic_authority") or {}),
+                "native_model_snapshot_hash": native_model.content_hash(),
+                "native_model_design_state_hash": native_model.design_state_hash(),
+                "native_model_readback_status": native_model.status,
+                "native_repair_plan_hash": native_model.repair_plan.content_hash() if native_model.repair_plan else None,
+                "native_repair_plan_status": native_model.repair_plan.status if native_model.repair_plan else None,
             },
         )
         application = NativeBindingApplication(
@@ -622,6 +729,8 @@ class MotorCADBindingExecutor:
             paths = {
                 "motorcad_binding_plan.json": plan.model_dump(mode="json"),
                 "motorcad_native_snapshot.json": snapshot.model_dump(mode="json"),
+                "native_model_snapshot.json": native_model.model_dump(mode="json"),
+                "native_repair_plan.json": native_model.repair_plan.model_dump(mode="json") if native_model.repair_plan else {},
                 "native_binding_application.json": application.model_dump(mode="json"),
             }
             artifacts: list[str] = []
@@ -642,6 +751,8 @@ class MotorCADBindingExecutor:
                 "required_failures": sorted(set(required_failures)), "warnings": warnings,
                 "geometry_valid": geometry.valid, "winding_readback_count": len(winding_readback.coils),
                 "material_readback_count": len(material_rows),
+                "native_model_readback_status": native_model.status,
+                "native_model_snapshot_hash": native_model.content_hash(),
             },
         )
         return application

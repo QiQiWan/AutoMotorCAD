@@ -161,9 +161,9 @@
       return service.savePromise;
     }
 
-    function enqueuePersist({silent = true, reason = 'autosave'} = {}) {
+    function enqueuePersist({silent = true, reason = 'autosave', force = false} = {}) {
       if (service.conflict) return Promise.reject(new Error('当前设计草稿存在并发冲突，请先重新加载或处理冲突'));
-      const request = makeRequest({deleteDraft: !hasChanges(), silent, reason});
+      const request = makeRequest({deleteDraft: !hasChanges() && !force, silent, force, reason});
       if (!request) return Promise.resolve(service.draft);
       clearTimeout(service.timer);
       service.pending = request;
@@ -211,6 +211,16 @@
       return Boolean(service.pending || service.busy || service.lastError || (hasChanges() && !service.lastSavedAt));
     }
 
+    function acceptServerState(draft) {
+      if (!draft || String(draft.design_id || draft.solution_id || designId() || '') !== String(designId() || '')) return snapshot();
+      service.draft = draft;
+      service.conflict = null;
+      service.lastError = null;
+      service.lastSavedAt = draft.updated_at || service.lastSavedAt || new Date().toISOString();
+      notify();
+      return snapshot();
+    }
+
     function dispose() {
       clearTimeout(service.timer);
       service.session += 1;
@@ -220,7 +230,7 @@
       notify();
     }
 
-    return {state: service, snapshot, begin, setConflict, schedule, persist: enqueuePersist, delete: queueDelete, flush, drain, hasUnpersistedChanges, dispose};
+    return {state: service, snapshot, begin, setConflict, schedule, persist: enqueuePersist, delete: queueDelete, flush, drain, hasUnpersistedChanges, acceptServerState, dispose};
   }
 
   window.MCSDesignDraftService = {create};

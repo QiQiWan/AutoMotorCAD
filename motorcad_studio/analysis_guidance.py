@@ -373,7 +373,7 @@ class AnalysisGuidanceService:
         definition["requested_outputs"] = list(dict.fromkeys([
             *(recipe.get("required_outputs") or []), *(spec.get("recommended_outputs") or []),
         ]))
-        definition["solver_settings"].setdefault("native_screen_capture", {"enabled": True, "screen": "E-Magnetics;FEA"})
+        definition["solver_settings"].setdefault("native_screen_capture", {"enabled": False, "screen": "E-Magnetics;FEA"})
         accepted_recommendations = [
             {key: deepcopy(row.get(key)) for key in ("id", "field_id", "path", "value", "source", "reason", "confidence", "dependencies", "common_decision")}
             for row in recommendations if row.get("value") is not None
