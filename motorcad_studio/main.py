@@ -304,6 +304,14 @@ _analysis_precheck_evidence_lock = threading.RLock()
 _analysis_precheck_evidence: dict[str, dict[str, Any]] = {}
 _ANALYSIS_PRECHECK_EVIDENCE_TTL_S = 900.0
 _ANALYSIS_PRECHECK_EVIDENCE_MAX = 128
+# V0.89-G3.3: long native prechecks run as observable single-flight jobs so the
+# browser receives immediate acknowledgement and stage progress while Motor-CAD
+# is loading/checking the native model.
+_analysis_precheck_jobs_lock = threading.RLock()
+_analysis_precheck_jobs: dict[str, dict[str, Any]] = {}
+_analysis_precheck_jobs_by_key: dict[str, str] = {}
+_ANALYSIS_PRECHECK_JOB_TTL_S = 900.0
+_ANALYSIS_PRECHECK_JOB_MAX = 64
 
 
 def _clean_parameter_overrides(parameters: dict[str, Any] | None) -> dict[str, Any]:
@@ -2664,12 +2672,18 @@ def _motorcad_check_message(result: dict[str, Any]) -> tuple[str, str]:
     )
 
 
-@app.post("/api/analysis-definitions/{analysis_id}/calculation-check")
-def calculation_check_analysis_definition(
+def _calculation_check_impl(
     analysis_id: str,
-    payload: AnalysisCalculationCheckRequest = AnalysisCalculationCheckRequest(),
-):
-    """Run the engineer-facing two-stage gate against one captured immutable revision pair."""
+    payload: AnalysisCalculationCheckRequest,
+    *,
+    progress=None,
+) -> dict[str, Any]:
+    """Run the two-stage engineering gate and emit coarse, truthful progress."""
+    def emit(stage: str, percent: float | None, message: str, *, indeterminate: bool = False) -> None:
+        if progress is not None:
+            progress(stage=stage, percent=percent, message=message, indeterminate=indeterminate)
+
+    emit("capture", 4, "正在锁定当前 Design / Analysis Revision…")
     analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
     if not analysis:
         raise HTTPException(status_code=404, detail="分析案例不存在")
@@ -2687,6 +2701,7 @@ def calculation_check_analysis_definition(
         current_design_revision_id=captured_design_revision_id,
     )
 
+    emit("studio", 18, "正在执行 Studio 几何、工况、输入与任务合同检查…")
     studio = _analysis_precheck_payload(analysis_id)
     _assert_analysis_execution_identity(
         analysis_id=analysis_id,
@@ -2696,6 +2711,7 @@ def calculation_check_analysis_definition(
         current_design_revision_id=str(studio.get("design_revision_id") or ""),
     )
     if not studio["valid"]:
+        emit("done", 100, "Studio 预检查发现阻断项，Motor-CAD 未启动。")
         return {
             "valid": False,
             "status": "FAIL",
@@ -2710,8 +2726,10 @@ def calculation_check_analysis_definition(
                 {"id": "motorcad", "label": "Motor-CAD 模型检查", "status": "LOCKED"},
             ],
         }
+    emit("studio", 36, "Studio 检查通过，准备调用 Motor-CAD 原生模型检查。")
     design = db.query_one("SELECT * FROM designs WHERE id=?", (revision.get("design_id"),)) or {}
     template_id = str(design.get("template_id") or "")
+    emit("motorcad", None, "Motor-CAD 正在启动/载入模型并执行材料、几何、绕组与参数回读…", indeterminate=True)
     try:
         runtime = template_geometry_runtime_check(
             template_id,
@@ -2734,6 +2752,7 @@ def calculation_check_analysis_definition(
         message, suggestion = _motorcad_check_message({"status": "FAIL", "checks": [{"status": "FAIL", "message": str(exc)}]})
         native_status = "FAIL"
 
+    emit("identity", 88, "Motor-CAD 原生检查已返回，正在确认检查期间 Revision 未发生变化…")
     current_analysis = engineering_platform.get_analysis_definition(analysis_id) or {}
     current_analysis_revision = (current_analysis.get("revisions") or [{}])[0]
     current_design_revision = solutions.get_revision(str(current_analysis.get("design_revision_id") or "")) or {}
@@ -2756,6 +2775,7 @@ def calculation_check_analysis_definition(
             {"id": "motorcad", "label": "Motor-CAD 模型检查", "status": native_status},
         ],
     }
+    emit("evidence", 96, "正在固化计算前检查证据…" if valid else "正在整理 Motor-CAD 阻断原因…")
     evidence = _store_analysis_precheck_evidence(
         analysis_id,
         response,
@@ -2764,8 +2784,154 @@ def calculation_check_analysis_definition(
     ) if valid else None
     if evidence:
         response["evidence"] = evidence
+    emit("done", 100, "完整计算前检查通过。" if valid else "完整计算前检查未通过，请按阻断原因修复后重试。")
     return response
 
+
+def _cleanup_analysis_precheck_jobs() -> None:
+    now = time.monotonic()
+    with _analysis_precheck_jobs_lock:
+        expired = [job_id for job_id, job in _analysis_precheck_jobs.items()
+                   if str(job.get("status")) in {"SUCCEEDED", "FAILED"}
+                   and now - float(job.get("finished_at_monotonic") or job.get("created_at_monotonic") or now) > _ANALYSIS_PRECHECK_JOB_TTL_S]
+        for job_id in expired:
+            job = _analysis_precheck_jobs.pop(job_id, None) or {}
+            key = str(job.get("singleflight_key") or "")
+            if key and _analysis_precheck_jobs_by_key.get(key) == job_id:
+                _analysis_precheck_jobs_by_key.pop(key, None)
+        if len(_analysis_precheck_jobs) > _ANALYSIS_PRECHECK_JOB_MAX:
+            removable = sorted(
+                ((job_id, job) for job_id, job in _analysis_precheck_jobs.items() if str(job.get("status")) != "RUNNING"),
+                key=lambda item: float(item[1].get("created_at_monotonic") or 0.0),
+            )
+            for job_id, _ in removable[: max(0, len(_analysis_precheck_jobs) - _ANALYSIS_PRECHECK_JOB_MAX)]:
+                job = _analysis_precheck_jobs.pop(job_id, None) or {}
+                key = str(job.get("singleflight_key") or "")
+                if key and _analysis_precheck_jobs_by_key.get(key) == job_id:
+                    _analysis_precheck_jobs_by_key.pop(key, None)
+
+
+def _public_analysis_precheck_job(job: dict[str, Any], *, coalesced: bool = False) -> dict[str, Any]:
+    return {
+        "id": job.get("id"),
+        "analysis_definition_id": job.get("analysis_definition_id"),
+        "status": job.get("status"),
+        "stage": job.get("stage"),
+        "progress_percent": job.get("progress_percent"),
+        "indeterminate": bool(job.get("indeterminate")),
+        "message": job.get("message"),
+        "created_at": job.get("created_at"),
+        "updated_at": job.get("updated_at"),
+        "result": job.get("result"),
+        "error": job.get("error"),
+        "coalesced": coalesced,
+        "contract_version": "0.89-G3.3",
+    }
+
+
+def _run_analysis_precheck_job(job_id: str, analysis_id: str, payload: AnalysisCalculationCheckRequest) -> None:
+    def progress(*, stage: str, percent: float | None, message: str, indeterminate: bool = False) -> None:
+        with _analysis_precheck_jobs_lock:
+            job = _analysis_precheck_jobs.get(job_id)
+            if not job:
+                return
+            job.update({
+                "status": "RUNNING", "stage": stage, "progress_percent": percent,
+                "indeterminate": indeterminate, "message": message, "updated_at": db.now(),
+            })
+    try:
+        result = _calculation_check_impl(analysis_id, payload, progress=progress)
+        with _analysis_precheck_jobs_lock:
+            job = _analysis_precheck_jobs.get(job_id)
+            if job:
+                job.update({
+                    "status": "SUCCEEDED", "stage": "done", "progress_percent": 100,
+                    "indeterminate": False, "message": "完整计算前检查已完成。",
+                    "result": result, "updated_at": db.now(), "finished_at_monotonic": time.monotonic(),
+                })
+    except Exception as exc:
+        if isinstance(exc, HTTPException):
+            detail = exc.detail
+            error = detail if isinstance(detail, str) else (detail.get("message") if isinstance(detail, dict) else None)
+            error = error or str(detail)
+        else:
+            error = str(exc) or type(exc).__name__
+        logs.audit(
+            level="ERROR", component="analysis_precheck", event_type="ANALYSIS_PRECHECK_JOB_FAILED",
+            message=f"analysis precheck job failed for {analysis_id}: {type(exc).__name__}",
+            payload={"analysis_definition_id": analysis_id, "job_id": job_id, "error": error},
+        )
+        with _analysis_precheck_jobs_lock:
+            job = _analysis_precheck_jobs.get(job_id)
+            if job:
+                job.update({
+                    "status": "FAILED", "stage": "failed", "progress_percent": None,
+                    "indeterminate": False, "message": "完整计算前检查执行失败。", "error": error,
+                    "updated_at": db.now(), "finished_at_monotonic": time.monotonic(),
+                })
+    finally:
+        with _analysis_precheck_jobs_lock:
+            job = _analysis_precheck_jobs.get(job_id) or {}
+            key = str(job.get("singleflight_key") or "")
+            if key and _analysis_precheck_jobs_by_key.get(key) == job_id:
+                _analysis_precheck_jobs_by_key.pop(key, None)
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/calculation-check/jobs", status_code=202)
+def start_calculation_check_job(
+    analysis_id: str,
+    payload: AnalysisCalculationCheckRequest = AnalysisCalculationCheckRequest(),
+):
+    """Acknowledge immediately and execute the Motor-CAD precheck in a worker thread."""
+    if not engineering_platform.get_analysis_definition(analysis_id):
+        raise HTTPException(status_code=404, detail="分析案例不存在")
+    _cleanup_analysis_precheck_jobs()
+    key_raw = json.dumps({
+        "analysis_id": analysis_id,
+        "expected_analysis_revision_id": payload.expected_analysis_revision_id,
+        "expected_design_revision_id": payload.expected_design_revision_id,
+    }, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    singleflight_key = hashlib.sha256(key_raw.encode("utf-8")).hexdigest()
+    with _analysis_precheck_jobs_lock:
+        existing_id = _analysis_precheck_jobs_by_key.get(singleflight_key)
+        existing = _analysis_precheck_jobs.get(existing_id or "")
+        if existing and str(existing.get("status")) in {"QUEUED", "RUNNING"}:
+            return _public_analysis_precheck_job(dict(existing), coalesced=True)
+        job_id = f"PJOB-{uuid.uuid4().hex.upper()}"
+        job = {
+            "id": job_id, "analysis_definition_id": analysis_id, "status": "QUEUED",
+            "stage": "queued", "progress_percent": 1, "indeterminate": False,
+            "message": "计算前检查已进入队列。", "result": None, "error": None,
+            "created_at": db.now(), "updated_at": db.now(), "created_at_monotonic": time.monotonic(),
+            "singleflight_key": singleflight_key,
+        }
+        _analysis_precheck_jobs[job_id] = job
+        _analysis_precheck_jobs_by_key[singleflight_key] = job_id
+    threading.Thread(
+        target=_run_analysis_precheck_job,
+        args=(job_id, analysis_id, payload),
+        name=f"analysis-precheck-{job_id[-8:]}", daemon=True,
+    ).start()
+    return _public_analysis_precheck_job(dict(job))
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/calculation-check/jobs/{job_id}")
+def get_calculation_check_job(analysis_id: str, job_id: str):
+    _cleanup_analysis_precheck_jobs()
+    with _analysis_precheck_jobs_lock:
+        job = dict(_analysis_precheck_jobs.get(job_id) or {})
+    if not job or str(job.get("analysis_definition_id")) != analysis_id:
+        raise HTTPException(status_code=404, detail="计算前检查任务不存在或已过期")
+    return _public_analysis_precheck_job(job)
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/calculation-check")
+def calculation_check_analysis_definition(
+    analysis_id: str,
+    payload: AnalysisCalculationCheckRequest = AnalysisCalculationCheckRequest(),
+):
+    """Compatibility synchronous endpoint; new HMI uses observable precheck jobs."""
+    return _calculation_check_impl(analysis_id, payload)
 
 
 def _build_analysis_execution_request(analysis_id: str, options: AnalysisExecutionRequest | None = None) -> tuple[TaskCreate, dict[str, Any]]:
@@ -7156,6 +7322,42 @@ def _verified_fea_frame(root: Path, record: dict[str, Any]) -> tuple[Path, str, 
     return frame, "UNVERIFIED_LEGACY", None
 
 
+def _verified_fea_viewer_manifest(root: Path, record: dict[str, Any]) -> tuple[Path, str]:
+    relative = str(record.get("viewer_manifest_file") or "")
+    if not relative:
+        raise HTTPException(status_code=404, detail="该 FEA 帧没有完整网格查看器清单")
+    path = (root / relative).resolve()
+    viewer_root = (root / "viewer_frames").resolve()
+    if viewer_root != path and viewer_root not in path.parents:
+        raise HTTPException(status_code=403, detail="FEA完整网格清单路径不在允许目录")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="FEA完整网格清单已丢失")
+    expected_size = int(record.get("viewer_manifest_size_bytes") or 0)
+    expected_hash = str(record.get("viewer_manifest_sha256") or "")
+    if expected_size and path.stat().st_size != expected_size:
+        raise HTTPException(status_code=409, detail="FEA完整网格清单大小校验失败")
+    digest = file_sha256(path)
+    if expected_hash and digest != expected_hash:
+        raise HTTPException(status_code=409, detail="FEA完整网格清单 SHA-256 校验失败")
+    return path, digest
+
+
+def _verified_fea_viewer_chunk(manifest_path: Path, chunk: dict[str, Any]) -> tuple[Path, str]:
+    path = (manifest_path.parent / str(chunk.get("file") or "")).resolve()
+    if manifest_path.parent != path and manifest_path.parent not in path.parents:
+        raise HTTPException(status_code=403, detail="FEA网格分块路径不在允许目录")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="FEA网格分块已丢失")
+    expected_size = int(chunk.get("size_bytes") or 0)
+    expected_hash = str(chunk.get("sha256") or "")
+    if expected_size and path.stat().st_size != expected_size:
+        raise HTTPException(status_code=409, detail="FEA网格分块大小校验失败")
+    digest = file_sha256(path)
+    if expected_hash and digest != expected_hash:
+        raise HTTPException(status_code=409, detail="FEA网格分块 SHA-256 校验失败")
+    return path, digest
+
+
 @app.get("/api/cases/{case_id}/fea-evidence")
 def case_fea_evidence(case_id: str):
     row, root = _case_native_fea_root(case_id)
@@ -7205,7 +7407,7 @@ def case_fea_evidence(case_id: str):
         "native_screen_url": f"/api/cases/{case_id}/native-screen" if native_screen.exists() else None,
         "spatial_overlay": manifest.get("spatial_overlay") or {},
         "spatial_overlay_url": f"/api/cases/{case_id}/spatial-overlay",
-        "evidence_boundary": "场值仅来自 Motor-CAD save_fea_data 原生导出；V0.88-F 仅在线 lineage 与坐标范围通过时叠加 GeometryTree 原生区域边界，缺少有限元连接时不生成插值等值云图。",
+        "evidence_boundary": "场值仅来自 Motor-CAD save_fea_data 原生导出；V0.89-G3.3 在原生三节点连接完整时按全部三角单元直接填色并绘制网格边线，不对缺失连接或缺失场值进行插值伪造。",
     }
 
 
@@ -7327,6 +7529,61 @@ def case_fea_frame(case_id: str, frame_index: int, request: Request):
     if etag:
         headers["ETag"] = etag
     return JSONResponse(payload, headers=headers)
+
+
+@app.get("/api/cases/{case_id}/fea-frames/{frame_index}/mesh-manifest")
+def case_fea_mesh_manifest(case_id: str, frame_index: int, request: Request):
+    _, root = _case_native_fea_root(case_id)
+    manifest_path = root / "native_fea_manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="Case尚无原生FEA证据")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    frames = ((manifest.get("normalization") or {}).get("frames") or [])
+    record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
+    if not record:
+        raise HTTPException(status_code=404, detail="FEA帧不存在")
+    path, digest = _verified_fea_viewer_manifest(root, record)
+    etag = f'"{digest}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA完整网格清单无法解析: {type(exc).__name__}") from exc
+    payload["integrity"] = {"status": "VERIFIED", "sha256": digest}
+    payload["chunk_endpoint"] = f"/api/cases/{case_id}/fea-frames/{frame_index}/mesh-chunks/{{chunk_index}}"
+    return JSONResponse(payload, headers={"Cache-Control": "private, max-age=31536000, immutable", "ETag": etag})
+
+
+@app.get("/api/cases/{case_id}/fea-frames/{frame_index}/mesh-chunks/{chunk_index}")
+def case_fea_mesh_chunk(case_id: str, frame_index: int, chunk_index: int, request: Request):
+    _, root = _case_native_fea_root(case_id)
+    manifest_path = root / "native_fea_manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="Case尚无原生FEA证据")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    frames = ((manifest.get("normalization") or {}).get("frames") or [])
+    record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
+    if not record:
+        raise HTTPException(status_code=404, detail="FEA帧不存在")
+    viewer_manifest_path, _ = _verified_fea_viewer_manifest(root, record)
+    try:
+        viewer_manifest = json.loads(viewer_manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA完整网格清单无法解析: {type(exc).__name__}") from exc
+    chunk = next((row for row in (viewer_manifest.get("chunks") or []) if int(row.get("index", -1)) == int(chunk_index)), None)
+    if not chunk:
+        raise HTTPException(status_code=404, detail="FEA网格分块不存在")
+    path, digest = _verified_fea_viewer_chunk(viewer_manifest_path, chunk)
+    etag = f'"{digest}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=f"FEA网格分块无法解析: {type(exc).__name__}") from exc
+    payload["integrity"] = {"status": "VERIFIED", "sha256": digest}
+    return JSONResponse(payload, headers={"Cache-Control": "private, max-age=31536000, immutable", "ETag": etag})
 
 
 @app.get("/api/cases/{case_id}/fea-frames/{frame_index}/view")

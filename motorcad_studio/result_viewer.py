@@ -112,6 +112,7 @@ class ResultViewerService:
                 item.result_id: {
                     "label": item.label or item.result_id, "unit": item.unit, "canonical_unit": item.unit,
                     "type": item.result_type, "required": item.required,
+                    "physical_domain": item.physical_domain, "viewer_modules": list(item.viewer_modules or []),
                 }
                 for item in bundle.results
             }
@@ -215,6 +216,8 @@ class ResultViewerService:
                     "result_type": result_row.result_type,
                     "unit": result_row.unit,
                     "status": result_row.status,
+                    "physical_domain": result_row.physical_domain,
+                    "viewer_modules": list(result_row.viewer_modules or []),
                     "externalized": bool(ref is not None),
                     "data_ref": ref.model_dump(mode="json") if ref is not None else None,
                     "data_href": f"/api/result-bundles/{row.get('result_bundle_id')}/results/{result_row.result_id}/data" if ref is not None and row.get("result_bundle_id") else None,
@@ -234,6 +237,7 @@ class ResultViewerService:
             "current_native_qualification": current_qualification,
             "result_authority": "ResultBundleV1" if bundle is not None else "LegacyResultCompatibility",
             "result_bundle_hash": bundle.content_hash() if bundle is not None else None,
+            "viewer_module_contract": "ResultBundleModuleProjectionV1" if bundle is not None else "LegacyHeuristicCompatibility",
             "extraction": extraction_contract,
             "fea": fea_contract,
             "archive_integrity": artifact_integrity,
@@ -245,28 +249,48 @@ class ResultViewerService:
                 and artifact_integrity.get("eligible") is True
             ),
         }
-        availability = {
-            "overview": bool(scalars or quality),
-            "performance": any(any(token in key for token in ("torque", "efficiency", "power", "voltage")) for key in scalar_keys) or any("torque_speed" in str(key).lower() for key in maps),
-            "losses": any("loss" in key for key in scalar_keys) or any("loss" in str(key).lower() for key in maps),
-            "output_data": bool(present_outputs),
-            "graphs": bool(series or maps),
-            "inputs": True,
-            "waveforms": any(key not in spectrum_ids for key in series),
-            "harmonics": bool(spectrum_ids),
-            "fea": bool(fea_manifest or fields or vectors) or any("fea" in key.lower() or "field" in key.lower() or "flux" in key.lower() for key in maps),
-            "thermal": bool(thermal_network.get("available")) or any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors]),
-            "thermal_schematic": bool(thermal_network.get("available")),
-            "temperatures": any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables]),
-            "lab": any("lab" in key.lower() or "efficiency_map" in key.lower() or "torque_speed" in key.lower() for key in [*scalars, *series, *maps]),
-            "mechanical": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors] for token in ("stress", "force", "nvh")),
-            "stress": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("stress", "displacement", "modal")),
-            "nvh": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("force", "nvh", "campbell", "modal")),
-            "artifacts": bool(current_artifacts),
-        }
+        # V0.89-G3.2: ResultBundle is the primary module-coverage authority.
+        # Legacy string heuristics remain only for historical cases without a bundle.
+        result_modules = bundle.module_projection() if bundle is not None else {}
+        if bundle is not None:
+            availability = {key: bool(value.get("available")) for key, value in result_modules.items()}
+            availability.update({
+                "inputs": True,
+                "overview": bool(availability.get("overview") or scalars or quality),
+                "fea": bool(availability.get("fea") or fea_manifest),
+                "thermal_schematic": bool(availability.get("thermal_schematic") or thermal_network.get("available")),
+                "artifacts": bool(availability.get("artifacts") or current_artifacts),
+            })
+        else:
+            availability = {
+                "overview": bool(scalars or quality),
+                "performance": any(any(token in key for token in ("torque", "efficiency", "power", "voltage")) for key in scalar_keys) or any("torque_speed" in str(key).lower() for key in maps),
+                "losses": any("loss" in key for key in scalar_keys) or any("loss" in str(key).lower() for key in maps),
+                "output_data": bool(present_outputs),
+                "graphs": bool(series or maps),
+                "inputs": True,
+                "waveforms": any(key not in spectrum_ids for key in series),
+                "harmonics": bool(spectrum_ids),
+                "fea": bool(fea_manifest or fields or vectors) or any("fea" in key.lower() or "field" in key.lower() or "flux" in key.lower() for key in maps),
+                "thermal": bool(thermal_network.get("available")) or any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors]),
+                "thermal_schematic": bool(thermal_network.get("available")),
+                "temperatures": any("temp" in key.lower() or "heat" in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables]),
+                "lab": any("lab" in key.lower() or "efficiency_map" in key.lower() or "torque_speed" in key.lower() for key in [*scalars, *series, *maps]),
+                "mechanical": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors] for token in ("stress", "force", "nvh")),
+                "stress": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("stress", "displacement", "modal")),
+                "nvh": any(token in key.lower() for key in [*scalars, *series, *maps, *fields, *vectors, *tables] for token in ("force", "nvh", "campbell", "modal")),
+                "artifacts": bool(current_artifacts),
+            }
         modules = deepcopy(self.catalog_payload.get("modules", {}))
         for key, item in modules.items():
+            projection = result_modules.get(key) or {}
             item["available"] = bool(availability.get(key))
+            item["result_ids"] = list(projection.get("result_ids") or [])
+            item["extracted_result_ids"] = list(projection.get("extracted_result_ids") or [])
+            item["missing_result_ids"] = list(projection.get("missing_result_ids") or [])
+            item["result_types"] = dict(projection.get("result_types") or {})
+            item["result_count"] = int(projection.get("result_count") or 0)
+            item["extracted_count"] = int(projection.get("extracted_count") or 0)
         return {
             "case": {
                 "id": case_id,
@@ -303,6 +327,7 @@ class ResultViewerService:
             "results": {"scalars": scalars, "series": series, "maps": maps, "fields": fields, "vectors": vectors, "tables": tables},
             "result_bundle": bundle.model_dump(mode="json") if bundle is not None else None,
             "result_data_inventory": result_data_inventory,
+            "result_modules": result_modules,
             "heavy_data_hydrated": bool(hydrate_heavy),
             "metric_registry": metrics,
             "trust": trust_snapshot.model_dump(mode="json") if trust_snapshot is not None else None,

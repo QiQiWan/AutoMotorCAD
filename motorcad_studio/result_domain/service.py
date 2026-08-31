@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+import re
 import uuid
+from pathlib import Path
 from typing import Any
 
 from ..analysis_domain import ExecutionPlan, ResultContract
@@ -21,10 +24,11 @@ from .contracts import (
     VectorFieldResult,
 )
 from .heavy_data import ResultDataGateway
+from .module_contract import result_module_contract
 
 
 class ResultBundleService:
-    """V0.73-C authority for normalized engineering result facts.
+    """V0.89-G3.2 authority for normalized engineering result facts.
 
     SolverResult is a transport/compatibility DTO.  A terminal successful Case must be
     normalized into one immutable ResultBundle before persistence and downstream use.
@@ -136,12 +140,15 @@ class ResultBundleService:
             value = self._value_for(result_type, result_id, stores)
             status = str(spec.get("status") or ("EXTRACTED" if value is not None else "MISSING"))
             audit_row = output_audit.get(result_id) if isinstance(output_audit.get(result_id), dict) else {}
+            module_contract = result_module_contract(result_id, {**dict(spec.get("metadata") or {}), "type": result_type})
             common = {
                 "result_id": result_id,
                 "label": str(spec.get("label") or result_id),
                 "unit": spec.get("unit"),
                 "native_unit": audit_row.get("solver_unit"),
                 "required": bool(spec.get("required")),
+                "physical_domain": module_contract["physical_domain"],
+                "viewer_modules": module_contract["viewer_modules"],
                 "status": status if status in {"EXTRACTED", "MISSING", "INVALID"} else "INVALID",
                 "issue": spec.get("issue"),
                 "source": spec.get("source") or audit_row.get("source") or audit_row.get("graph"),
@@ -173,6 +180,32 @@ class ResultBundleService:
                 rows.append(TableResult(**common, data=value))
             else:
                 rows.append(ArtifactResult(**common, data=value))
+
+        # Solver artifacts are first-class ResultBundle members in G3.2 so the
+        # Artifacts view participates in the same typed/module projection as every
+        # other result.  Store only the display name/kind in the immutable bundle;
+        # download paths remain governed by the artifacts table/API.
+        existing_result_ids = {row.result_id for row in rows}
+        for index, artifact in enumerate(result.artifacts or []):
+            if isinstance(artifact, dict):
+                raw_name = str(artifact.get("name") or artifact.get("path") or f"artifact_{index + 1}")
+                kind = str(artifact.get("kind") or Path(raw_name).suffix.lstrip(".") or "artifact")
+            else:
+                raw_name = str(artifact)
+                kind = Path(raw_name).suffix.lstrip(".") or "artifact"
+            name = Path(raw_name).name or f"artifact_{index + 1}"
+            safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") or f"artifact_{index + 1}"
+            digest = hashlib.sha256(f"{index}|{name}".encode("utf-8", errors="replace")).hexdigest()[:10]
+            result_id = f"artifact_{digest}_{safe_name}"[:180]
+            if result_id in existing_result_ids:
+                continue
+            existing_result_ids.add(result_id)
+            rows.append(ArtifactResult(
+                result_id=result_id, label=name, required=False, status="EXTRACTED",
+                physical_domain="artifact", viewer_modules=["artifacts"],
+                source="solver_artifact_archive", data={"name": name, "kind": kind},
+                metadata={"archive_kind": kind, "path_redacted": True},
+            ))
 
         native_binding = execution_plan.native_binding if execution_plan is not None else None
         provenance = ResultProvenance(
@@ -235,6 +268,8 @@ class ResultBundleService:
                 "legacy_solver_result": "compatibility_projection_only",
                 "requested_result_count": len(metrics),
                 "extracted_result_count": sum(row.status == "EXTRACTED" for row in rows),
+                "viewer_module_contract": "ResultBundleModuleProjectionV1",
+                "viewer_module_ids": sorted({module for row in rows for module in row.viewer_modules}),
             },
         )
 

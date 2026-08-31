@@ -543,3 +543,78 @@
 2026-08-28T10:06:10.965378+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
 2026-08-28T10:06:10.966877+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
 2026-08-28T10:06:12.457876+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-28T10:07:04.590812+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 37334 ms
+2026-08-28T10:07:04.617313+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-28T10:10:15.097691+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/revisions -> 201
+2026-08-28T10:11:19.426007+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-E1AB2B136F/input-domains/cooling -> 200
+2026-08-28T10:11:22.645503+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-E1AB2B136F/input-domains/losses -> 200
+2026-08-28T10:11:42.359272+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/revisions -> 201
+2026-08-28T10:13:06.613304+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-28T10:13:06.614304+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-28T10:13:08.008802+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOINED] joined in-flight Motor-CAD feasibility check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:11.318298+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOINED] joined in-flight Motor-CAD feasibility check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:15.123197+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOINED] joined in-flight Motor-CAD feasibility check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:19.661191+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-28T10:13:19.952245+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOIN_RESULT] reused freshly completed in-flight Motor-CAD check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:20.103191+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOIN_RESULT] reused freshly completed in-flight Motor-CAD check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:20.104191+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_JOIN_RESULT] reused freshly completed in-flight Motor-CAD check for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:13:20.198190+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:13:20.199065+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:13:20.200068+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:13:20.201068+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:15:11.080312+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:15:11.106312+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:15:11.109812+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-28T10:15:11.125312+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-E1AB2B136F/calculation-check -> 200
+2026-08-28T10:15:46.550187+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T10:15:49.272696+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-28T10:15:50.010833+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/commit -> 201
+2026-08-28T10:17:19.134771+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping
+2026-08-31T00:47:35.190493+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T00:47:35.191994+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T00:47:37.160990+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T00:47:37.161990+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T00:47:38.685489+00:00 [INFO] [application] [APP_START] MotorCAD Studio 0.89.9 starting
+2026-08-31T00:49:38.363859+00:00 [INFO] [runtime_pool] [MOTORCAD_POOL_RECYCLE_REQUESTED] Motor-CAD安装选择变化，持久Worker将使用新安装重建
+2026-08-31T00:49:38.364859+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/system/installations/select -> 200
+2026-08-31T00:49:39.402404+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T00:49:39.403404+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T00:51:59.040003+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/analysis-definitions -> 201
+2026-08-31T00:56:08.122400+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/cooling -> 200
+2026-08-31T00:56:14.086233+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/losses -> 200
+2026-08-31T00:57:43.553493+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/interfaces -> 200
+2026-08-31T00:57:47.653143+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/radiation -> 200
+2026-08-31T00:58:21.197750+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/convection -> 200
+2026-08-31T00:58:25.583862+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/end_space -> 200
+2026-08-31T00:58:38.655736+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/end_space -> 200
+2026-08-31T00:58:41.196734+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/analysis-definitions/ANL-4FB14B3577/input-domains/flow_circuit -> 200
+2026-08-31T00:59:17.377787+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-4FB14B3577/revisions -> 201
+2026-08-31T00:59:31.472235+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-4FB14B3577/calculation-check/jobs -> 202
+2026-08-31T00:59:32.316234+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T00:59:32.317734+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T00:59:44.654219+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-31T01:00:51.600015+00:00 [INFO] [api] [HTTP_REQUEST] PUT /api/solutions/DSN-650E61B451/draft -> 200
+2026-08-31T01:00:53.298014+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/solutions/DSN-650E61B451/draft/commit -> 201
+2026-08-31T01:03:49.941123+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T01:03:49.942123+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T01:04:01.674311+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-31T01:04:01.724311+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-C0C2C14EB9B7
+2026-08-31T01:04:01.734810+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/design-revisions/DRV-8B66C5AEE6/standard-validation-package/execute -> 201
+2026-08-31T01:04:49.288023+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 52223 ms
+2026-08-31T01:04:49.320023+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-31T01:05:02.090155+00:00 [WARNING] [frontend] [FRONTEND_ROUTE_SLOW] 页面路由加载耗时 2689 ms
+2026-08-31T01:05:02.092654+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/client-events -> 204
+2026-08-31T01:06:35.364977+00:00 [WARNING] [api] [HTTP_REQUEST] GET /.well-known/appspecific/com.chrome.devtools.json -> 404
+2026-08-31T01:07:22.805462+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.pm
+2026-08-31T01:07:22.806962+00:00 [INFO] [motor_plugin_registry] [MOTOR_PLUGIN_REGISTERED] registered motor family plugin builtin.induction
+2026-08-31T01:07:34.689948+00:00 [WARNING] [model_validation] [MODEL_RUNTIME_CHECK] model feasibility check i5_Industrial_SPM_Servo_Tooth_Wound: FAIL
+2026-08-31T01:07:34.705448+00:00 [WARNING] [standard_validation] [STANDARD_VALIDATION_EXECUTION] standard validation package blocked: SVP-0E2563F05991
+2026-08-31T01:07:34.708448+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/projects/PRJ-9393E45ABD/design-revisions/DRV-9880751C00/standard-validation-package/execute -> 201
+2026-08-31T01:09:20.504912+00:00 [INFO] [api] [HTTP_REQUEST] POST /api/analysis-definitions/ANL-4FB14B3577/calculation-check/jobs -> 202
+2026-08-31T01:09:20.621911+00:00 [INFO] [model_validation] [MODEL_RUNTIME_CHECK_CACHE_HIT] reused Motor-CAD feasibility evidence for i5_Industrial_SPM_Servo_Tooth_Wound
+2026-08-31T03:42:15.104024+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-A0A4123D9B
+2026-08-31T03:42:15.115523+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-A0A4123D9B -> 200
+2026-08-31T03:42:23.764927+00:00 [INFO] [workspace] [PROJECT_TRASHED] project moved to trash: PRJ-9393E45ABD
+2026-08-31T03:42:24.951425+00:00 [INFO] [api] [HTTP_REQUEST] DELETE /api/projects/PRJ-9393E45ABD -> 200
+2026-08-31T06:22:49.091805+00:00 [WARNING] [api] [HTTP_REQUEST] GET /api/projects/PRJ-9393E45ABD -> 404
+2026-08-31T07:36:43.291564+00:00 [INFO] [application] [APP_STOP] MotorCAD Studio stopping

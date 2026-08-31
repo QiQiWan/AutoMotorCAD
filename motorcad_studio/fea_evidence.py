@@ -19,7 +19,7 @@ class NativeFEAExportConfig:
     enabled: bool = True
     outputs: str = "RegCode,X,Y,B,Pt,J,JEddy"
     regions: str = ""
-    max_steps: int = 36
+    max_steps: int = 30
     max_points_per_frame: int = 6000
     separator: str = ","
     policy: str = "optional"
@@ -48,7 +48,7 @@ class NativeFEAExportConfig:
             enabled=bool(plan["enabled"]),
             outputs=str(raw.get("outputs") or default_outputs),
             regions=str(raw.get("regions") or ""),
-            max_steps=max(1, min(240, int(raw.get("max_steps") or 36))),
+            max_steps=max(1, min(240, int(raw.get("max_steps") or 30))),
             max_points_per_frame=max(250, min(50000, int(raw.get("max_points_per_frame") or 6000))),
             separator=str(raw.get("separator") or ",")[:1] or ",",
             policy=str(plan["policy"]),

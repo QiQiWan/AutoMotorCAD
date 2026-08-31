@@ -1,5 +1,17 @@
 # MotorCAD Studio changelog
 
+## 0.89.9 — V0.89-G3.2 + G3.3 ResultBundle Coverage + Native FEA 2.5D Viewer + Observable HMI
+
+- Expanded the canonical ResultBundle contract to all 44 registered outputs with explicit physical-domain and Result Viewer module projection.
+- Added typed solver-artifact results and ResultBundle-first module availability so result pages no longer depend primarily on name heuristics.
+- Rebuilt Native FEA delivery around archived triangle connectivity, per-frame mesh manifests and bounded mesh chunks with immutable size/SHA-256 verification.
+- Upgraded the engineering field viewer to filled triangular contours, optional mesh edges, full-region bounds, up to 30 recorded frames, auto-focus, pan, zoom, rotation and tilt in a 2.5D engineering plane.
+- Fixed Motor-CAD NodesTable normalization when a units row follows the semantic header; full mesh connectivity is now recoverable from normal native exports.
+- Converted full calculation precheck from a blocking request into an immediately acknowledged asynchronous job with Studio/Motor-CAD/identity/evidence stages and live progress.
+- Added operation progress for Analysis save/refresh/submit, ResultBundle/heavy result loading and Standard Validation execution, plus a shared latency fallback for legacy API-backed controls and background data loads.
+- Collapsed Standard Validation details by default and removed empty/hidden panel height so the analysis editor is no longer pushed down by a large dead region.
+- Added V0.89-G3.2/G3.3 regression coverage. Formal Windows + licensed Motor-CAD 2026R1 qualification remains pending.
+
 ## 0.89.9 — V0.89-G3.1 Result Shell + Decision Summary + Live i18n + FEA Lifecycle
 
 - Executed the first V0.89-G3 delivery slice: G3.0 evidence/lifecycle closure plus G3.1 result-shell convergence.

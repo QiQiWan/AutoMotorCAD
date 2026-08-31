@@ -4,11 +4,15 @@ Current release: **0.89.9 / Schema 45**.
 
 This is the cleaned current source release. Historical implementations, obsolete runners, generated runtime state and superseded release reports are excluded from the production package.
 
-## Current increment — V0.89-G3.1
+## Current increment — V0.89-G3.2 + G3.3
 
-V0.89-G3.1 executes the first slice of the published G3 repair plan. It closes the Result Viewer shell/decision-summary/i18n lifecycle defects first, before expanding result extraction and rebuilding the FEA renderer. The Engineering Decision Summary now has bounded loading and degraded states; result-view navigation follows the live language switch; stale FEA asynchronous callbacks are disposed safely; result modules fail soft instead of rendering a generic unimplemented blank panel; and the wide-screen project shell keeps workflow and status information adjacent.
+V0.89-G3.2 closes the ResultBundle coverage gap. All 44 canonical output IDs now carry an explicit physical-domain and Result Viewer module contract, typed results expose that contract directly, solver artifacts are represented as typed artifact results, and the Result Viewer consumes ResultBundle module projection before falling back to legacy heuristics. The result shell can therefore reason about overview, performance, FEA, thermal, mechanical, stress, graphs, output-data and artifact surfaces from one authoritative bundle.
 
-This package contains **G3.0 + G3.1** and view-side preparation for G3.2. It does not claim G3.3 mesh rendering, G3.4 winding feasibility guidance, G3.5 material-library performance work, G3.6 global async-progress convergence or G3.7 formal Windows qualification. See `docs/V0.89-G3.1_RESULT_SHELL_DECISION_I18N_LIFECYCLE.md`.
+V0.89-G3.3 upgrades Native FEA delivery and the high-impact asynchronous HMI path. Native Motor-CAD triangle connectivity is streamed into bounded per-frame mesh chunks and rendered as filled triangle contours with optional mesh edges. The viewer covers the full archived region, plays up to 30 recorded frames, auto-focuses the model, supports wheel zoom, drag pan, Shift/right-drag rotation, tilt and reset, and keeps a bounded four-frame browser cache. The rendering contract remains evidence-preserving: it does not interpolate a synthetic volumetric field or fabricate missing connectivity.
+
+The same increment removes the largest remaining interaction stalls in Analysis Configuration. Full calculation precheck is now an immediately acknowledged background job with stage polling; Studio check, Motor-CAD native check, revision identity verification and evidence persistence are visible in the UI. Save/refresh/submit/result-load operations use explicit progress, while the shared API path provides a delayed global fallback for older controls and route/background loads. The expanded Standard Validation package is collapsed by default so it no longer creates the large blank/dead region above the analysis editor.
+
+This package does not claim G3.4 winding-feasibility guidance, G3.5 material-library performance work, full G3.6 performance qualification, or G3.7 licensed Windows + Motor-CAD qualification. Formal workstation evidence remains pending. See `V0.89-G3.2_G3.3_IMPLEMENTATION_REPORT.md`.
 
 ## Engineer workflow
 

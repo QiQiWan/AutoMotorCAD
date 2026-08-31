@@ -6,10 +6,12 @@ from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, Field
 
+from .module_contract import module_projection
+
 
 RESULT_OBJECT_SCHEMA_VERSION = 1
 RESULT_BUNDLE_SCHEMA_VERSION = 1
-RESULT_OBJECT_CONTRACT_VERSION = "0.73-C"
+RESULT_OBJECT_CONTRACT_VERSION = "0.89-G3.2"
 RESULT_DATA_REF_SCHEMA_VERSION = 2
 RESULT_DATA_GATEWAY_CONTRACT_VERSION = "0.80-A"
 
@@ -85,6 +87,8 @@ class EngineeringResultBase(BaseModel):
     unit: str | None = None
     native_unit: str | None = None
     required: bool = False
+    physical_domain: str | None = None
+    viewer_modules: list[str] = Field(default_factory=list)
     status: Literal["EXTRACTED", "MISSING", "INVALID"] = "EXTRACTED"
     issue: str | None = None
     source: str | None = None
@@ -180,6 +184,10 @@ class ResultBundle(BaseModel):
     def by_id(self) -> dict[str, EngineeringResultBase]:
         return {row.result_id: row for row in self.results}
 
+    def module_projection(self) -> dict[str, dict[str, Any]]:
+        """V0.89-G3.2 explicit viewer-module coverage for every typed result."""
+        return module_projection(self.results)
+
     def legacy_projection(self) -> dict[str, Any]:
         scalars: dict[str, Any] = {}
         series: dict[str, Any] = {}
@@ -209,6 +217,7 @@ class ResultBundle(BaseModel):
             "result_provenance": self.provenance.model_dump(mode="json"),
             "result_quality": self.quality.model_dump(mode="json"),
             "result_extraction_contract": self.extraction_contract,
+            "result_module_projection": self.module_projection(),
             "fea_contract": self.fea_contract,
         }
         return {

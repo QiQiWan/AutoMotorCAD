@@ -222,3 +222,16 @@ See `docs/V0.89-E_UI_SOAK_RECOVERY_FAULT_INJECTION_QUALIFICATION.md`.
 - Browser live-language Result Viewer mock: PASS; selected module retained; zero page errors.
 - Standard Validation semantics invocation reached 5/5 assertions at 100%, but the process did not exit within the available 120-second runner window. This run is recorded as a runner-shutdown timeout rather than a fresh complete-suite qualification.
 - Formal Windows + licensed Motor-CAD 2026R1 qualification remains PENDING; no new live-workstation percentage is claimed by G3.1.
+
+
+## V0.89-G3.2 + G3.3 targeted verification — 2026-08-30
+
+- Python compileall for `motorcad_studio`: PASS.
+- JavaScript syntax checks: PASS for `app.js`, `analysis/unified-configuration.js`, `analysis/standard-validation.js`, `results/case-viewer.js`, `results/field-viewer.js` and `hmi/operation-progress.js`.
+- `tests/test_v089g32_g33_deep_iteration.py`: 6/6 PASS, including 44/44 output-contract coverage, full triangle mesh normalization, async precheck immediate acknowledgement/poll completion and global API progress fallback wiring.
+- G3.2/G3.3 + G3.1 + G2.3 + G2 + G1R + G1 + V0.88-F targeted regression set: 47/47 PASS before the async-job test expansion; the G3.2/G3.3 file was then rerun at 6/6 PASS.
+- Core API + canonical project-flow smoke: 7/7 PASS.
+- Native spatial/preview/FEA compatibility set: 25/25 PASS.
+- The legacy G1R component Chromium file reaches 5/6 PASS; its remaining shell-grid assertion predates G3.2/G3.3 and conflicts with the existing G2.2/G3.1 compact-shell rule that intentionally hides the duplicated current-context cell at desktop width. No new G3.2/G3.3 failure is attributed to that assertion.
+- A monolithic non-E2E pytest process is not used as a new release qualification signal because pre-existing tests mix lifespan-managed `TestClient` instances with a process-global non-lifespan client; closing one lifespan intentionally shuts the global TaskManager, while the affected optimization test passes in an isolated process.
+- Formal Windows + licensed Motor-CAD 2026R1 qualification remains PENDING; this increment makes no new workstation PASS claim.

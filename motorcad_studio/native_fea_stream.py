@@ -142,6 +142,24 @@ def _iter_native_blocks(raw_path: Path, element_width: int | None, separator: st
                     and all(_norm(candidate[index]).startswith("node") for index in (1, 2, 3))
                 ]
                 headers = structural_headers[-1] if structural_headers else (header_candidates[-1] if header_candidates else [])
+            elif name == "nodestable":
+                # Native exports commonly put a unit row immediately below the
+                # semantic header.  Selecting the last alpha-containing preamble
+                # row therefore loses NodeIndex/X/Y (for example ``[-],[mm],[mm]``)
+                # and makes every otherwise valid triangle look disconnected.
+                structural_headers = [
+                    candidate for candidate in header_candidates
+                    if _pick(candidate, ("NodeIndex", "NodeID", "Node", "Index"), fuzzy=False)
+                    and _pick(candidate, ("X", "XCoord", "XCoordinate", "NodeX"))
+                    and _pick(candidate, ("Y", "YCoord", "YCoordinate", "NodeY"))
+                ]
+                headers = structural_headers[-1] if structural_headers else (header_candidates[-1] if header_candidates else [])
+            elif name == "regionstable":
+                structural_headers = [
+                    candidate for candidate in header_candidates
+                    if any(token in _norm(candidate[0]) for token in ("reg", "region", "code", "index"))
+                ]
+                headers = structural_headers[-1] if structural_headers else (header_candidates[-1] if header_candidates else [])
             else:
                 headers = header_candidates[-1] if header_candidates else []
 
@@ -410,6 +428,9 @@ def normalize_native_fea_tables(
     """
     configured_outputs = [token.strip() for token in str(requested_outputs or "").split(",") if token.strip()]
     frames_dir.mkdir(parents=True, exist_ok=True)
+    viewer_root = frames_dir.parent / "viewer_frames"
+    viewer_root.mkdir(parents=True, exist_ok=True)
+    viewer_chunk_elements = 1800
     temp_handle = tempfile.NamedTemporaryFile(
         prefix="motorcad-native-index-", suffix=".sqlite3", dir=frames_dir.parent, delete=False
     )
@@ -502,6 +523,7 @@ def normalize_native_fea_tables(
         total_points = 0
         dropped = 0
         mesh_frame_count = 0
+        full_mesh_frame_count = 0
         frame_number = 0
         for block in _iter_native_blocks(raw_path, None, separator):
             if block.name != "elementstable":
@@ -511,12 +533,72 @@ def normalize_native_fea_tables(
             block_outputs = block.headers[4:] if len(block.headers) > 4 else outputs
             block_field_columns, _ = _field_contract(block_outputs)
             accumulator = FrameAccumulator(frame_number, max_points_per_frame, available_fields)
+            viewer_frame_index = len(frame_index)
+            viewer_frame_dir = viewer_root / f"frame_{viewer_frame_index:04d}"
+            viewer_frame_dir.mkdir(parents=True, exist_ok=True)
+            for stale in viewer_frame_dir.glob("*.json"):
+                stale.unlink(missing_ok=True)
+            viewer_buffer: list[dict[str, Any]] = []
+            viewer_chunks: list[dict[str, Any]] = []
+            viewer_mesh_complete = True
+            viewer_bounds = [math.inf, -math.inf, math.inf, -math.inf]
+
+            def flush_viewer_chunk() -> None:
+                nonlocal viewer_mesh_complete
+                if not viewer_buffer:
+                    return
+                chunk_index = len(viewer_chunks)
+                referenced_ids = {
+                    str(node_id) for point in viewer_buffer for node_id in (point.get("node_ids") or [])[:3]
+                    if node_id is not None
+                }
+                coordinates = _node_coordinates(connection, referenced_ids)
+                complete = bool(
+                    viewer_buffer and referenced_ids
+                    and all(
+                        len(point.get("node_ids") or []) >= 3
+                        and all(str(node_id) in coordinates for node_id in (point.get("node_ids") or [])[:3])
+                        for point in viewer_buffer
+                    )
+                )
+                viewer_mesh_complete = viewer_mesh_complete and complete
+                mesh_nodes = [
+                    {"id": node_id, "x": coordinates[node_id][0], "y": coordinates[node_id][1]}
+                    for node_id in sorted(coordinates, key=lambda value: (_to_float(value) is None, _to_float(value) or 0.0, value))
+                ]
+                geometry = mesh_nodes or viewer_buffer
+                for item in geometry:
+                    x, y = _to_float(item.get("x")), _to_float(item.get("y"))
+                    if x is None or y is None:
+                        continue
+                    viewer_bounds[0] = min(viewer_bounds[0], x)
+                    viewer_bounds[1] = max(viewer_bounds[1], x)
+                    viewer_bounds[2] = min(viewer_bounds[2], y)
+                    viewer_bounds[3] = max(viewer_bounds[3], y)
+                chunk_name = f"chunk_{chunk_index:04d}.json"
+                chunk_payload = {
+                    "schema_version": 1, "contract_version": "0.89-G3.3",
+                    "frame_index": viewer_frame_index, "chunk_index": chunk_index,
+                    "element_count": len(viewer_buffer), "mesh_complete": complete,
+                    "elements": list(viewer_buffer), "mesh_nodes": mesh_nodes,
+                }
+                size_bytes, sha256 = _atomic_frame(viewer_frame_dir / chunk_name, chunk_payload)
+                viewer_chunks.append({
+                    "index": chunk_index, "file": chunk_name, "element_count": len(viewer_buffer),
+                    "node_count": len(mesh_nodes), "mesh_complete": complete,
+                    "size_bytes": size_bytes, "sha256": sha256,
+                })
+                viewer_buffer.clear()
+
             for parts in block.rows:
                 point = _point_from_row(parts, block_outputs, block_field_columns, region_names)
                 if point is None:
                     dropped += 1
                     continue
                 accumulator.add(point)
+                viewer_buffer.append({key: value for key, value in point.items() if key != "_source_index"})
+                if len(viewer_buffer) >= viewer_chunk_elements:
+                    flush_viewer_chunk()
                 total_points += 1
                 coordinate_batch.append((float(point["x"]), float(point["y"])))
                 if len(coordinate_batch) >= 1000:
@@ -532,6 +614,7 @@ def normalize_native_fea_tables(
                     field_counts[name] += 1
                     global_ranges[name][0] = min(global_ranges[name][0], value)
                     global_ranges[name][1] = max(global_ranges[name][1], value)
+            flush_viewer_chunk()
             if accumulator.source_count <= 0:
                 frame_number += 1
                 continue
@@ -557,6 +640,26 @@ def normalize_native_fea_tables(
             if mesh_complete:
                 mesh_frame_count += 1
             index = len(frame_index)
+            full_bounds = None if any(value in (math.inf, -math.inf) for value in viewer_bounds) else viewer_bounds
+            full_mesh_complete = bool(
+                viewer_chunks and viewer_mesh_complete
+                and sum(int(chunk.get("element_count") or 0) for chunk in viewer_chunks) == accumulator.source_count
+            )
+            if full_mesh_complete:
+                full_mesh_frame_count += 1
+            viewer_manifest_name = "manifest.json"
+            viewer_manifest_payload = {
+                "schema_version": 1, "contract_version": "0.89-G3.3",
+                "frame_index": index, "step": str(frame_number),
+                "element_count": accumulator.source_count, "chunk_count": len(viewer_chunks),
+                "chunk_element_limit": viewer_chunk_elements, "mesh_complete": full_mesh_complete,
+                "full_region": True, "data_bounds": full_bounds,
+                "available_fields": available_fields,
+                "regions": sorted(accumulator.source_regions), "chunks": viewer_chunks,
+            }
+            viewer_manifest_size, viewer_manifest_sha = _atomic_frame(
+                viewer_frame_dir / viewer_manifest_name, viewer_manifest_payload
+            )
             frame_name = f"frame_{index:04d}.json"
             payload = {
                 "schema_version": 3,
@@ -579,6 +682,13 @@ def normalize_native_fea_tables(
                 "source_point_count": accumulator.source_count,
                 "mesh_complete": mesh_complete,
                 "sampling": sampling,
+                "viewer_manifest_file": f"viewer_frames/frame_{index:04d}/{viewer_manifest_name}",
+                "viewer_manifest_size_bytes": viewer_manifest_size,
+                "viewer_manifest_sha256": viewer_manifest_sha,
+                "viewer_chunk_count": len(viewer_chunks),
+                "viewer_element_count": accumulator.source_count,
+                "viewer_mesh_complete": full_mesh_complete,
+                "viewer_data_bounds": full_bounds,
                 "size_bytes": size_bytes,
                 "sha256": sha256,
             }
@@ -615,8 +725,8 @@ def normalize_native_fea_tables(
         all_extrema = all(bool(record.get("extrema_preserved")) for record in sampling_records)
         all_region_coverage = all(float(record.get("region_coverage") or 0.0) >= 1.0 for record in sampling_records)
         return {
-            "schema_version": 5,
-            "native_stream_schema": 1,
+            "schema_version": 6,
+            "native_stream_schema": 2,
             "normalized": True,
             "source_format": "motorcad_table",
             "headers": headers,
@@ -639,15 +749,33 @@ def normalize_native_fea_tables(
             "connectivity_columns": {"element": "TriIndex", "nodes": ["Node1", "Node2", "Node3"]},
             "capabilities": {
                 "playback": len(frame_index) > 1,
+                "autoplay_30": len(frame_index) > 1,
                 "field_selection": len(available_fields) > 1,
                 "region_filter": bool(all_regions),
                 "manual_range": True,
                 "nearest_point_probe": True,
                 "raw_download": True,
                 "connectivity_metadata": True,
-                "mesh_edges": mesh_frame_count == len(frame_index) and mesh_frame_count > 0,
-                "filled_contours": mesh_frame_count == len(frame_index) and mesh_frame_count > 0,
+                "mesh_edges": full_mesh_frame_count == len(frame_index) and full_mesh_frame_count > 0,
+                "filled_contours": full_mesh_frame_count == len(frame_index) and full_mesh_frame_count > 0,
+                "full_region_mesh": full_mesh_frame_count == len(frame_index) and full_mesh_frame_count > 0,
+                "progressive_mesh_chunks": bool(frame_index),
+                "auto_focus": True,
+                "pan": True,
+                "zoom": True,
+                "rotate_2_5d": True,
                 "equipotential_lines": False,
+            },
+            "viewer_contract": {
+                "contract_version": "0.89-G3.3",
+                "render_geometry": "native_triangle_elements",
+                "surface_mode": "2.5d_engineering_plane",
+                "target_playback_frames": 30,
+                "playback_frame_indices": list(range(min(30, len(frame_index)))),
+                "mesh_manifest_endpoint": "/api/cases/{case_id}/fea-frames/{frame_index}/mesh-manifest",
+                "mesh_chunk_endpoint": "/api/cases/{case_id}/fea-frames/{frame_index}/mesh-chunks/{chunk_index}",
+                "default_mesh_edges": True,
+                "default_auto_focus": True,
             },
             "row_count": row_count,
             "dropped_rows": dropped,
@@ -661,6 +789,7 @@ def normalize_native_fea_tables(
                 "finite_field_coverage": finite_coverage,
                 "region_count": len(all_regions),
                 "mesh_frame_count": mesh_frame_count,
+                "full_mesh_frame_count": full_mesh_frame_count,
             },
             "sampling_contract": {
                 "strategy": "region_field_coordinate_hash_v1",
@@ -678,6 +807,8 @@ def normalize_native_fea_tables(
                 "node_index": "temporary_sqlite_without_rowid",
                 "indexed_node_count": indexed_nodes,
                 "max_retained_points_per_frame": max_points_per_frame,
+                "viewer_chunk_element_limit": viewer_chunk_elements,
+                "viewer_mesh_storage": "progressive_verified_json_chunks",
                 "full_element_rows_in_memory": False,
                 "full_node_table_in_memory": False,
                 "frame_write": "atomic_replace",

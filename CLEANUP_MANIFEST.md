@@ -1,6 +1,6 @@
 # Clean Release Manifest
 
-Release: **MotorCAD Studio 0.89.9 / V0.89-G3.1**
+Release: **MotorCAD Studio 0.89.9 / V0.89-G3.2 + G3.3**
 
 This package is intentionally **latest-only**. The source distribution contains the current runtime implementation, current authority contracts, current regression surface and the minimum current documentation required to operate/qualify the product.
 
@@ -27,7 +27,7 @@ Retained because they remain part of the active product contract:
 - V0.88-D editor transaction/native-state reconciliation authority;
 - V0.88-E native-preview/design-visualization reconciliation authority;
 - V0.88-F native spatial-geometry/result-overlay authority;
-- V0.89-A global workflow/context authority, V0.89-B HMI action qualification authority, V0.89-C navigation/editor transaction authority, V0.89-D Windows Native Golden Journey qualification authority, V0.89-E UI Soak/Recovery/Fault Injection qualification authority, V0.89-F Engineer UX/Release Candidate authorities V0.89-G1 Global Shell/Typography/Copy convergence authority, V0.89-G1R usability-repair contracts, V0.89-G2 Workflow Action Readiness authority, and V0.89-G3.1 Result Shell/Decision/i18n/FEA-lifecycle convergence;
+- V0.89-A global workflow/context authority, V0.89-B HMI action qualification authority, V0.89-C navigation/editor transaction authority, V0.89-D Windows Native Golden Journey qualification authority, V0.89-E UI Soak/Recovery/Fault Injection qualification authority, V0.89-F Engineer UX/Release Candidate authorities V0.89-G1 Global Shell/Typography/Copy convergence authority, V0.89-G1R usability-repair contracts, V0.89-G2 Workflow Action Readiness authority, and V0.89-G3.1 Result Shell/Decision/i18n/FEA-lifecycle convergence, V0.89-G3.2 ResultBundle module authority and V0.89-G3.3 Native FEA/observable-HMI convergence;
 - current V0.88-F Windows Native qualification, V0.89-D live UI Golden Journey qualification, Production Soak authority, V0.89-E live UI resilience qualification and V0.89-F RC/human-acceptance gate;
 - compact current-release regression tests;
 - current architecture, engineer workflow, Motor-CAD onboarding, official mapping and production-qualification documentation.
@@ -56,7 +56,7 @@ Current-release regression policy:
 
 ## V0.89-G2 cleanup
 
-The clean package contains the active V0.88 A–F native authority chain plus V0.89-A workflow truth, V0.89-B full-button HMI qualification, V0.89-C editor/navigation transaction hardening, V0.89-D Windows Native Golden Journey qualification, V0.89-E UI Soak/Recovery/Fault Injection qualification, V0.89-F Engineer UX/Release Candidate Gate, V0.89-G1 Global Shell/Typography/Copy convergence, V0.89-G1R screenshot-driven shell/material/analysis repair and V0.89-G2 Workflow Action Readiness/Dead-end Elimination. The live Golden Journey runner, Native production-soak runner, UI resilience runner, packaged matrices and current qualification tests are retained. Generated screenshots, Playwright traces, formal workstation evidence, runtime Draft/native reconciliation, GeometryTree captures, FEA exports and result overlays are not shipped. `data/` remains runtime-materialized and ships with `.gitkeep` only.
+The clean package contains the active V0.88 A–F native authority chain plus V0.89-A workflow truth, V0.89-B full-button HMI qualification, V0.89-C editor/navigation transaction hardening, V0.89-D Windows Native Golden Journey qualification, V0.89-E UI Soak/Recovery/Fault Injection qualification, V0.89-F Engineer UX/Release Candidate Gate, V0.89-G1 Global Shell/Typography/Copy convergence, V0.89-G1R screenshot-driven shell/material/analysis repair and V0.89-G2 Workflow Action Readiness/Dead-end Elimination plus V0.89-G3.1/G3.2/G3.3 result/FEA/HMI convergence. The live Golden Journey runner, Native production-soak runner, UI resilience runner, packaged matrices and current qualification tests are retained. Generated screenshots, Playwright traces, formal workstation evidence, runtime Draft/native reconciliation, GeometryTree captures, FEA exports and result overlays are not shipped. `data/` remains runtime-materialized and ships with `.gitkeep` only.
 
 ## V0.89-G2 final clean-tree evidence
 

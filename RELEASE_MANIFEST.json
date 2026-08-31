@@ -2,17 +2,17 @@
   "version": "0.89.9",
   "schema_version": 45,
   "release_track": "current_clean_release",
-  "iteration": "V0.89-G3.1 Result Shell + Decision Summary + Live i18n + FEA Lifecycle",
+  "iteration": "V0.89-G3.2 + G3.3 ResultBundle Coverage + Native FEA 2.5D Viewer + Observable HMI",
   "source_distribution": "latest_only_clean",
-  "source_file_count": 431,
-  "source_tree_sha256_excluding_manifest": "789046f7d12721df64aff3052c1056958c9f9ca69ff164f11430ae99cb3b797a",
+  "source_file_count": 437,
+  "source_tree_sha256_excluding_manifest": "385b006b934163d030e474274e02936c7a2e8d744b396dad4f7319a1354ef584",
   "source_tree_hash_algorithm": "sha256(concat(sorted(relative_path_utf8 + NUL + file_sha256_hex_utf8 + LF)))",
   "component_counts": {
     "docs": 23,
     "scripts": 26,
-    "tests": 44,
-    "javascript": 83,
-    "css": 10,
+    "tests": 47,
+    "javascript": 84,
+    "css": 12,
     "yaml": 32,
     "mtt": 33
   },
@@ -567,7 +567,8 @@
       "G3.1 result shell",
       "decision summary state convergence",
       "live result-view i18n",
-      "G3.2 view-side preparation"
+      "G3.2 typed ResultBundle module projection",
+      "G3.3 full native triangle viewer"
     ],
     "decision_states": [
       "loading",
@@ -583,19 +584,82 @@
   "g3_iteration_boundary": {
     "implemented": [
       "G3.0",
-      "G3.1"
+      "G3.1",
+      "G3.2",
+      "G3.3"
     ],
     "partial": [
-      "G3.2-view-layer-preparation"
+      "G3.6-high-impact-progress-core"
     ],
     "deferred": [
-      "G3.2-result-extractor-completion",
-      "G3.3-native-fea-mesh-viewer",
       "G3.4-winding-feasibility-guard",
       "G3.5-material-library-ux-v2",
-      "G3.6-global-async-ux-performance",
+      "G3.6-formal-cross-module-performance-qualification",
       "G3.7-windows-golden-journey-qualification"
     ],
     "new_formal_windows_claim_percent": 0
+  },
+  "result_bundle_module_authority": {
+    "contract_version": "0.89-G3.2",
+    "canonical_output_count": 44,
+    "explicit_viewer_module_coverage": 44,
+    "explicit_physical_domain_coverage": 44,
+    "projection_authority": "ResultBundleModuleProjectionV1",
+    "typed_solver_artifacts": true,
+    "legacy_heuristic_role": "fallback_only",
+    "status": "PASS"
+  },
+  "native_fea_engineering_viewer": {
+    "contract_version": "0.89-G3.3",
+    "native_stream_schema": 2,
+    "normalized_schema_version": 6,
+    "render_geometry": "native_triangle_elements",
+    "filled_contours": true,
+    "mesh_edges": true,
+    "full_region_mesh_when_connectivity_available": true,
+    "target_playback_frames": 30,
+    "viewer_mode": "2.5d_engineering_plane",
+    "controls": [
+      "auto_focus",
+      "pan",
+      "zoom",
+      "rotate",
+      "tilt",
+      "reset",
+      "nearest_element_probe"
+    ],
+    "mesh_chunk_max_elements": 1800,
+    "browser_frame_cache_limit": 4,
+    "fabricated_volumetric_geometry": false,
+    "formal_windows_live_evidence": "pending"
+  },
+  "observable_async_hmi": {
+    "contract_version": "0.89-G3.3",
+    "full_precheck_mode": "http_202_job_plus_polling",
+    "precheck_stages": [
+      "queued",
+      "capture",
+      "studio",
+      "motorcad",
+      "identity",
+      "evidence",
+      "done"
+    ],
+    "motorcad_stage_indeterminate_supported": true,
+    "explicit_progress_surfaces": [
+      "analysis_save",
+      "analysis_refresh",
+      "execution_plan",
+      "full_precheck",
+      "submit",
+      "standard_validation",
+      "result_bundle",
+      "heavy_result_data",
+      "fea_frame_playback"
+    ],
+    "global_api_latency_fallback": true,
+    "immediate_button_acknowledgement": true,
+    "standard_validation_default": "collapsed_compact_strip",
+    "status": "PASS"
   }
 }
