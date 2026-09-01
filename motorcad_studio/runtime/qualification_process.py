@@ -14,10 +14,10 @@ def _child(payload: dict[str, Any], result_queue: Any) -> None:
     try:
         from ..models import AnalysisType
         from ..registry import Registry
-        from ..solvers.motorcad import MotorCADSolverAdapter
+        from ..solvers.motorcad_runtime import MotorCADRuntimeAdapter
 
         registry = Registry(Path(payload["config_dir"]), str(payload["motorcad_version"]))
-        adapter = MotorCADSolverAdapter(
+        adapter = MotorCADRuntimeAdapter(
             registry,
             visible=False,
             strict_mapping=bool(payload.get("strict_parameter_mapping", True)),
