@@ -4,7 +4,21 @@ Current release: **0.89.9 / Schema 45**.
 
 This is the cleaned current source release. Historical implementations, obsolete runners, generated runtime state and superseded release reports are excluded from the production package.
 
-## Current increment — V0.89-G3.2 + G3.3
+## Current increment — V0.89-G4.1 IPM, Winding, Material and Performance Repair
+
+G4.1 separates immediate design-derived relationships from native Motor-CAD authority. The IPM preview now reserves a real display bridge and caps each V-leg by pole pitch; turns update conductor markers in the same frame; and slot fill follows turns/strand count/relative slot area under an explicit fixed-conductor assumption, with a recoverable manual mode. Material snapshots now expose a direct entry into the editable Draft and material-library failures are no longer silent.
+
+Analysis loading and saving use the new `AnalysisWorkspaceService`/browser client boundary: bootstrap keeps only each Solution's latest Motor Revision plus referenced history, editor reads and writes return one latest Analysis Revision with its input catalog, and guidance refresh is deferred. Engineering-context version labels and parameter units now use the language authorities. See `docs/V0.89-G4.1_IPM_WINDING_MATERIAL_PERFORMANCE_MODULARIZATION.md`.
+
+## Previous increment — V0.89-G4 Workflow Repair
+
+V0.89-G4 repairs the primary Design → Validate → Decide workflow as five bounded modules. Dynamic i18n now owns reused text nodes and asynchronous status updates; low-frequency page guidance is collapsed into a compact help affordance; result-only shell geometry is scoped to the Results route; and nested-main/fixed-min-height defects no longer create blank operation regions.
+
+Analysis Configuration now loads through one project bootstrap instead of project/solution/analysis N+1 requests. The lightweight list reads only each definition's latest revision and collapses exact legacy duplicates for presentation without deleting lineage. Standard Validation runs as an observable single-flight background job, while network, precheck and validation waits have explicit deadlines and recoverable UI terminal states.
+
+Radiation-dependent values are disabled and excluded from solver projection when radiation is off. Local winding guards now distinguish total pole count from pole-pair count and reject invalid slot/phase/path, odd-pole, phase-symmetry and unqualified topology-regeneration combinations before launching Motor-CAD. Formal Windows + licensed Motor-CAD evidence remains pending. See `docs/V0.89-G4_WORKFLOW_REPAIR_IMPLEMENTATION_REPORT.md`.
+
+## Previous increment — V0.89-G3.2 + G3.3
 
 V0.89-G3.2 closes the ResultBundle coverage gap. All 44 canonical output IDs now carry an explicit physical-domain and Result Viewer module contract, typed results expose that contract directly, solver artifacts are represented as typed artifact results, and the Result Viewer consumes ResultBundle module projection before falling back to legacy heuristics. The result shell can therefore reason about overview, performance, FEA, thermal, mechanical, stress, graphs, output-data and artifact surfaces from one authoritative bundle.
 
@@ -12,7 +26,7 @@ V0.89-G3.3 upgrades Native FEA delivery and the high-impact asynchronous HMI pat
 
 The same increment removes the largest remaining interaction stalls in Analysis Configuration. Full calculation precheck is now an immediately acknowledged background job with stage polling; Studio check, Motor-CAD native check, revision identity verification and evidence persistence are visible in the UI. Save/refresh/submit/result-load operations use explicit progress, while the shared API path provides a delayed global fallback for older controls and route/background loads. The expanded Standard Validation package is collapsed by default so it no longer creates the large blank/dead region above the analysis editor.
 
-This package does not claim G3.4 winding-feasibility guidance, G3.5 material-library performance work, full G3.6 performance qualification, or G3.7 licensed Windows + Motor-CAD qualification. Formal workstation evidence remains pending. See `V0.89-G3.2_G3.3_IMPLEMENTATION_REPORT.md`.
+That increment did not claim winding-feasibility guidance, full performance qualification, or licensed Windows + Motor-CAD qualification. G4 now supplies the local deterministic winding guard and bounded analysis-loading path; formal workstation evidence remains pending. See `V0.89-G3.2_G3.3_IMPLEMENTATION_REPORT.md`.
 
 ## Engineer workflow
 

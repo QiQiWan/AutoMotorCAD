@@ -1,5 +1,39 @@
 # MotorCAD Studio changelog
 
+## 0.89.9 — V0.89-G4.5 AFPM / Material / Analysis / Lifecycle Repair
+
+- Collapsed the default desktop project shell to one 56 px row and removed redundant explanatory surfaces from the normal workflow.
+- Replaced the misleading overlaid AFPM face projection with separate stator and rotor axial faces.
+- Fixed the material picker callback lifecycle and bound material views to the global language state.
+- Stopped guided starters and native checks from rewriting template defaults as explicit AFPM geometry/winding overrides.
+- Reduced Analysis Workspace bootstrap to project summary + bounded latest revisions and deferred large snapshots, with phase timings.
+- Added guarded deletion for unreferenced motor configurations while protecting analysis/task/result lineage.
+- Added G4.5 regression coverage and documented supplied-log findings. Licensed Windows Motor-CAD validation remains pending.
+
+## 0.89.9 — V0.89-G4.1 IPM / Winding / Material / Performance Repair
+
+- Corrected the IPM preview so the two V-magnet legs use separate origins, retain a visible bridge and are capped by pole pitch instead of overlapping in the Studio projection.
+- Added a reusable derived-parameter module. With conductor construction fixed, turns, strands-in-hand and relative slot area now drive an immediate slot-fill estimate; a direct slot-fill edit switches to explicit manual mode.
+- Replaced the fixed minimum conductor-dot rendering with exact per-turn markers up to 96 turns and documented equivalent sampling above that limit, so the slot view updates in the same frame as winding edits.
+- Restored material editing through an explicit saved-version → editable-draft action, component-aware material selection and visible failure reporting when the material library is unavailable.
+- Added `AnalysisWorkspaceService` and a browser workspace client. Bootstrap, editor reads and editor writes now return bounded/latest-only data instead of repeatedly expanding every immutable revision.
+- Debounced analysis guidance refresh and reused design/analysis write responses, removing redundant full project reloads from common save paths.
+- Localized engineering-context versions, modules, topology labels, booleans and units through the language authorities; technical product names and stable IDs remain unchanged.
+- Added G4.1 regression coverage and a root-cause/modularization report. Licensed Windows Motor-CAD geometry/readback/solve qualification remains pending.
+
+## 0.89.9 — V0.89-G4 Workflow Repair + Local Engineering Guards
+
+- Rebuilt dynamic i18n source tracking and character-data observation so asynchronous progress and reused DOM nodes follow the language button.
+- Collapsed low-frequency primary-page guidance into compact help surfaces and removed nested-main/fixed-min-height blank regions.
+- Scoped G3 result-shell geometry to the Results canonical stage, fixing the broken top navigation on Design/Validation pages.
+- Added dependency-aware radiation inputs; disabled radiation temperature/emissivity remain persisted but do not enter validation or solver projection.
+- Converted Standard Validation to observable single-flight background jobs with real stages, polling, timeouts and late-result protection.
+- Added bounded analysis requests and a one-round-trip Analysis Workspace bootstrap; replaced solution/analysis N+1 loading with bounded queries and latest-revision summaries.
+- Made Standard Validation materialization lock-protected and legacy-aware; collapsed exact historical duplicate definitions in list presentation without deleting audit lineage.
+- Added local total-pole, slot/phase/path, phase-symmetry and winding-regeneration qualification guards before Motor-CAD launch.
+- Hardened soak telemetry to degrade safely if psutil temporarily loses the current process in a PID namespace.
+- Added 6 G4 regressions and the detailed implementation/iteration report. Licensed Windows Motor-CAD qualification remains pending.
+
 ## 0.89.9 — V0.89-G3.2 + G3.3 ResultBundle Coverage + Native FEA 2.5D Viewer + Observable HMI
 
 - Expanded the canonical ResultBundle contract to all 44 registered outputs with explicit physical-domain and Result Viewer module projection.
@@ -238,3 +272,22 @@
 - Delayed Engineer Journey refresh until active project context validation; stale project IDs self-invalidate without noisy UI failures.
 - Added automatic shallow environment self-check progress with explicit 0–100% stage feedback; deep Motor-CAD process validation remains manual.
 - Added full-shell browser simulation using the current `index.html` and all JavaScript assets, plus a product control-plane smoke chain across Design -> Validate -> Decide.
+# V0.89-G4.2 — Results / 3D Field / Performance / Diagnostics Repair
+
+- Fixed the project overview `experimentModeLabel is not defined` error.
+- Localized result module descriptions, decision details and optimization copy.
+- Parallelized direct ResultBundle opening and switched FEA first paint to verified LOD data.
+- Restored stable three-stage desktop navigation and expanded diagnostic performance evidence.
+# V0.89-G4.3 — Result / Validation / Decision Workflow Separation
+
+- Split the primary journey into Design, Validate, Results and Decision.
+- Routed result browsing and engineering decisions to separate page modes.
+- Rebuilt stage navigation text layout to prevent clipping and overlap.
+- Bound decision copy and status labels to the live language state.
+
+# V0.89-G4.4 — Compact Project Shell Height Repair
+
+- Replaced conflicting one-row/overflowing desktop shell geometry with one authoritative two-row layout.
+- Bounded the project/stage row to 54 px and the status/next-action row to 46 px.
+- Hid redundant breadcrumb and journey-cue surfaces in the default engineering experience.
+- Kept all four stage labels inside their navigation cells without masks or cross-row overlap.

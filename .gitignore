@@ -11,6 +11,3 @@ data/results/*
 data/baselines/*
 !data/baselines/.gitkeep
 !data/baselines/README.md
-logs/*
-!logs/.gitkeep
-data/logs/*

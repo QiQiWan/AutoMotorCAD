@@ -39,7 +39,8 @@
     const type = designType(design, revision);
     const lead = [...header.children].find(node => !node.classList.contains('actions'));
     if (lead) {
-      lead.innerHTML = `<span class="eyebrow">\u7535\u673a\u8bbe\u8ba1</span><h2>${safe(design.name)}</h2><div class="design-object-meta-v063"><span class="design-revision-pill-v063">Rev.${safe(revision.revision)}</span><span>${safe(type.label)}</span><span>\u5f53\u524d\uff1a${safe(currentStageLabel())}</span><details><summary>\u6280\u672f\u4fe1\u606f</summary><div><code>${safe(design.id)}</code><span>${safe(type.code)}</span><span>${safe(type.physicalFamily || '-')} / ${safe(type.topology || '-')}</span><span>${safe(design.template_id || '-')}</span><code>${safe(String(revision.motor_snapshot_hash || revision.content_hash || '').slice(0, 16))}</code></div></details></div>`;
+      const tr=(zh,en)=>window.MCS_I18N?.t?.(zh,en)??zh,revisionText=window.MCSDesignRenderUtils?.revisionLabel?.(revision.revision,'motor')||tr(`电机版本 ${revision.revision}`,`Motor revision ${revision.revision}`);
+      lead.innerHTML = `<span class="eyebrow">${tr('\u7535\u673a\u8bbe\u8ba1','Motor design')}</span><h2>${safe(design.name)}</h2><div class="design-object-meta-v063"><span class="design-revision-pill-v063">${safe(revisionText)}</span><span>${safe(type.label)}</span><span>${tr('\u5f53\u524d','Current')}：${safe(currentStageLabel())}</span><details><summary>${tr('\u6280\u672f\u4fe1\u606f','Technical details')}</summary><div><code>${safe(design.id)}</code><span>${safe(type.code)}</span><span>${safe(type.physicalFamily || '-')} / ${safe(type.topology || '-')}</span><span>${safe(design.template_id || '-')}</span><code>${safe(String(revision.motor_snapshot_hash || revision.content_hash || '').slice(0, 16))}</code></div></details></div>`;
     }
     const actions = q('.actions', header);
     const edit = q('#workspaceEditRevision');

@@ -1,6 +1,14 @@
 # MotorCAD Studio Architecture
 
-Current release: **0.89.8 / Schema 45**.
+Current release: **0.89.9 / Schema 45**.
+
+## V0.89-G4.1 bounded editor and derived-design modules
+
+`MCSDesignDerivedParameters` is the single browser authority for non-native, immediate relationships such as relative slot area, fixed-conductor slot-fill coupling, conductor marker sampling and IPM preview leg separation. These values are explicitly preview evidence; native Motor-CAD geometry and winding readback remain authoritative.
+
+`AnalysisWorkspaceService` is the application-service seam between HTTP routes, `EngineeringPlatform` and `SolutionService`. Its bootstrap read model returns the latest Motor Revision per Solution plus any older revision referenced by the active Analysis or route. Its editor bundle and write responses carry only the latest Analysis Revision and current input-domain catalog. Immutable history remains available from the existing detail endpoints.
+
+The browser consumes this contract through `MCSAnalysisWorkspaceClient`. Design and Analysis controllers update from write responses instead of reloading the entire Project graph. This is the first extraction step; `main.py`, `EngineeringPlatform`, `design/editor.js` and `analysis/unified-configuration.js` remain migration targets rather than completed micro-modules.
 
 ## Product workflow
 
@@ -127,4 +135,3 @@ Draft editing remains Design-Intent-first. In saved read-only Design views, `Nat
 `NativeSpatialResultOverlayAuthorityV1` accepts only a post-solve `QUALIFIED` NativeModelSnapshot and the same Case's normalized native FEA manifest. Binding-plan, Design-snapshot, model-source, native-state and spatial-geometry lineage must agree. FEA coordinate bounds must be contained by the native geometry envelope strongly enough to produce `CONFIRMED` alignment for formal qualification.
 
 Rendering follows a strict evidence rule. If the native FEA export contains real element/node connectivity, Studio may draw those native elements and apply their exported values. If connectivity is absent, Studio renders exported points only (`NO_INTERPOLATION`). It does not manufacture triangles, mesh edges or a smooth contour from point clouds. The exact GeometryTree card is currently an XY/radial native view; the longitudinal/axial engineering section remains parameter/readback reconstruction until a target-workstation API supplies an equivalent spatial section authority.
-

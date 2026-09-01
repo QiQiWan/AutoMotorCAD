@@ -207,8 +207,8 @@
   };
 
   const previousOpenWorkspaceDesign = openWorkspaceDesign;
-  openWorkspaceDesign = async function(designId,routeCtx=null) {
-    const loaded=await previousOpenWorkspaceDesign(designId,routeCtx);if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
+  openWorkspaceDesign = async function(designId,routeCtx=null,preloadedDesign=null) {
+    const loaded=await previousOpenWorkspaceDesign(designId,routeCtx,preloadedDesign);if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
     enhanceWorkspaceTreeV019();
     const actions = $('#workspaceCanvas .workspace-object-header .actions');
     if (!actions || !state.workspaceRevision) return;

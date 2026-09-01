@@ -105,12 +105,54 @@ class SolutionService:
     def list_project_solutions(self, project_id: str) -> list[dict[str, Any]]:
         return [self._canonical_payload(item) or {} for item in self.repository.list_for_project(project_id)]
 
-    def get_solution(self, solution_id: str) -> dict[str, Any] | None:
-        solution = self.repository.get_solution(solution_id)
+    def list_project_solutions_with_revisions(
+        self,
+        project_id: str,
+        *,
+        revision_limit: int | None = None,
+        include_revision_ids: set[str] | list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        rows = self.repository.list_for_project_with_revisions(
+            project_id,
+            revision_limit=revision_limit,
+            include_revision_ids=include_revision_ids,
+        )
+        payload: list[dict[str, Any]] = []
+        for solution in rows:
+            solution["revisions"] = [
+                self._with_snapshot(solution, revision)
+                for revision in solution.get("revisions") or []
+            ]
+            payload.append(self._canonical_payload(solution) or {})
+        return payload
+
+    def get_solution(self, solution_id: str, *, revision_limit: int | None = None) -> dict[str, Any] | None:
+        solution = self.repository.get_solution(solution_id, revision_limit=revision_limit)
         if solution is None:
             return None
         solution["revisions"] = [self._with_snapshot(solution, revision) for revision in solution.get("revisions") or []]
         return self._canonical_payload(solution)
+
+    def get_solution_summary(self, solution_id: str) -> dict[str, Any] | None:
+        return self._canonical_payload(self.repository.get_solution(solution_id, include_revisions=False))
+
+    def get_latest_revision(self, solution_id: str) -> dict[str, Any] | None:
+        revision = self.repository.get_latest_revision(solution_id)
+        if revision is None:
+            return None
+        solution = self.repository.get_solution(solution_id, include_revisions=False)
+        if solution is not None:
+            revision = self._with_snapshot(solution, revision)
+        return self._canonical_payload(revision)
+
+    def find_revision_by_commit_key(self, solution_id: str, commit_key: str) -> dict[str, Any] | None:
+        revision = self.repository.find_revision_by_commit_key(solution_id, commit_key)
+        if revision is None:
+            return None
+        solution = self.repository.get_solution(solution_id, include_revisions=False)
+        if solution is not None:
+            revision = self._with_snapshot(solution, revision)
+        return self._canonical_payload(revision)
 
     def get_revision(self, revision_id: str) -> dict[str, Any] | None:
         revision = self.repository.get_revision(revision_id)
@@ -167,6 +209,9 @@ class SolutionService:
         if self.repository.get_solution(solution_id, include_revisions=False) is None:
             raise KeyError(solution_id)
         return self.repository.delete_draft(solution_id, expected_version=expected_version)
+
+    def delete_solution(self, project_id: str, solution_id: str) -> dict[str, Any]:
+        return self.repository.delete_solution(project_id, solution_id)
 
     def record_native_reconciliation(
         self, solution_id: str, *, expected_transaction_hash: str, expected_intent_hash: str, reconciliation: dict[str, Any]
@@ -286,7 +331,7 @@ class SolutionService:
         automation_parameters: dict[str, dict[str, Any]] | None = None,
         capability_snapshot: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        solution = self.get_solution(solution_id)
+        solution = self.get_solution_summary(solution_id)
         if solution is None:
             raise KeyError(solution_id)
         stored, explicit, validation = self._revision_policy(solution, parameters, explicit_parameter_ids)

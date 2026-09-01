@@ -22,7 +22,7 @@ def test_v087a_guided_mode_is_default_and_advanced_catalog_is_progressive_disclo
     assert 'body[data-user-mode="operator"] .engineering-catalog-only' in css
     assert 'worker-pool-panel-v026 expert-only' in html
     assert 'runtime-scheduler-panel-v027 expert-only' in html
-    assert '设计、验证、决策三个阶段' in html
+    assert '设计、验证、结果、决策四个阶段' in html
 
 
 def test_v087b_starter_catalog_has_spm_ipm_afpm_and_fail_closed_native_qualification():

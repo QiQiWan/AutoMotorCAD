@@ -325,12 +325,14 @@ class EngineeringPlatformService:
             result[str(domain_id)] = normalized
         return result
 
-    def input_domain_catalog(self, analysis_id: str | None = None) -> dict[str, Any]:
+    def input_domain_catalog(
+        self, analysis_id: str | None = None, *, analysis_payload: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         current: dict[str, dict[str, Any]] = {}
         analysis = None
         required: set[str] = set()
         if analysis_id:
-            analysis = self.get_analysis_definition(analysis_id)
+            analysis = analysis_payload or self.get_analysis_definition(analysis_id, revision_limit=1)
             if not analysis:
                 raise KeyError(analysis_id)
             latest = (analysis.get("revisions") or [{}])[0]
@@ -723,7 +725,13 @@ class EngineeringPlatformService:
             )
         return self.get_analysis_definition(aid) or {}
 
-    def create_analysis_revision(self, analysis_id: str, request: AnalysisDefinitionRevisionCreate) -> dict[str, Any]:
+    def create_analysis_revision(
+        self,
+        analysis_id: str,
+        request: AnalysisDefinitionRevisionCreate,
+        *,
+        revision_limit: int | None = None,
+    ) -> dict[str, Any]:
         parent = self.db.query_one("SELECT * FROM analysis_definitions WHERE id=?", (analysis_id,))
         if not parent:
             raise KeyError(analysis_id)
@@ -764,7 +772,7 @@ class EngineeringPlatformService:
                  self.db.dumps(analysis_snapshot.model_dump(mode="json")), ANALYSIS_SNAPSHOT_SCHEMA_VERSION, analysis_snapshot.content_hash()),
             )
             conn.execute("UPDATE analysis_definitions SET updated_at=? WHERE id=?", (now, analysis_id))
-        return self.get_analysis_definition(analysis_id) or {}
+        return self.get_analysis_definition(analysis_id, revision_limit=revision_limit) or {}
 
     def set_analysis_design_revision(self, analysis_id: str, design_revision_id: str) -> dict[str, Any]:
         parent = self.db.query_one("SELECT * FROM analysis_definitions WHERE id=?", (analysis_id,))
@@ -788,11 +796,18 @@ class EngineeringPlatformService:
         )
         return self.get_analysis_definition(analysis_id) or {}
 
-    def get_analysis_definition(self, analysis_id: str) -> dict[str, Any] | None:
+    def get_analysis_definition(
+        self, analysis_id: str, *, revision_limit: int | None = None
+    ) -> dict[str, Any] | None:
         row = self.db.query_one("SELECT * FROM analysis_definitions WHERE id=?", (analysis_id,))
         if not row:
             return None
-        revisions = self.db.query_all("SELECT * FROM analysis_definition_revisions WHERE analysis_definition_id=? ORDER BY revision DESC", (analysis_id,))
+        sql = "SELECT * FROM analysis_definition_revisions WHERE analysis_definition_id=? ORDER BY revision DESC"
+        params: tuple[Any, ...] = (analysis_id,)
+        if revision_limit is not None:
+            sql += " LIMIT ?"
+            params = (analysis_id, max(1, min(int(revision_limit), 1000)))
+        revisions = self.db.query_all(sql, params)
         for revision in revisions:
             revision["definition"] = self.db.loads(revision.pop("definition_json"), {})
             revision["analysis_snapshot"] = self.db.loads(revision.pop("analysis_snapshot_json", None), {})
@@ -800,8 +815,72 @@ class EngineeringPlatformService:
         return row
 
     def list_analysis_definitions(self, project_id: str) -> list[dict[str, Any]]:
-        rows = self.db.query_all("SELECT id FROM analysis_definitions WHERE project_id=? ORDER BY updated_at DESC", (project_id,))
-        return [item for row in rows if (item := self.get_analysis_definition(str(row["id"]))) is not None]
+        """Return one lightweight latest-revision row per visible analysis.
+
+        The previous implementation issued one query per definition and decoded every
+        historical revision just to draw the left-hand list.  That made older projects
+        progressively slower.  A single latest-revision join keeps list cost bounded;
+        the full immutable history remains available from ``get_analysis_definition``.
+        Exact duplicate rows are collapsed for presentation without deleting lineage.
+        """
+
+        rows = self.db.query_all(
+            """SELECT ad.*,
+                      adr.id AS latest_revision_id,
+                      adr.revision AS latest_revision_number,
+                      adr.definition_json AS latest_definition_json,
+                      adr.notes AS latest_revision_notes,
+                      adr.content_hash AS latest_content_hash,
+                      adr.created_at AS latest_revision_created_at,
+                      adr.analysis_snapshot_schema_version AS latest_analysis_snapshot_schema_version,
+                      adr.analysis_snapshot_hash AS latest_analysis_snapshot_hash
+                 FROM analysis_definitions ad
+                 LEFT JOIN analysis_definition_revisions adr
+                   ON adr.analysis_definition_id=ad.id
+                  AND adr.revision=(
+                      SELECT MAX(newest.revision)
+                        FROM analysis_definition_revisions newest
+                       WHERE newest.analysis_definition_id=ad.id
+                  )
+                WHERE ad.project_id=?
+                ORDER BY ad.updated_at DESC, ad.id DESC""",
+            (project_id,),
+        )
+        visible: list[dict[str, Any]] = []
+        by_identity: dict[tuple[str, ...], dict[str, Any]] = {}
+        for raw in rows:
+            row = dict(raw)
+            definition = self.db.loads(row.pop("latest_definition_json", None), {})
+            revision = {
+                "id": row.pop("latest_revision_id", None),
+                "revision": row.pop("latest_revision_number", None),
+                "definition": definition,
+                "notes": row.pop("latest_revision_notes", ""),
+                "content_hash": row.pop("latest_content_hash", ""),
+                "created_at": row.pop("latest_revision_created_at", None),
+                "analysis_snapshot": {},
+                "analysis_snapshot_deferred": True,
+                "analysis_snapshot_schema_version": row.pop("latest_analysis_snapshot_schema_version", 1),
+                "analysis_snapshot_hash": row.pop("latest_analysis_snapshot_hash", ""),
+            }
+            row["revisions"] = [revision] if revision["id"] else []
+            identity = (
+                str(row.get("design_revision_id") or ""),
+                str(row.get("name") or "").strip(),
+                str(row.get("module") or ""),
+                str(row.get("recipe_id") or ""),
+                str(revision.get("content_hash") or ""),
+            )
+            existing = by_identity.get(identity)
+            if existing is not None and identity[-1]:
+                existing["duplicate_count"] = int(existing.get("duplicate_count") or 1) + 1
+                existing.setdefault("duplicate_ids", []).append(str(row.get("id") or ""))
+                continue
+            row["duplicate_count"] = 1
+            row["duplicate_ids"] = []
+            by_identity[identity] = row
+            visible.append(row)
+        return visible
 
     def create_analysis_case(self, project_id: str, request: AnalysisCaseCreate) -> dict[str, Any]:
         """Create the engineer-facing case and enter motor design in one action."""
@@ -934,8 +1013,15 @@ class EngineeringPlatformService:
             })
         return result
 
-    def update_input_domain(self, analysis_id: str, domain_id: str, request: InputDomainUpdate) -> dict[str, Any]:
-        parent = self.get_analysis_definition(analysis_id)
+    def update_input_domain(
+        self,
+        analysis_id: str,
+        domain_id: str,
+        request: InputDomainUpdate,
+        *,
+        revision_limit: int | None = None,
+    ) -> dict[str, Any]:
+        parent = self.get_analysis_definition(analysis_id, revision_limit=1)
         if not parent:
             raise KeyError(analysis_id)
         if domain_id not in self.input_domains:
@@ -951,13 +1037,13 @@ class EngineeringPlatformService:
             input_domains=normalized,
             requested_outputs=deepcopy(snapshot.get("requested_outputs") or []),
             notes=request.notes or f"更新{self.input_domains[domain_id].get('label') or domain_id}输入",
-        ))
+        ), revision_limit=revision_limit)
         return {
             "analysis_definition_id": analysis_id,
             "domain_id": domain_id,
             "saved_values": normalized[domain_id],
             "analysis_definition": revision,
-            "catalog": self.input_domain_catalog(analysis_id),
+            "catalog": self.input_domain_catalog(analysis_id, analysis_payload=revision),
         }
 
     def qualification_coverage(self, motor_type_id: str | None = None, template_id: str | None = None) -> dict[str, Any]:

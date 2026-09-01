@@ -164,6 +164,15 @@ class TemplateService:
             winding["require_integer_slots_per_phase_path"] = bool(
                 winding_profile.get("require_integer_slots_per_phase_path", False)
             )
+            winding["require_even_pole_count"] = bool(
+                winding_profile.get("require_even_pole_count", False)
+            )
+            winding["require_phase_symmetric_winding"] = bool(
+                winding_profile.get("require_phase_symmetric_winding", False)
+            )
+            winding["supports_winding_regeneration"] = bool(
+                winding_profile.get("supports_winding_regeneration", False)
+            )
             model_source = self._resolve_model_source(template_id, path)
             old_version = str(item.get("version", "")).startswith(("13.", "2024."))
             warnings: list[str] = []

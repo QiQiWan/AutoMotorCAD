@@ -1,18 +1,18 @@
 {
   "version": "0.89.9",
-  "schema_version": 45,
+  "schema_version": 46,
   "release_track": "current_clean_release",
-  "iteration": "V0.89-G3.2 + G3.3 ResultBundle Coverage + Native FEA 2.5D Viewer + Observable HMI",
+  "iteration": "V0.89-G4.5 AFPM Material Analysis Lifecycle Repair",
   "source_distribution": "latest_only_clean",
-  "source_file_count": 437,
-  "source_tree_sha256_excluding_manifest": "385b006b934163d030e474274e02936c7a2e8d744b396dad4f7319a1354ef584",
+  "source_file_count": 455,
+  "source_tree_sha256_excluding_manifest": "ff38271ae9a31f4a610355430aa41fefc21de2b453579cb9c8893ebd3b9825f0",
   "source_tree_hash_algorithm": "sha256(concat(sorted(relative_path_utf8 + NUL + file_sha256_hex_utf8 + LF)))",
   "component_counts": {
-    "docs": 23,
+    "docs": 29,
     "scripts": 26,
-    "tests": 47,
-    "javascript": 84,
-    "css": 12,
+    "tests": 53,
+    "javascript": 87,
+    "css": 13,
     "yaml": 32,
     "mtt": 33
   },
@@ -24,6 +24,7 @@
   "engineer_workflow": [
     "Design",
     "Validate",
+    "Results",
     "Decide"
   ],
   "golden_motor_starters": [
@@ -137,12 +138,12 @@
     "formal_v089e_ui_resilience": "pending live Windows + licensed Motor-CAD 2026R1 evidence"
   },
   "current_test_summary": {
-    "full_inventory": "241/241 PASS",
-    "non_e2e": "204/204 PASS (26 isolated current-release files)",
-    "browser_hmi": "37/37 PASS (16 isolated E2E files)",
-    "javascript_syntax": "83/83 PASS",
+    "full_inventory": "233/233 current executable non-E2E assertions PASS across 31 isolated files; browser baseline reported separately",
+    "non_e2e": "31/31 isolated files PASS; 233 current executable assertions",
+    "browser_hmi": "37/37 PASS inherited qualified baseline; G4.1 environment collected 33 and skipped them because Playwright was unavailable",
+    "javascript_syntax": "87/87 PASS",
     "python_compileall": "PASS",
-    "pytest_inventory": "241 total; 204 non-E2E; 37 E2E",
+    "pytest_inventory": "233 current executable non-E2E; 33 browser HMI collected in G4.1 environment; 4 expected environment collection skips",
     "current_api_product_surface": "25/25 PASS",
     "v088_engineering_closure": "7/7 PASS",
     "v088a_semantic_authority": "10/10 PASS",
@@ -187,7 +188,11 @@
     "v089g31_full_shell_route_hmi": "1/1 PASS; zero page errors in exercised journey",
     "v089g31_javascript_syntax": "83/83 PASS",
     "v089g31_python_compileall": "PASS",
-    "v089g31_fresh_full_inventory": "PENDING; complete current-suite inventory not rerun in this incremental package"
+    "v089g31_fresh_full_inventory": "PENDING; complete current-suite inventory not rerun in that historical incremental package",
+    "v089g41_ipm_winding_material_performance": "7/7 PASS",
+    "v089g41_plus_g4_targeted": "13/13 PASS",
+    "v089g41_isolated_non_e2e_files": "31/31 PASS",
+    "v089g41_browser_hmi_current_environment": "33 SKIPPED; Playwright unavailable; no new browser PASS claimed"
   },
   "release_runner": {
     "current_gate_includes_v088a": true,
@@ -232,7 +237,8 @@
     "current_gate_includes_v089g1": true,
     "global_shell_typography_copy_release_gate": true,
     "guided_copy_audit_release_gate": true,
-    "current_gate_includes_v089g2": true
+    "current_gate_includes_v089g2": true,
+    "current_gate_includes_v089g41": true
   },
   "cleanup": {
     "latest_only_docs": true,
@@ -586,15 +592,14 @@
       "G3.0",
       "G3.1",
       "G3.2",
-      "G3.3"
+      "G3.3",
+      "G4-local-workflow-repair"
     ],
     "partial": [
-      "G3.6-high-impact-progress-core"
+      "G3.5-material-library-ux-v2",
+      "G3.6-formal-cross-module-performance-qualification"
     ],
     "deferred": [
-      "G3.4-winding-feasibility-guard",
-      "G3.5-material-library-ux-v2",
-      "G3.6-formal-cross-module-performance-qualification",
       "G3.7-windows-golden-journey-qualification"
     ],
     "new_formal_windows_claim_percent": 0
@@ -633,8 +638,78 @@
     "fabricated_volumetric_geometry": false,
     "formal_windows_live_evidence": "pending"
   },
+  "workflow_repair_g4": {
+    "contract_version": "0.89-G4",
+    "modules": [
+      "ui_convergence",
+      "dynamic_i18n",
+      "analysis_workspace_gateway",
+      "observable_jobs",
+      "engineering_guards"
+    ],
+    "analysis_bootstrap": "one_round_trip",
+    "solution_revision_queries": 2,
+    "analysis_list_revision_policy": "latest_only",
+    "legacy_exact_duplicate_policy": "collapse_for_presentation_preserve_lineage",
+    "standard_validation_materialization": "lock_protected_legacy_identity_aware",
+    "radiation_disabled_projection": "persist_values_exclude_from_active_solver_inputs",
+    "winding_local_checks": [
+      "positive_integer_counts",
+      "total_poles_even",
+      "slot_phase_parallel_path_integer",
+      "phase_symmetric_periodicity",
+      "qualified_winding_regeneration"
+    ],
+    "dedicated_regression": "6/6 PASS",
+    "formal_windows_live_evidence": "pending"
+  },
+  "ipm_winding_material_performance_g41": {
+    "contract_version": "0.89-G4.1",
+    "modules": [
+      "design_derived_parameters",
+      "material_draft_transaction",
+      "analysis_workspace_service",
+      "analysis_workspace_browser_client",
+      "engineering_context_language_authority"
+    ],
+    "ipm_preview_policy": "separate V-leg origins + visible bridge + pole-pitch cap",
+    "slot_fill_policy": "relative estimate under fixed conductor/insulation; direct edit enters manual mode",
+    "conductor_marker_policy": "one marker per turn through 96; bounded equivalent sampling above 96",
+    "material_edit_policy": "saved snapshot enters editable draft; library failures are visible",
+    "analysis_history_policy": "latest-only read models plus referenced history on demand",
+    "analysis_editor_write_policy": "one response carries latest analysis revision and input catalog",
+    "commit_replay_lookup": "SQLite expression index on solution_id and commit_key",
+    "dedicated_regression": "7/7 PASS",
+    "isolated_non_e2e_files": "31/31 PASS",
+    "formal_windows_live_evidence": "pending"
+  },
+  "compact_project_shell_g44": {
+    "contract_version": "0.89-G4.4",
+    "default_desktop_rows_px": [54, 46],
+    "default_desktop_total_height_px": 100,
+    "default_overflow": "hidden",
+    "stage_count": 4,
+    "default_hidden_redundant_surfaces": [
+      "engineering_context_breadcrumb",
+      "engineer_journey_cue"
+    ],
+    "dedicated_regression": "4/4 PASS",
+    "targeted_static_regression": "13/13 PASS",
+    "formal_windows_live_evidence": "pending"
+  },
+  "afpm_material_analysis_lifecycle_g45": {
+    "contract_version": "0.89-G4.5",
+    "project_shell": "single 56px desktop row; redundant context guidance hidden by default",
+    "afpm_projection": "separate stator and rotor axial faces",
+    "material_assignment": "picker callback preserved and language-event rerendered",
+    "native_default_policy": "template-equal inputs are not explicit overrides",
+    "analysis_bootstrap": "project summary + bounded latest revisions + deferred snapshots + timings",
+    "motor_configuration_delete": "allowed only while no engineering lineage references exist",
+    "targeted_compatibility": "71/71 PASS",
+    "formal_windows_live_evidence": "pending"
+  },
   "observable_async_hmi": {
-    "contract_version": "0.89-G3.3",
+    "contract_version": "0.89-G4",
     "full_precheck_mode": "http_202_job_plus_polling",
     "precheck_stages": [
       "queued",
@@ -660,6 +735,11 @@
     "global_api_latency_fallback": true,
     "immediate_button_acknowledgement": true,
     "standard_validation_default": "collapsed_compact_strip",
+    "standard_validation_mode": "http_202_singleflight_job_plus_polling",
+    "analysis_request_timeout_ms": 60000,
+    "full_precheck_ui_timeout_ms": 270000,
+    "standard_validation_ui_timeout_ms": 1020000,
+    "late_terminal_result_guard": true,
     "status": "PASS"
   }
 }

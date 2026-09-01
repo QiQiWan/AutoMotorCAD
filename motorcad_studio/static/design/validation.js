@@ -2,7 +2,7 @@
 /* V0.64 Design validation / comparison renderer. */
 (() => {
   const U=window.MCSDesignRenderUtils;if(!U)throw new Error('MCSDesignRenderUtils must load before validation renderer');
-  const {safe,fmt}=U;
+  const {safe,fmt,revisionLabel}=U;
 
   function nativeOperatorMessage(native){
     if(!native)return'';
@@ -63,7 +63,7 @@
     const previous=data.previous_feasible,values=data.effective_parameters||{};
     if(!previous)return'<div class="native-empty-v031"><b>没有可用比较基线</b><p>创建第二个可行设计版本后即可查看参数差异。</p></div>';
     const rows=(data.parameters||[]).map(row=>({row,base:previous.parameters?.[row.id],current:values[row.id]})).filter(x=>x.base!==undefined&&String(x.base)!==String(x.current));
-    const label=previous.source==='revision'?`Rev.${previous.revision}`:'模板基线';
+    const label=previous.source==='revision'?revisionLabel(previous.revision):'模板基线';
     return`<div class="design-compare-view-v031"><div class="visual-heading-v031"><div><span class="eyebrow">DESIGN · COMPARE</span><h3>${safe(label)} → 当前设计版本</h3></div><div class="visual-facts-v031"><span>${rows.length} 项差异</span></div></div><table><thead><tr><th>参数</th><th>${safe(label)}</th><th>当前</th><th>变化</th></tr></thead><tbody>${rows.length?rows.map(({row,base,current})=>{const delta=Number.isFinite(Number(base))&&Number.isFinite(Number(current))?Number(current)-Number(base):null;return`<tr><td><b>${safe(row.label)}</b><small>${safe(row.category_label||'设计参数')}</small></td><td>${fmt(base)} ${safe(row.unit||'')}</td><td>${fmt(current)} ${safe(row.unit||'')}</td><td class="${delta>0?'up':delta<0?'down':''}">${delta===null?'—':`${delta>0?'+':''}${fmt(delta)}`}</td></tr>`}).join(''):'<tr><td colspan="4">当前值与比较基线相同。</td></tr>'}</tbody></table></div>`;
   }
 

@@ -1262,6 +1262,10 @@ class Database:
                 "native_reconciliation_json": "TEXT NOT NULL DEFAULT '{}'",
             }.items():
                 self._ensure_column(conn, "motor_revisions", name, ddl)
+            conn.execute(
+                """CREATE INDEX IF NOT EXISTS idx_motor_revisions_commit_key
+                   ON motor_revisions(solution_id, json_extract(editor_transaction_json,'$.commit_key'))"""
+            )
             conn.execute("CREATE INDEX IF NOT EXISTS idx_solution_drafts_base_revision ON solution_drafts(base_motor_revision_id)")
             self._ensure_column(conn, "datasets", "project_id", "TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_datasets_project ON datasets(project_id,updated_at)")

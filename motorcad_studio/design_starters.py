@@ -217,6 +217,13 @@ class DesignStarterService:
                 raise ValueError(f"{spec['label']} is below hard minimum {hard_min} {spec.get('unit') or ''}")
             if hard_max is not None and numeric > float(hard_max):
                 raise ValueError(f"{spec['label']} is above hard maximum {hard_max} {spec.get('unit') or ''}")
+            default_value = spec.get("default_value")
+            if default_value is not None:
+                try:
+                    if abs(float(default_value) - numeric) <= max(1e-9, abs(float(default_value)) * 1e-9):
+                        continue
+                except (TypeError, ValueError):
+                    pass
             overrides[parameter_id] = int(numeric) if parameter_id in {"pole_count", "slot_count", "turns_per_coil", "parallel_paths", "magnet_layers"} else numeric
         solution = self.solutions.create_from_template(
             project_id=project_id,

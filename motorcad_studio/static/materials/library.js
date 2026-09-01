@@ -45,7 +45,7 @@
   }
   function close(){q('#materialLibraryV061')?.remove();stateV061.picker=null;if(!q('#materialLibraryV061'))document.body.classList.remove('engineering-sheet-open')}
   function shell(){
-    window.MCSCloseEngineeringSheets?.();close();
+    window.MCSCloseEngineeringSheets?.();q('#materialLibraryV061')?.remove();
     const node=document.createElement('div');node.id='materialLibraryV061';node.className='material-library-shell-v061';
     const picker=stateV061.picker;
     node.innerHTML=`<div class="material-library-backdrop-v061"></div><section role="dialog" aria-modal="true" aria-label="Motor-CAD 材料库"><header><div><span>${picker?'材料选择':'材料工程数据'}</span><h2>${safe(picker?.title||'Motor-CAD 材料库')}</h2><p>${picker?'单击预览，双击或使用底部按钮赋值。':'浏览、筛选和维护材料；数据库来源信息默认折叠。'}</p></div><button type="button" data-material-close-v061 aria-label="关闭">×</button></header><div id="materialLibraryBodyV061" class="material-library-body-v061"><div class="material-loading-v061">正在读取材料数据库状态…</div></div><div class="material-library-resize-handle-v088" data-material-resize-v088 title="拖动调整窗口大小；双击恢复默认大小"></div></section>`;

@@ -1,80 +1,205 @@
-/* Golden Motor standard validation package.
- * Single-flight execution prevents duplicate Motor-CAD prechecks. Validation now also
- * exposes the current boot-session log export so a failed precheck can be diagnosed
- * without navigating to Results.
- */
+/* V0.89-G4 observable Standard Validation package. */
 (() => {
-  const q=(s,r=document)=>r?.querySelector?.(s)||null;
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const state={payload:null,loading:false,timer:null,lastKey:null,running:false,runPromise:null,runKey:null,submissionKey:null};
-  const ctx=()=>window.MCSEngineeringContext?.get?.()||{};
-  const isEnglish=()=>String(window.MCS_I18N?.language||document.documentElement.lang||'zh').toLowerCase().startsWith('en');
-  async function apiCall(path,opts={}){if(window.api)return window.api(path,opts);const r=await fetch(path,{cache:'no-store',headers:{'Content-Type':'application/json'},...opts});if(!r.ok){let d;try{d=await r.json()}catch{d={detail:await r.text()}}throw new Error(typeof d?.detail==='string'?d.detail:(d?.detail?.message||JSON.stringify(d?.detail||d)))}return r.json()}
-  const statusLabel=s=>({READY:'就绪',NEEDS_INPUT:'需要确认',UNAVAILABLE:'不可用'}[s]||s||'—');
-  const newSubmissionKey=()=>{try{return `svp-${crypto.randomUUID()}`}catch{return `svp-${Date.now()}-${Math.random().toString(16).slice(2)}`}};
-  const progress=options=>window.MCSOperationProgress?.start?.(options)||{update(){return this},done(){return this},fail(){return this},close(){return this}};
-  function exportCurrentLogs(){
-    const url='/api/logs/export.zip?current_session=true&minutes=240';
-    window.open(url,'_blank','noopener');
-    window.toast?.(isEnglish()?'Current-session logs are being exported.':'正在导出当前运行会话日志；实时原始日志同时保存在项目根目录 logs/。','INFO',5000);
+  const q = (selector, root = document) => root?.querySelector?.(selector) || null;
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const tr = (zh, en) => window.MCS_I18N?.t?.(zh, en) ?? zh;
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const state = {
+    payload: null, refreshPromise: null, timer: null, lastKey: null,
+    running: false, runPromise: null, runKey: null, submissionKey: null, currentJobId: null,
+  };
+  const ctx = () => window.MCSEngineeringContext?.get?.() || {};
+  async function apiCall(path, options = {}) {
+    const timeoutMs=Number(options.timeoutMs??45000),controller=new AbortController(),requestOptions={...options};delete requestOptions.timeoutMs;
+    const timer=setTimeout(()=>controller.abort('REQUEST_TIMEOUT'),timeoutMs);requestOptions.signal=controller.signal;
+    try {
+    if (window.api) return await window.api(path, requestOptions);
+    const response = await fetch(path, {cache:'no-store', headers:{'Content-Type':'application/json'}, ...requestOptions});
+    if (!response.ok) {
+      let data;
+      try { data = await response.json(); } catch { data = {detail: await response.text()}; }
+      throw new Error(typeof data?.detail === 'string' ? data.detail : (data?.detail?.message || JSON.stringify(data?.detail || data)));
+    }
+    return response.json();
+    } catch (error) {
+      if(controller.signal.aborted){const timeoutError=new Error(tr(`请求超过 ${Math.round(timeoutMs/1000)} 秒，已停止等待。`,`Request exceeded ${Math.round(timeoutMs/1000)} seconds and was stopped.`));timeoutError.code='REQUEST_TIMEOUT';throw timeoutError}
+      throw error;
+    } finally { clearTimeout(timer); }
   }
-  function syncRunButton(host=q('#standardValidationPackageV087D')){
-    if(!host)return;
-    const button=q('[data-svp-run]',host),ready=Boolean(state.payload?.ready_to_materialize);
-    if(!button)return;
-    button.disabled=state.running||!ready;
-    button.textContent=state.running?'检查中…':'运行标准设计验证';
-    button.setAttribute('aria-busy',state.running?'true':'false');
+  const statusLabel = status => ({
+    READY: tr('就绪', 'Ready'), NEEDS_INPUT: tr('需要确认', 'Needs input'), UNAVAILABLE: tr('不可用', 'Unavailable'),
+  })[status] || status || '—';
+  const moduleLabel = value => window.MCSAnalysisLabels?.moduleLabel?.(value) || value || '—';
+  const newSubmissionKey = () => {
+    try { return `svp-${crypto.randomUUID()}`; }
+    catch { return `svp-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+  };
+  const progress = options => window.MCSOperationProgress?.start?.(options) || {state:'running', update(){return this;}, done(){return this;}, fail(){return this;}, close(){return this;}};
+
+  function syncRunButton(host = q('#standardValidationPackageV087D')) {
+    if (!host) return;
+    const button = q('[data-svp-run]', host);
+    if (!button) return;
+    const ready = Boolean(state.payload?.ready_to_materialize);
+    button.disabled = state.running || !ready;
+    button.textContent = state.running ? tr('检查中…', 'Checking…') : tr('运行标准设计验证', 'Run standard validation');
+    button.setAttribute('aria-busy', state.running ? 'true' : 'false');
   }
-  function render(p){const host=q('#standardValidationPackageV087D');if(!host)return;state.payload=p;if(!p){host.classList.add('hidden');host.innerHTML='';return}host.classList.remove('hidden');const steps=p.steps||[],ready=Boolean(p.ready_to_materialize),blockedCount=steps.filter(s=>!s.ready).length;host.innerHTML=`
-    <div class="standard-validation-head-v087d"><div><span class="eyebrow">标准验证</span><h2>${esc(p.label||'标准设计验证')}</h2><p>${esc(p.starter?.label||'预制设计')} · Rev.${esc(p.design_revision||'—')} · ${steps.length} 个验证步骤</p></div><span class="status-chip ${ready?'success':'warning'}">${ready?'可以运行':`${blockedCount||1} 项待确认`}</span></div>
-    <details class="standard-validation-details-v089g33"><summary><span>${ready?'验证链已准备完成':'验证链存在待处理项'}</span><small>展开查看 ${steps.length} 个标准验证步骤</small></summary><div class="standard-validation-steps-v087d">${steps.map(s=>`<div class="standard-validation-step-v087d ${s.ready?'ready':'blocked'}" title="${esc(s.when_to_use||'')}"><i>${s.sequence}</i><div><b>${esc(s.short_label||s.label)}</b><small>${esc(s.engineering_question||'')}</small><em>${esc(s.module||'')} · ${esc(statusLabel(s.status))}${s.expected_runtime?` · ${esc(s.expected_runtime)}`:''}</em></div><span>${s.ready?'✓':'!'}</span></div>`).join('')}</div></details>
-    <div class="standard-validation-footer-v087d"><div><b>结果输出</b><span>工程指标 ${(p.scorecard_coverage?.covered_count||0)}/${(p.scorecard_coverage?.metric_count||0)} 已覆盖${p.scorecard_coverage?.complete?'。':'，仍有缺口。'}</span><small>运行日志实时写入项目根目录 <code>logs/</code>，即使 Motor-CAD 检查失败也可直接导出。</small></div><div class="actions"><button type="button" data-svp-export-logs>导出当前运行日志</button><button type="button" data-svp-preview ${state.running?'disabled':''}>刷新验证计划</button><button class="primary" type="button" data-svp-run ${(ready&&!state.running)?'':'disabled'}>${state.running?'检查中…':'运行标准设计验证'}</button></div></div>
-    <div data-svp-status class="analysis-inline-status-v076 ${state.running?'running':''}">${state.running?'正在执行 Studio + Motor-CAD 计算前检查，请勿重复提交…':(ready?'当前设计已具备标准验证计划。':'存在不可用或待确认的分析步骤，请先处理。')}</div>`;
-    q('[data-svp-export-logs]',host)?.addEventListener('click',exportCurrentLogs);
-    q('[data-svp-preview]',host)?.addEventListener('click',()=>refresh({force:true}));
-    q('[data-svp-run]',host)?.addEventListener('click',run);
+
+  function render(payload) {
+    const host = q('#standardValidationPackageV087D');
+    if (!host) return;
+    state.payload = payload;
+    if (!payload) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+    host.classList.remove('hidden');
+    const steps = payload.steps || [];
+    const ready = Boolean(payload.ready_to_materialize);
+    const blockedCount = steps.filter(step => !step.ready).length;
+    const rev = window.MCSAnalysisLabels?.revisionLabel?.(payload.design_revision, 'motor') || tr(`电机版本 ${payload.design_revision ?? '—'}`, `Motor revision ${payload.design_revision ?? '—'}`);
+    host.innerHTML = `<div class="standard-validation-head-v087d"><div><span class="eyebrow">${tr('标准验证', 'Standard validation')}</span><h2>${esc(payload.label || tr('标准设计验证', 'Standard design validation'))}</h2><p>${esc(payload.starter?.label || tr('预制设计', 'Starter design'))} · ${esc(rev)} · ${tr(`${steps.length} 个验证步骤`, `${steps.length} validation steps`)}</p></div><span class="status-chip ${ready ? 'success' : 'warning'}">${ready ? tr('可以运行', 'Ready to run') : tr(`${blockedCount || 1} 项待确认`, `${blockedCount || 1} items need review`)}</span></div>
+      <details class="standard-validation-details-v089g33"><summary><span>${ready ? tr('验证链已准备完成', 'Validation chain is ready') : tr('验证链存在待处理项', 'Validation chain needs attention')}</span><small>${tr(`查看 ${steps.length} 个标准验证步骤`, `View ${steps.length} standard steps`)}</small></summary><div class="standard-validation-steps-v087d">${steps.map(step => `<div class="standard-validation-step-v087d ${step.ready ? 'ready' : 'blocked'}" title="${esc(step.when_to_use || '')}"><i>${step.sequence}</i><div><b>${esc(step.short_label || step.label)}</b><small>${esc(step.engineering_question || '')}</small><em>${esc(moduleLabel(step.module))} · ${esc(statusLabel(step.status))}${step.expected_runtime ? ` · ${esc(step.expected_runtime)}` : ''}</em></div><span>${step.ready ? '✓' : '!'}</span></div>`).join('')}</div></details>
+      <div class="standard-validation-footer-v087d"><div><b>${tr('结果输出', 'Result output')}</b><span>${tr(`工程指标 ${payload.scorecard_coverage?.covered_count || 0}/${payload.scorecard_coverage?.metric_count || 0} 已覆盖${payload.scorecard_coverage?.complete ? '。' : '，仍有缺口。'}`, `Engineering metrics ${payload.scorecard_coverage?.covered_count || 0}/${payload.scorecard_coverage?.metric_count || 0} covered${payload.scorecard_coverage?.complete ? '.' : '; gaps remain.'}`)}</span></div><div class="actions"><button type="button" data-svp-preview ${state.running ? 'disabled' : ''}>${tr('刷新验证计划', 'Refresh plan')}</button><button class="primary" type="button" data-svp-run ${(ready && !state.running) ? '' : 'disabled'}>${state.running ? tr('检查中…', 'Checking…') : tr('运行标准设计验证', 'Run standard validation')}</button></div></div>
+      <div data-svp-status class="analysis-inline-status-v076 ${state.running ? 'running' : ''}">${state.running ? tr('后台验证正在运行；进度来自实际作业阶段，请勿重复提交。', 'Validation is running in the background; progress follows the actual job stage.') : (ready ? tr('当前设计已具备标准验证计划。', 'The design has a standard validation plan.') : tr('请先处理不可用或待确认的分析步骤。', 'Resolve unavailable or unconfirmed analysis steps first.'))}</div>`;
+    q('[data-svp-preview]', host)?.addEventListener('click', () => refresh({force:true}));
+    q('[data-svp-run]', host)?.addEventListener('click', run);
     syncRunButton(host);
   }
-  function run(){
-    if(state.runPromise)return state.runPromise;
-    const c=ctx();
-    if(!c.projectId||!c.motorRevisionId||!state.payload)return Promise.resolve(null);
-    const runKey=`${c.projectId}:${c.motorRevisionId}`;
-    state.running=true;state.runKey=runKey;state.submissionKey=newSubmissionKey();
+
+  function run() {
+    if (state.runPromise) return state.runPromise;
+    const context = ctx();
+    if (!context.projectId || !context.motorRevisionId || !state.payload) return Promise.resolve(null);
+    const runKey = `${context.projectId}:${context.motorRevisionId}`;
+    state.running = true;
+    state.runKey = runKey;
+    state.submissionKey = newSubmissionKey();
     render(state.payload);
     window.MCSActionReadiness?.scheduleRefresh?.();
-    const host=q('#standardValidationPackageV087D'),button=q('[data-svp-run]',host),op=progress({id:`standard-validation-${c.motorRevisionId}`,label:'运行标准设计验证',stage:'冻结标准分析',detail:'准备 Studio + Motor-CAD 计算前检查',percent:6,button,failDelay:6000});
-    const promise=(async()=>{
-      const status=q('[data-svp-status]',q('#standardValidationPackageV087D'));
-      try{
-        if(status){status.textContent='正在冻结标准分析配置并执行 Studio + Motor-CAD 计算前检查…';status.className='analysis-inline-status-v076 running'}
-        op.update({percent:null,stage:'Motor-CAD 原生检查',detail:'正在检查标准验证链；耗时取决于 Motor-CAD 启动与模型载入'});
-        const result=await apiCall(`/api/projects/${encodeURIComponent(c.projectId)}/design-revisions/${encodeURIComponent(c.motorRevisionId)}/standard-validation-package/execute`,{method:'POST',body:JSON.stringify({decisions_by_analysis:{},run_native_precheck:true,reuse_cache:true,quality_profile:'standard',submission_key:state.submissionKey})});
-        if(result.execution_status==='BLOCKED'){
-          const blocked=(result.executions||[]).find(x=>x.execution_status==='BLOCKED');
-          const message=blocked?.blocker?.message||blocked?.blocker?.code||'标准验证被计算前检查阻断';
-          if(status){status.textContent=`${message}；可直接点击“导出当前运行日志”查看本次会话证据。`;status.className='analysis-inline-status-v076 error'}
-          op.fail(message);window.toast?.(message,'WARNING',9000);return result;
+    const host = q('#standardValidationPackageV087D');
+    const operation = progress({
+      id: `standard-validation-${context.motorRevisionId}`,
+      label: tr('运行标准设计验证', 'Run standard validation'),
+      stage: tr('创建后台作业', 'Create background job'),
+      detail: tr('冻结标准分析并准备计算前检查', 'Freeze standard analyses and prepare preflight checks'),
+      percent: 3,
+      button: q('[data-svp-run]', host),
+      timeoutMs: 1020000,
+      timeoutDetail: tr('标准验证超过 17 分钟，界面已恢复；请检查 Motor-CAD 进程与日志。', 'Standard validation exceeded 17 minutes. Check the Motor-CAD process and logs.'),
+      failDelay: 7000,
+    });
+    const promise = (async () => {
+      const status = () => q('[data-svp-status]', q('#standardValidationPackageV087D'));
+      try {
+        const startPath = `/api/projects/${encodeURIComponent(context.projectId)}/design-revisions/${encodeURIComponent(context.motorRevisionId)}/standard-validation-package/jobs`;
+        let job = await apiCall(startPath, {method:'POST', body:JSON.stringify({
+          decisions_by_analysis:{}, run_native_precheck:true, reuse_cache:true,
+          quality_profile:'standard', submission_key:state.submissionKey,
+        })});
+        if (!job?.id) throw new Error(tr('标准验证后台作业未返回任务标识', 'The validation job did not return an ID'));
+        state.currentJobId = job.id;
+        const deadline = Date.now() + 1020000;
+        while (['QUEUED', 'RUNNING'].includes(String(job.status || '').toUpperCase())) {
+          if (Date.now() > deadline) throw new Error(tr('标准验证等待超时，请查看 Motor-CAD 运行日志后重试。', 'Standard validation timed out. Check the Motor-CAD logs and retry.'));
+          const percent = Number.isFinite(job.progress_percent) ? Number(job.progress_percent) : null;
+          const detail = job.message || tr('后台验证正在运行…', 'Validation is running…');
+          operation.update({percent, stage: detail, detail: job.coalesced ? tr('已合并重复提交，继续跟踪同一作业', 'Duplicate submission merged; tracking the same job') : detail});
+          const node = status();
+          if (node) { node.textContent = detail; node.className = 'analysis-inline-status-v076 running'; }
+          await wait(700);
+          job = await apiCall(`${startPath}/${encodeURIComponent(state.currentJobId)}`);
         }
-        const tasks=(result.executions||[]).filter(x=>x.task_id);
-        if(status){status.textContent=`已提交 ${tasks.length} 个标准分析任务；Motor-CAD 将按 Worker / 许可证容量排队执行。`;status.className='analysis-inline-status-v076 success'}
-        op.done(`已提交 ${tasks.length} 个标准分析任务`);window.toast?.(`标准设计验证已提交：${tasks.length} 个任务，将按运行时容量排队`,'SUCCESS',7000);
-        if(tasks[0]?.task_id){window.MCSEngineeringContext?.setExecution?.(tasks[0],{taskId:tasks[0].task_id,source:'standard-validation'});window.MCSRouter?.navigate?.(`/app/projects/${encodeURIComponent(c.projectId)}/simulation/monitor/${encodeURIComponent(tasks[0].task_id)}`)}
+        if (['FAILED', 'TIMED_OUT'].includes(String(job.status || '').toUpperCase())) throw new Error(job.error || job.message || tr('标准验证后台作业失败', 'Standard validation job failed'));
+        const result = job.result;
+        if (!result) throw new Error(tr('标准验证完成但未返回结果', 'Standard validation completed without a result'));
+        if (result.execution_status === 'BLOCKED') {
+          const blocked = (result.executions || []).find(item => item.execution_status === 'BLOCKED');
+          const message = blocked?.blocker?.message || blocked?.blocker?.code || tr('标准验证被计算前检查阻断', 'Standard validation was blocked by preflight checks');
+          const node = status();
+          if (node) { node.textContent = message; node.className = 'analysis-inline-status-v076 error'; }
+          operation.fail(message);
+          window.toast?.(message, 'WARNING', 9000);
+          return result;
+        }
+        const tasks = (result.executions || []).filter(item => item.task_id);
+        const success = tr(`已提交 ${tasks.length} 个标准分析任务，将按 Worker / 许可证容量排队。`, `${tasks.length} standard analyses submitted and queued by worker/license capacity.`);
+        const node = status();
+        if (node) { node.textContent = success; node.className = 'analysis-inline-status-v076 success'; }
+        operation.done(success);
+        window.toast?.(success, 'SUCCESS', 7000);
+        if (tasks[0]?.task_id) {
+          window.MCSEngineeringContext?.setExecution?.(tasks[0], {taskId:tasks[0].task_id, source:'standard-validation'});
+          window.MCSRouter?.navigate?.(`/app/projects/${encodeURIComponent(context.projectId)}/simulation/monitor/${encodeURIComponent(tasks[0].task_id)}`);
+        }
         return result;
-      }catch(e){
-        const currentHost=q('#standardValidationPackageV087D'),currentStatus=q('[data-svp-status]',currentHost);
-        if(currentStatus){currentStatus.textContent=`${e.message||String(e)}；可直接导出当前运行日志继续排查。`;currentStatus.className='analysis-inline-status-v076 error'}
-        op.fail(e.message||String(e));window.toast?.(e.message||String(e),'ERROR',9000);throw e;
-      }finally{
-        if(state.runKey===runKey){state.running=false;state.runKey=null;state.submissionKey=null}
-        state.runPromise=null;syncRunButton();const preview=q('[data-svp-preview]');if(preview)preview.disabled=false;window.MCSActionReadiness?.scheduleRefresh?.();
+      } catch (error) {
+        const node = status();
+        if (node) { node.textContent = error.message || String(error); node.className = 'analysis-inline-status-v076 error'; }
+        if (operation.state === 'running') operation.fail(error.message || String(error));
+        window.toast?.(error.message || String(error), 'ERROR', 9000);
+        return null;
+      } finally {
+        if (state.runKey === runKey) {
+          state.running = false; state.runKey = null; state.submissionKey = null; state.currentJobId = null;
+        }
+        state.runPromise = null;
+        syncRunButton();
+        const preview = q('[data-svp-preview]');
+        if (preview) preview.disabled = false;
+        window.MCSActionReadiness?.scheduleRefresh?.();
       }
     })();
-    state.runPromise=promise;return promise;
+    state.runPromise = promise;
+    return promise;
   }
-  async function refresh({force=false,silent=false}={}){const c=ctx(),host=q('#standardValidationPackageV087D');if(!host)return null;if(!c.projectId||!c.motorRevisionId){host.classList.add('hidden');host.innerHTML='';state.payload=null;return null}const key=`${c.projectId}:${c.motorRevisionId}`;if(state.loading)return state.payload;if(!force&&state.lastKey===key&&state.payload)return state.payload;state.loading=true;const button=q('[data-svp-preview]',host),op=(!silent||force)?progress({id:`standard-validation-refresh-${c.motorRevisionId}`,label:'刷新标准验证计划',stage:'读取验证合同',detail:'同步设计版本、标准分析步骤与结果覆盖度',percent:16,button}):null;try{op?.update?.({percent:52,stage:'汇总验证步骤',detail:'检查各分析模块的可用性与必要输入'});const p=await apiCall(`/api/projects/${encodeURIComponent(c.projectId)}/design-revisions/${encodeURIComponent(c.motorRevisionId)}/standard-validation-package`);state.lastKey=key;render(p);op?.done?.('标准验证计划已同步');return p}catch(e){state.lastKey=key;state.payload=null;host.classList.add('hidden');host.innerHTML='';op?.fail?.(e.message||String(e));if(!silent&&e?.status!==422)window.toast?.(`标准验证计划读取失败：${e.message||e}`,'WARNING',6000);return null}finally{state.loading=false}}
-  function schedule(){if(!q('#analysisConfig')?.classList.contains('active'))return;clearTimeout(state.timer);state.timer=setTimeout(()=>refresh({silent:true}),100)}
-  window.addEventListener('mcs:engineering-context-changed',schedule);window.addEventListener('mcs:route-ready',schedule);window.addEventListener('mcs-language-change',()=>state.payload&&render(state.payload));document.addEventListener('DOMContentLoaded',schedule,{once:true});
-  window.MCSStandardValidation={state,refresh,render,run,exportCurrentLogs};
+
+  function refresh({force = false, silent = false} = {}) {
+    if (state.refreshPromise) return state.refreshPromise;
+    const context = ctx();
+    const host = q('#standardValidationPackageV087D');
+    if (!host) return Promise.resolve(null);
+    if (!context.projectId || !context.motorRevisionId) {
+      host.classList.add('hidden'); host.innerHTML = ''; state.payload = null;
+      return Promise.resolve(null);
+    }
+    const key = `${context.projectId}:${context.motorRevisionId}`;
+    if (!force && state.lastKey === key && state.payload) return Promise.resolve(state.payload);
+    const operation = (!silent || force) ? progress({
+      id:`standard-validation-refresh-${context.motorRevisionId}`,
+      label:tr('刷新标准验证计划', 'Refresh standard validation plan'),
+      stage:tr('读取验证合同', 'Load validation contract'),
+      detail:tr('同步电机版本、标准分析步骤与结果覆盖度', 'Sync motor revision, validation steps, and result coverage'),
+      percent:16, button:q('[data-svp-preview]', host), timeoutMs:45000,
+    }) : null;
+    const promise = (async () => {
+      try {
+        operation?.update?.({percent:52, stage:tr('汇总验证步骤', 'Summarize validation steps'), detail:tr('检查各分析模块的可用性与必要输入', 'Check module availability and required inputs')});
+        const payload = await apiCall(`/api/projects/${encodeURIComponent(context.projectId)}/design-revisions/${encodeURIComponent(context.motorRevisionId)}/standard-validation-package`);
+        state.lastKey = key;
+        render(payload);
+        operation?.done?.(tr('标准验证计划已同步', 'Validation plan synchronized'));
+        return payload;
+      } catch (error) {
+        state.lastKey = key; state.payload = null;
+        host.classList.add('hidden'); host.innerHTML = '';
+        if (operation?.state === 'running') operation.fail(error.message || String(error));
+        if (!silent && error?.status !== 422) window.toast?.(tr(`标准验证计划读取失败：${error.message || error}`, `Failed to load validation plan: ${error.message || error}`), 'WARNING', 6000);
+        return null;
+      } finally {
+        state.refreshPromise = null;
+      }
+    })();
+    state.refreshPromise = promise;
+    return promise;
+  }
+
+  function schedule() {
+    if (!q('#analysisConfig')?.classList.contains('active')) return;
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => refresh({silent:true}), 100);
+  }
+  window.addEventListener('mcs:engineering-context-changed', schedule);
+  window.addEventListener('mcs:route-ready', schedule);
+  document.addEventListener('mcs-language-change', () => state.payload && render(state.payload));
+  document.addEventListener('DOMContentLoaded', schedule, {once:true});
+  window.MCSStandardValidation = {state, refresh, render, run};
 })();

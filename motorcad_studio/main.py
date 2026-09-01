@@ -104,9 +104,11 @@ from .model_workbench import ModelWorkbenchService
 from .ui_guidance import UIGuidanceService
 from .engineering_workflow import EngineeringWorkflowService
 from .engineering_platform import EngineeringPlatformService
+from .analysis_workspace_service import AnalysisWorkspaceService
 from .analysis_guidance import AnalysisGuidanceService
 from .models import StandardValidationPackageRequest, StandardValidationExecuteRequest
 from .standard_validation import StandardValidationPackageService, EngineeringScorecardService
+from .observable_jobs import ObservableJobRegistry
 from .engineering_precheck import load_precheck_catalog, required_input_domains, validate_engineering_inputs
 from .experiment_lifecycle import build_experiment_lifecycle
 from .native_tables import cached_file_sha256, file_sha256, read_native_table_page
@@ -208,12 +210,20 @@ engineering_platform = EngineeringPlatformService(
     db, registry, templates, workspace, automation_registry,
     settings.config_dir, settings.data_dir / "model_sources", calibration,
 )
+analysis_workspace_service = AnalysisWorkspaceService(platform=engineering_platform, solutions=solutions)
 analysis_guidance = AnalysisGuidanceService(
     settings.config_dir / "analysis_templates.yaml", db=db, registry=registry,
     platform=engineering_platform, workspace=workspace,
 )
 standard_validation = StandardValidationPackageService(
     db=db, workspace=workspace, starters=design_starters, analysis_guidance=analysis_guidance, registry=registry,
+)
+standard_validation_jobs = ObservableJobRegistry(
+    prefix="SVJOB",
+    contract_version="0.89-G4",
+    ttl_s=900.0,
+    max_jobs=32,
+    max_runtime_s=960.0,
 )
 data_factory = DataFactoryService(db, settings, registry, log_store=logs)
 tasks.data_factory = data_factory
@@ -312,6 +322,7 @@ _analysis_precheck_jobs: dict[str, dict[str, Any]] = {}
 _analysis_precheck_jobs_by_key: dict[str, str] = {}
 _ANALYSIS_PRECHECK_JOB_TTL_S = 900.0
 _ANALYSIS_PRECHECK_JOB_MAX = 64
+_ANALYSIS_PRECHECK_JOB_MAX_RUNTIME_S = 300.0
 
 
 def _clean_parameter_overrides(parameters: dict[str, Any] | None) -> dict[str, Any]:
@@ -2112,6 +2123,27 @@ def create_solution_from_template(project_id: str, payload: DesignFromTemplateCr
     return _create_solution_from_template_http(project_id, payload)
 
 
+@app.delete("/api/projects/{project_id}/solutions/{solution_id}")
+def delete_project_solution(project_id: str, solution_id: str):
+    try:
+        result = solutions.delete_solution(project_id, solution_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="电机配置不存在") from exc
+    except ValueError as exc:
+        detail = exc.args[0] if exc.args and isinstance(exc.args[0], dict) else {
+            "code": "MOTOR_CONFIGURATION_DELETE_BLOCKED",
+            "message": str(exc),
+        }
+        if isinstance(detail, dict) and detail.get("code") == "MOTOR_CONFIGURATION_REFERENCED":
+            detail["message"] = "该电机配置已被分析、任务或工程证据引用，需先删除相关分析后才能删除。"
+        raise HTTPException(status_code=409, detail=detail) from exc
+    logs.audit(
+        level="WARNING", component="solution_service", event_type="SOLUTION_DELETED",
+        message=f"motor configuration deleted: {solution_id}", payload=result,
+    )
+    return result
+
+
 @app.post("/api/projects/{project_id}/designs/from-template", status_code=201)
 def create_design_from_template(project_id: str, payload: DesignFromTemplateCreate):
     # Compatibility alias. Persistence and immutable Revision creation are owned by SolutionService.
@@ -2202,8 +2234,15 @@ def materialize_standard_validation_package(project_id: str, design_revision_id:
     return created
 
 
-@app.post("/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/execute", status_code=201)
-def execute_standard_validation_package(project_id: str, design_revision_id: str, payload: StandardValidationExecuteRequest = StandardValidationExecuteRequest()):
+def _execute_standard_validation_package_impl(
+    project_id: str,
+    design_revision_id: str,
+    payload: StandardValidationExecuteRequest,
+    *,
+    progress: Any | None = None,
+) -> dict[str, Any]:
+    emit = progress or (lambda **_: None)
+    emit(stage="materialize", percent=8, message="正在冻结标准分析配置并复用已有定义。")
     try:
         package = standard_validation.materialize(
             project_id, design_revision_id, decisions_by_analysis=payload.decisions_by_analysis, notes=payload.notes,
@@ -2212,13 +2251,21 @@ def execute_standard_validation_package(project_id: str, design_revision_id: str
         raise HTTPException(status_code=404, detail="Design Revision 不存在") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    executions = []
+    executions: list[dict[str, Any]] = []
     blocked = False
-    for item in package.get("analysis_definitions") or []:
+    items = list(package.get("analysis_definitions") or [])
+    total = max(1, len(items))
+    for index, item in enumerate(items, start=1):
         if blocked:
             executions.append({**item, "execution_status": "PENDING_AFTER_BLOCKER"})
             continue
         analysis_id = str(item.get("analysis_definition_id") or "")
+        emit(
+            stage="motorcad",
+            percent=15 + ((index - 1) / total) * 76,
+            message=f"正在检查并提交第 {index}/{len(items)} 项：{item.get('label') or analysis_id}",
+            indeterminate=True,
+        )
         try:
             submitted = execute_analysis_definition(
                 analysis_id,
@@ -2233,6 +2280,11 @@ def execute_standard_validation_package(project_id: str, design_revision_id: str
             )
             executions.append({**item, "execution_status": "SUBMITTED", "task_id": submitted.get("task_id"),
                                "next_route": submitted.get("next_route")})
+            emit(
+                stage="submit",
+                percent=15 + (index / total) * 76,
+                message=f"第 {index}/{len(items)} 项已通过检查并进入计算队列。",
+            )
         except HTTPException as exc:
             blocked = True
             detail = exc.detail if isinstance(exc.detail, dict) else {"message": str(exc.detail)}
@@ -2247,6 +2299,84 @@ def execute_standard_validation_package(project_id: str, design_revision_id: str
                  "task_ids": [x.get("task_id") for x in executions if x.get("task_id")]},
     )
     return {**package, "execution_status": package_status, "executions": executions}
+
+
+@app.post("/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/execute", status_code=201)
+def execute_standard_validation_package(
+    project_id: str,
+    design_revision_id: str,
+    payload: StandardValidationExecuteRequest = StandardValidationExecuteRequest(),
+):
+    """Compatibility synchronous endpoint; the current HMI uses observable jobs."""
+
+    return _execute_standard_validation_package_impl(project_id, design_revision_id, payload)
+
+
+@app.post(
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/jobs",
+    status_code=202,
+)
+def start_standard_validation_job(
+    project_id: str,
+    design_revision_id: str,
+    payload: StandardValidationExecuteRequest = StandardValidationExecuteRequest(),
+):
+    try:
+        preview = standard_validation.preview(
+            project_id,
+            design_revision_id,
+            decisions_by_analysis=payload.decisions_by_analysis,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Design Revision 不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not preview.get("ready_to_materialize"):
+        raise HTTPException(status_code=422, detail="标准验证包仍有不可用或需要确认的分析步骤")
+    key_raw = json.dumps(
+        {
+            "project_id": project_id,
+            "design_revision_id": design_revision_id,
+            "package_hash": preview.get("package_hash"),
+            "run_native_precheck": payload.run_native_precheck,
+            "reuse_cache": payload.reuse_cache,
+            "quality_profile": payload.quality_profile,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    singleflight_key = hashlib.sha256(key_raw.encode("utf-8")).hexdigest()
+    frozen_payload = payload.model_copy(deep=True)
+    return standard_validation_jobs.start(
+        singleflight_key=singleflight_key,
+        metadata={
+            "project_id": project_id,
+            "design_revision_id": design_revision_id,
+            "package_id": preview.get("package_id"),
+        },
+        initial_message="标准设计验证已进入后台队列。",
+        worker=lambda emit: _execute_standard_validation_package_impl(
+            project_id,
+            design_revision_id,
+            frozen_payload,
+            progress=emit,
+        ),
+    )
+
+
+@app.get(
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/jobs/{job_id}"
+)
+def get_standard_validation_job(project_id: str, design_revision_id: str, job_id: str):
+    job = standard_validation_jobs.get(job_id)
+    if (
+        not job
+        or str(job.get("project_id") or "") != project_id
+        or str(job.get("design_revision_id") or "") != design_revision_id
+    ):
+        raise HTTPException(status_code=404, detail="标准设计验证任务不存在或已过期")
+    return job
 
 
 @app.get("/api/projects/{project_id}/design-revisions/{design_revision_id}/engineering-scorecard")
@@ -2355,6 +2485,42 @@ def list_analysis_definitions(project_id: str):
     if workspace.get_project(project_id) is None:
         raise HTTPException(status_code=404, detail="project not found")
     return engineering_platform.list_analysis_definitions(project_id)
+
+
+@app.get("/api/projects/{project_id}/analysis-workspace")
+def analysis_workspace(project_id: str, selected_revision_id: str | None = Query(default=None)):
+    """One round-trip bootstrap for the Analysis Configuration page."""
+
+    project = workspace.get_project_summary(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    return analysis_workspace_service.bootstrap(project, selected_revision_id=selected_revision_id)
+
+
+@app.get("/api/analysis-definitions/{analysis_id}/editor")
+def get_analysis_editor_bundle(analysis_id: str):
+    payload = analysis_workspace_service.editor_bundle(analysis_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="分析配置不存在")
+    return payload
+
+
+@app.post("/api/analysis-definitions/{analysis_id}/editor/revisions", status_code=201)
+def create_analysis_editor_revision(analysis_id: str, payload: AnalysisDefinitionRevisionCreate):
+    try:
+        return analysis_workspace_service.create_revision(analysis_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="分析配置不存在") from exc
+
+
+@app.put("/api/analysis-definitions/{analysis_id}/editor/input-domains/{domain_id}")
+def update_analysis_editor_input_domain(analysis_id: str, domain_id: str, payload: InputDomainUpdate):
+    try:
+        return analysis_workspace_service.update_input_domain(analysis_id, domain_id, payload)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="分析配置不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/projects/{project_id}/analysis-definitions", status_code=201)
@@ -2791,6 +2957,22 @@ def _calculation_check_impl(
 def _cleanup_analysis_precheck_jobs() -> None:
     now = time.monotonic()
     with _analysis_precheck_jobs_lock:
+        for job_id, job in _analysis_precheck_jobs.items():
+            if str(job.get("status")) not in {"QUEUED", "RUNNING"}:
+                continue
+            age = now - float(job.get("created_at_monotonic") or now)
+            if age <= _ANALYSIS_PRECHECK_JOB_MAX_RUNTIME_S:
+                continue
+            job.update({
+                "status": "FAILED", "stage": "failed", "progress_percent": None,
+                "indeterminate": False,
+                "message": "完整计算前检查超过最大运行时间，已恢复界面操作。",
+                "error": "计算前检查超时；请检查 Motor-CAD 进程、许可证与运行日志后重试。",
+                "updated_at": db.now(), "finished_at_monotonic": now,
+            })
+            key = str(job.get("singleflight_key") or "")
+            if key and _analysis_precheck_jobs_by_key.get(key) == job_id:
+                _analysis_precheck_jobs_by_key.pop(key, None)
         expired = [job_id for job_id, job in _analysis_precheck_jobs.items()
                    if str(job.get("status")) in {"SUCCEEDED", "FAILED"}
                    and now - float(job.get("finished_at_monotonic") or job.get("created_at_monotonic") or now) > _ANALYSIS_PRECHECK_JOB_TTL_S]
@@ -2833,7 +3015,7 @@ def _run_analysis_precheck_job(job_id: str, analysis_id: str, payload: AnalysisC
     def progress(*, stage: str, percent: float | None, message: str, indeterminate: bool = False) -> None:
         with _analysis_precheck_jobs_lock:
             job = _analysis_precheck_jobs.get(job_id)
-            if not job:
+            if not job or str(job.get("status")) not in {"QUEUED", "RUNNING"}:
                 return
             job.update({
                 "status": "RUNNING", "stage": stage, "progress_percent": percent,
@@ -2843,7 +3025,7 @@ def _run_analysis_precheck_job(job_id: str, analysis_id: str, payload: AnalysisC
         result = _calculation_check_impl(analysis_id, payload, progress=progress)
         with _analysis_precheck_jobs_lock:
             job = _analysis_precheck_jobs.get(job_id)
-            if job:
+            if job and str(job.get("status")) in {"QUEUED", "RUNNING"}:
                 job.update({
                     "status": "SUCCEEDED", "stage": "done", "progress_percent": 100,
                     "indeterminate": False, "message": "完整计算前检查已完成。",
@@ -2863,7 +3045,7 @@ def _run_analysis_precheck_job(job_id: str, analysis_id: str, payload: AnalysisC
         )
         with _analysis_precheck_jobs_lock:
             job = _analysis_precheck_jobs.get(job_id)
-            if job:
+            if job and str(job.get("status")) in {"QUEUED", "RUNNING"}:
                 job.update({
                     "status": "FAILED", "stage": "failed", "progress_percent": None,
                     "indeterminate": False, "message": "完整计算前检查执行失败。", "error": error,
@@ -4899,8 +5081,8 @@ def create_design(payload: DesignCreate):
 
 
 @app.get("/api/solutions/{solution_id}")
-def get_solution(solution_id: str):
-    payload = solutions.get_solution(solution_id)
+def get_solution(solution_id: str, revision_limit: int | None = Query(default=None, ge=1, le=1000)):
+    payload = solutions.get_solution(solution_id, revision_limit=revision_limit)
     if payload is None:
         raise HTTPException(status_code=404, detail="solution not found")
     return payload
@@ -4916,14 +5098,21 @@ def get_design(design_id: str):
 
 
 def _editor_transaction_state(solution_id: str, *, draft: dict[str, Any] | None = None) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    solution = solutions.get_solution(solution_id)
+    # The summary read model is the bounded production path. Keep the older
+    # service protocol as a compatibility seam for integrations/test doubles.
+    summary_reader = getattr(solutions, "get_solution_summary", None)
+    solution = summary_reader(solution_id) if callable(summary_reader) else solutions.get_solution(solution_id)
     if solution is None:
         raise KeyError(solution_id)
     if draft is None:
         draft = solutions.get_draft(solution_id)
     base_id = str((draft or {}).get("base_revision_id") or "")
     if not base_id:
-        latest = (solution.get("revisions") or [None])[0]
+        latest_reader = getattr(solutions, "get_latest_revision", None)
+        if callable(latest_reader):
+            latest = latest_reader(solution_id)
+        else:
+            latest = ((solution or {}).get("revisions") or [None])[-1]
         base_id = str((latest or {}).get("id") or "")
     base = solutions.get_revision(base_id) if base_id else None
     if not base:
@@ -5310,16 +5499,15 @@ def commit_design_draft(design_id: str, payload: DesignDraftCommit):
             # Retrying the same key returns that exact Revision and never creates a
             # second history entry.
             if payload.commit_key:
-                design_state = solutions.get_solution(design_id) or {}
-                for revision in (design_state.get("revisions") or []):
+                revision = solutions.find_revision_by_commit_key(design_id, str(payload.commit_key))
+                if revision:
                     transaction = dict(revision.get("editor_transaction") or {})
-                    if str(transaction.get("commit_key") or "") == str(payload.commit_key):
-                        replay = dict(revision)
-                        replay["editor_transaction"] = transaction
-                        replay["native_reconciliation"] = dict(revision.get("native_reconciliation") or {})
-                        replay["linked_analysis_definition_id"] = transaction.get("linked_analysis_definition_id")
-                        replay["idempotent_replay"] = True
-                        return replay
+                    replay = dict(revision)
+                    replay["editor_transaction"] = transaction
+                    replay["native_reconciliation"] = dict(revision.get("native_reconciliation") or {})
+                    replay["linked_analysis_definition_id"] = transaction.get("linked_analysis_definition_id")
+                    replay["idempotent_replay"] = True
+                    return replay
             raise HTTPException(status_code=404, detail="design draft not found")
         current_version = int(draft.get("version") or 0)
         if payload.expected_version is not None and current_version != int(payload.expected_version):
@@ -5335,8 +5523,8 @@ def commit_design_draft(design_id: str, payload: DesignDraftCommit):
         base = solutions.get_revision(str(draft.get("base_revision_id") or ""))
         if not base or str(base.get("design_id")) != str(design_id):
             raise HTTPException(status_code=409, detail="design draft base revision is no longer available")
-        design = solutions.get_solution(design_id) or {}
-        latest = (design.get("revisions") or [None])[0]
+        design = solutions.get_solution_summary(design_id) or {}
+        latest = solutions.get_latest_revision(design_id)
         if latest and str(latest.get("id") or "") != str(base.get("id") or ""):
             raise HTTPException(status_code=409, detail="该电机已产生更新的 Design Revision，请重新打开最新版本后再继续编辑")
         editor_transaction, _ = _editor_transaction_state(design_id, draft=draft)
@@ -6832,7 +7020,22 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
     from .validation import normalize_parameters
     clean_parameters = _clean_parameter_overrides(payload.parameters)
     merged = normalize_parameters({**(template.get("defaults") or {}), **clean_parameters}, schema)
-    winding_precheck = validate_winding_relations(merged, template, payload.explicit_parameter_ids)
+    template_defaults = normalize_parameters(dict(template.get("defaults") or {}), schema)
+    effective_explicit_ids: list[str] = []
+    redundant_default_ids: list[str] = []
+    for parameter_id in payload.explicit_parameter_ids or []:
+        if parameter_id not in clean_parameters:
+            continue
+        current, baseline = clean_parameters.get(parameter_id), template_defaults.get(parameter_id)
+        try:
+            equal = baseline is not None and abs(float(current) - float(baseline)) <= max(1e-9, abs(float(baseline)) * 1e-9)
+        except (TypeError, ValueError):
+            equal = baseline is not None and current == baseline
+        if equal:
+            redundant_default_ids.append(str(parameter_id))
+        else:
+            effective_explicit_ids.append(str(parameter_id))
+    winding_precheck = validate_winding_relations(merged, template, effective_explicit_ids)
     if not winding_precheck.get("valid", True):
         logs.audit(
             level="WARNING", component="model_validation", event_type="MODEL_PRECHECK_BLOCKED",
@@ -6846,7 +7049,7 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
             "work_dir": None, "blocked_before_motorcad": True,
         }
     model_fingerprint = _model_runtime_check_key(
-        template_id, merged, payload.explicit_parameter_ids, payload.materials.model_dump(mode="json"), payload.repair_policy
+        template_id, merged, effective_explicit_ids, payload.materials.model_dump(mode="json"), payload.repair_policy
     )
     # safe_auto is a live mutation of the current Motor-CAD session toward an already
     # frozen Design Snapshot. It must never be satisfied from a cached diagnosis.
@@ -6904,9 +7107,9 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         "strict_parameter_mapping": settings.strict_parameter_mapping,
         "model_policy": settings.model_policy,
         "template": template,
-        "parameters": {key: value for key, value in clean_parameters.items() if key in set(payload.explicit_parameter_ids or [])},
+        "parameters": {key: value for key, value in clean_parameters.items() if key in set(effective_explicit_ids)},
         "effective_parameters": merged,
-        "explicit_parameter_ids": list(payload.explicit_parameter_ids or []),
+        "explicit_parameter_ids": effective_explicit_ids,
         "materials": payload.materials.model_dump(mode="json"),
         "repair_policy": payload.repair_policy,
         "analysis": "emag",
@@ -6960,6 +7163,7 @@ def template_geometry_runtime_check(template_id: str, payload: GeometryRuntimeCh
         "native_binding_plan_hash": result.get("native_binding_plan_hash"),
         "motorcad_io_artifacts": result.get("io_artifacts") or {},
         "coalesced_inflight": False,
+        "ignored_redundant_default_parameter_ids": redundant_default_ids,
     }
     _store_model_runtime_check(model_fingerprint, response)
     _release_model_runtime_check(model_fingerprint, inflight_event)

@@ -1,7 +1,7 @@
 MotorCAD Studio current clean source release
 Version: 0.89.9
 Schema: 45
-Iteration: V0.89-G3.2 + G3.3 ResultBundle Coverage + Native FEA 2.5D Viewer + Observable HMI
+Iteration: V0.89-G4.1 IPM / Winding / Material / Performance Repair
 Source basis: V0.89-G2.3 / 0.89.9 clean source + supplied TASK-203CA80290 diagnostic evidence
 Native target: Motor-CAD 2026R1 / PyMotorCAD 0.8.8
 Native binding contract: motorcad-2026R1-v2
@@ -28,7 +28,7 @@ Windows top-level evidence namespace: V089F (G1 is presentation-only and does no
 Windows execution chain: V0.88-F -> V0.89-D -> Native 100/500 Case Soak -> V0.89-E -> V0.89-F RC/human sign-off
 HMI fixed-control qualification: 90/90 registered; 79 triggered + 11 correctly workflow/IDLE-gated; 0 missing/page/console errors; 0 readiness dead ends/unmanaged primaries
 Inherited G3.1 regression inventory: 241 tests (204 non-E2E + 37 E2E); G3.2/G3.3 uses targeted compatibility verification documented in TEST_REPORT.md
-Static production shell: 84 unique JavaScript + 12 unique CSS, all pinned to 0.89.9; modified JavaScript syntax checks PASS
+Static production shell: 87 unique JavaScript + 13 unique CSS, all pinned to 0.89.9; all JavaScript syntax checks PASS
 V0.89-G1 qualification: 7/7 non-E2E + 3/3 dedicated Chromium HMI PASS; V0.89-G1R repair: 7/7 non-E2E + 6/6 dedicated Chromium HMI PASS; V0.89-G2 readiness: 9/9 non-E2E + 6/6 Chromium HMI PASS
 Formal RC human acceptance: 12/12 PASS + evidence refs + reviewer sign-off required; shipped template remains PENDING
 Formal Windows + licensed Motor-CAD 2026R1 RC qualification: pending target-workstation live evidence and human sign-off; 0% claimed in this package
@@ -44,4 +44,16 @@ G3.3 calculation gate: full precheck is HTTP-202 job + polling with capture/stud
 G3.3 HMI progress: explicit Analysis/Validation/Result/FEA progress plus shared API latency fallback and immediate button acknowledgement; Standard Validation details collapsed by default to remove the dominant analysis-page dead region.
 G3.2/G3.3 local verification: dedicated 6/6 PASS; targeted G3/G2/G1/V0.88-F compatibility 47/47 PASS before async-job test expansion; core API/canonical flow 7/7 PASS; native spatial/preview/FEA 25/25 PASS; Python compileall and modified JS syntax PASS.
 G3.2/G3.3 formal boundary: Windows + licensed Motor-CAD 2026R1 production/RC qualification remains PENDING; 0% newly claimed.
-Clean source files excluding RELEASE_MANIFEST.json: 437
+G4 UI convergence: compact primary-flow help, one semantic main landmark, content-driven analysis height, and result-shell CSS restricted to the Results canonical stage.
+G4 i18n: source/rendered dynamic-node state, characterData observation, bilingual analysis labels and live progress repaint.
+G4 analysis loading: one analysis-workspace bootstrap, two-query Solution/Motor Revision hydration, latest-only analysis summaries and exact legacy duplicate collapse without lineage deletion.
+G4 observable work: Standard Validation HTTP-202 single-flight jobs, real stages, bounded polling, UI/network deadlines and terminal late-result protection.
+G4 engineering guards: disabled radiation values excluded from active projection; total-pole, slot/phase/path, phase-symmetry and winding-regeneration checks execute before Motor-CAD.
+G4 local verification: 6/6 dedicated PASS; 8/8 targeted G4/compatibility PASS; all JavaScript syntax and Python compileall PASS. Formal licensed Windows evidence remains pending.
+G4.1 design projection: bounded IPM V-leg geometry with display bridge; exact/bounded conductor markers; fixed-conductor slot-fill coupling with explicit manual override and local stale-value guard.
+G4.1 material transaction: saved material snapshots expose a direct editable-draft action; component selection failures are visible and selected bindings remain versioned with the Design Draft.
+G4.1 analysis performance: AnalysisWorkspaceService + browser workspace client provide latest-only bootstrap/editor bundles, indexed idempotency lookup, deferred guidance refresh and write-response reuse.
+G4.1 modularity: derived design math, analysis application orchestration and browser transport are now separate seams; remaining extraction sequence is documented in docs/V0.89-G4.1_IPM_WINDING_MATERIAL_PERFORMANCE_MODULARIZATION.md.
+G4.1 local verification: dedicated 7/7 PASS; G4.1 + G4 targeted 13/13 PASS; 31/31 isolated non-E2E files PASS; 87/87 JavaScript syntax and Python compileall PASS. Browser HMI: 33 SKIPPED because Playwright is unavailable in this build environment.
+G4.1 formal boundary: Studio projection and local API tests do not replace Windows + licensed Motor-CAD 2026R1 native geometry, winding readback and solve evidence.
+Clean source files excluding RELEASE_MANIFEST.json: 447

@@ -22,11 +22,13 @@
   function renderShell(){
     const host=q('#resultsWorkbenchV069');if(!host||!wb.project)return;
     const mode=wb.mode;
+    document.body.dataset.resultsMode=mode;
+    ['#engineeringDecisionCockpitV086R','#engineeringScorecardV087D','#engineeringEvidenceAdvancedV086R'].forEach(selector=>q(selector)?.classList.toggle('hidden',mode!=='overview'));
     host.innerHTML=`<section class="results-shell-v069 panel">
       <div class="results-title-v069"><div><span class="eyebrow">工程结果</span><h2>结果与工程判断</h2><p>优先展示关键工程指标、可信度和下一步工程动作。</p></div>${nativeBadge(wb.project)}</div>
       <nav class="results-nav-v069" aria-label="结果与优化工作台">
-        <button type="button" data-results-mode-v069="overview" class="${mode==='overview'?'active':''}"><b>结果总览</b><small>工程指标 · 可信度</small></button>
-        <button type="button" data-results-mode-v069="case" class="${mode==='case'?'active':''}"><b>单工况</b><small>详细结果与场数据</small></button>
+        <button type="button" data-results-mode-v069="overview" class="${mode==='overview'?'active':''}"><b>工程决策</b><small>结论 · 要求 · 下一步</small></button>
+        <button type="button" data-results-mode-v069="case" class="${mode==='case'?'active':''}"><b>结果查看</b><small>工况 · 曲线 · 场数据</small></button>
         <button type="button" data-results-mode-v069="caseCompare" class="${mode==='caseCompare'?'active':''}"><b>工况比较</b><small>同一任务内结果对照</small></button>
         <button type="button" data-results-mode-v069="compare" class="${mode==='compare'?'active':''}"><b>版本比较</b><small>电机版本横向对照</small></button>
         <button type="button" data-results-mode-v069="optimization" class="${mode==='optimization'?'active':''}"><b>参数研究与优化</b><small>Sweep · DOE · Pareto · NSGA-II</small></button>
@@ -107,12 +109,20 @@
     if(wb.mode==='case')return window.MCSCaseViewer?.mount?.(route,ctx);
   }
   async function mount(route,ctx){
-    hideLegacyHeader();wb.route=route;wb.ctx=ctx;wb.mode=modeForRoute(route);
+    hideLegacyHeader();wb.route=route;wb.ctx=ctx;wb.mode=modeForRoute(route);document.body.dataset.resultsMode=wb.mode;
     const projectId=route?.projectId||currentProjectId();if(!projectId)return{legacyCase:false};
     try{
-      wb.project=await api(`/api/projects/${encodeURIComponent(projectId)}/results-workbench`,ctx?.signal?{signal:ctx.signal}:{});
+      const projectPromise=api(`/api/projects/${encodeURIComponent(projectId)}/results-workbench`,ctx?.signal?{signal:ctx.signal}:{});
+      /* A direct ResultBundle route previously waited for the complete project
+         workbench before starting the independent bundle/FEA index request.
+         Start both branches together so first useful result paint is bounded by
+         the slower branch instead of their sum. */
+      const directCasePromise=wb.mode==='case'&&route?.resultBundleId
+        ?(setLegacyCase(true),window.MCSCaseViewer?.mount?.(route,ctx))
+        :null;
+      wb.project=await projectPromise;
       if(!active(ctx))return{legacyCase:false,aborted:true};
-      renderShell();await renderMode(route,ctx);
+      renderShell();if(directCasePromise)await directCasePromise;else await renderMode(route,ctx);
       return{legacyCase:false,mode:wb.mode};
     }catch(error){
       if(window.MCSPageRuntime?.isAbortError?.(error))return{legacyCase:false,aborted:true};

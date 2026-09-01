@@ -1,7 +1,7 @@
 parameters:
   pole_count:
-    label: 极数
-    description: 电机磁极总数，通常为偶数。
+    label: 极数（总极数）
+    description: 电机磁极总数，等于极对数的 2 倍，必须填写偶数。
     motorcad_candidates:
     - Pole_Number
     type: integer

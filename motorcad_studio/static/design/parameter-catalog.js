@@ -1,6 +1,8 @@
 /* V0.77 design parameter catalog. Capability-only module: no route/page ownership. */
 (() => {
   const safe=value=>typeof window.esc==='function'?window.esc(value):String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const tr=(zh,en)=>window.MCS_I18N?.t?.(zh,en)??zh;
+  const revisionLabel=value=>tr(`电机版本 ${value??'—'}`,`Motor revision ${value??'—'}`);
   async function open(){
     const revision=state.workspaceRevision,solution=state.workspaceDesign;
     if(!revision||!solution)return toast('请选择电机 Revision','WARNING');
@@ -19,8 +21,8 @@
     if(!result||!Object.keys(result).length)return;
     const parameters=Object.fromEntries(Object.entries(revision.parameters||{}).filter(([,value])=>value!==null&&value!=='')),automation=JSON.parse(JSON.stringify(revision.automation_parameters||{})),explicit=new Set(revision.explicit_parameter_ids||[]);
     for(const {row,value} of Object.values(result)){if(String(row.id).startsWith('automation:'))(automation[row.context]??={})[row.automation_name]=value;else{parameters[row.id]=value;explicit.add(row.id)}}
-    const created=await api(`/api/solutions/${encodeURIComponent(solution.id)}/revisions`,{method:'POST',body:JSON.stringify({parameters,materials:revision.materials||{},explicit_parameter_ids:[...explicit],automation_parameters:automation,capability_snapshot:catalog.capability_snapshot,notes:`参数目录编辑：修改 ${Object.keys(result).length} 项，基于 Rev.${revision.revision}`})});
-    toast(`已创建 Motor Revision Rev.${created.revision||''}`,'SUCCESS');
+    const created=await api(`/api/solutions/${encodeURIComponent(solution.id)}/revisions`,{method:'POST',body:JSON.stringify({parameters,materials:revision.materials||{},explicit_parameter_ids:[...explicit],automation_parameters:automation,capability_snapshot:catalog.capability_snapshot,notes:`参数目录编辑：修改 ${Object.keys(result).length} 项，基于电机版本 ${revision.revision}`})});
+    toast(tr(`已创建${revisionLabel(created.revision||'—')}`,`Created ${revisionLabel(created.revision||'—')}`),'SUCCESS');
     if(window.MCSRouter?.navigate)await MCSRouter.navigate(`/app/projects/${encodeURIComponent(state.activeProjectId)}/designs/${encodeURIComponent(solution.id)}/revisions/${encodeURIComponent(created.id)}/geometry/radial`);
   }
   window.MCSDesignParameterCatalog=Object.freeze({open});

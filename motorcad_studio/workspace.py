@@ -154,6 +154,18 @@ class WorkspaceService:
                 experiment["definition"] = self.db.loads(experiment.pop("definition_json"), {})
         return row
 
+    def get_project_summary(self, project_id: str, include_trashed: bool = False) -> dict[str, Any] | None:
+        """Return project identity without materializing designs, experiments or scenarios.
+
+        Analysis bootstrap composes its own bounded Solution revision window.  Calling
+        ``get_project`` first duplicated the design query and decoded every experiment
+        payload even though the Analysis page never used those records.
+        """
+        row = self.db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
+        if row and row.get("status") == "TRASHED" and not include_trashed:
+            return None
+        return row
+
     def update_project(self, project_id: str, *, name: str | None = None, description: str | None = None) -> dict[str, Any]:
         project = self.db.query_one("SELECT * FROM projects WHERE id=?", (project_id,))
         if not project:

@@ -45,8 +45,8 @@ domains:
     analysis: [Therm, Coupled]
     fields:
       - {id: radiation_enabled, label: 启用辐射换热, type: boolean, default: false, help: 高温、低风速或自然冷却工况建议启用。}
-      - {id: radiation_temperature_c, label: 辐射环境温度, type: number, unit: °C, default: 25, minimum: -273.15, maximum: 1000, help: 电机所看到的周围表面等效温度。}
-      - {id: emissivity, label: 表面发射率, type: number, unit: ratio, default: 0.85, minimum: 0, maximum: 1, help: 喷涂机壳通常高于裸金属。}
+      - {id: radiation_temperature_c, label: 辐射环境温度, type: number, unit: °C, default: 25, minimum: -273.15, maximum: 1000, enabled_when: {field: radiation_enabled, equals: true}, help: 电机所看到的周围表面等效温度；启用辐射换热后可编辑。}
+      - {id: emissivity, label: 表面发射率, type: number, unit: ratio, default: 0.85, minimum: 0, maximum: 1, enabled_when: {field: radiation_enabled, equals: true}, help: 喷涂机壳通常高于裸金属；启用辐射换热后可编辑。}
   convection:
     label: 对流
     purpose: 定义外表面与环境空气之间的对流换热边界。

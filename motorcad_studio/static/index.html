@@ -16,8 +16,9 @@
   <link rel="stylesheet" href="/static/engineer-ux-convergence.css?v=0.89.9">
   <link rel="stylesheet" href="/static/global-shell-convergence.css?v=0.89.9">
   <link rel="stylesheet" href="/static/action-readiness.css?v=0.89.9">
+  <link rel="stylesheet" href="/static/ui-convergence-g4.css?v=0.89.9">
 </head>
-<body class="studio-v089g1" data-release-train="V0.89-G3.2+G3.3">
+<body class="studio-v089g1" data-release-train="V0.89-G4.5">
 <header class="app-header operator-header">
   <div class="brand-block">
     <h1>MotorCAD Studio <span class="version">0.89.9</span></h1>
@@ -48,7 +49,8 @@
   <nav class="project-stage-nav canonical-project-flow engineer-journey-nav-v086r" aria-label="工程师工作流程">
     <button type="button" data-tab="workspace" data-project-tab data-engineer-stage="design"><span>1</span><b>设计</b></button>
     <button type="button" data-tab="analysisConfig" data-project-tab data-engineer-stage="validate"><span>2</span><b>验证</b></button>
-    <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="decide"><span>3</span><b>决策</b></button>
+    <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="results" data-results-destination="viewer"><span>3</span><b>结果</b></button>
+    <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="decide" data-results-destination="decision"><span>4</span><b>决策</b></button>
   </nav>
   <div id="engineeringContextBreadcrumbV089A" class="engineering-context-breadcrumb-v089a" aria-live="polite" aria-label="当前工程上下文"></div>
   <div id="engineerFocusBarV089F" class="engineer-focus-bar-v089f" aria-live="polite" aria-label="工程师当前状态与下一步"></div>
@@ -146,7 +148,7 @@
     </article>
     <div id="dashboardMetrics" class="metrics-grid project-metrics"></div>
     <div class="two-col workflow-overview-row-v081a">
-      <article class="panel workflow-completion-panel-v081a"><div class="section-head"><div><h2>工程流程</h2><p>按设计、验证、决策三个阶段推进当前项目。</p></div></div><div id="engineeringWorkflowOverviewV081A"><div class="workflow-empty-v081a"><b>正在读取工程状态…</b></div></div></article>
+      <article class="panel workflow-completion-panel-v081a"><div class="section-head"><div><h2>工程流程</h2><p>按设计、验证、结果、决策四个阶段推进当前项目。</p></div></div><div id="engineeringWorkflowOverviewV081A"><div class="workflow-empty-v081a"><b>正在读取工程状态…</b></div></div></article>
       <article class="panel run-center-panel-v081a"><div class="section-head"><div><h2>运行中心</h2><p>集中查看正在计算、需要恢复和最近完成的任务。</p></div><button type="button" data-go="tasks">全部任务</button></div><div id="runCenterV081A"><div class="workflow-empty-v081a"><b>正在读取运行状态…</b></div></div></article>
       <article class="panel failure-center-panel"><div class="section-head"><div><h2>失败处理中心</h2><p>集中查看失败原因和可执行的处理建议。</p></div><button type="button" data-go="logs">问题与诊断</button></div><div id="failureCenter"><div class="workflow-empty-v081a"><b>正在读取失败诊断…</b></div></div></article>
     </div>
@@ -217,7 +219,7 @@
         <div id="analysisListV076" class="analysis-list-v076"></div>
       </aside>
 
-      <main class="panel analysis-editor-v076">
+      <section class="panel analysis-editor-v076">
         <div id="analysisEmptyV076" class="analysis-empty-v076">
           <span class="eyebrow">分析配置</span><h3>请选择或新建分析配置</h3><p>请选择已保存的电机版本；几何、绕组和材料仍在“电机配置”中修改。</p>
         </div>
@@ -231,7 +233,7 @@
           </nav>
           <section id="analysisEditorBodyV076" class="analysis-editor-body-v076"></section>
         </div>
-      </main>
+      </section>
 
       <aside class="panel analysis-summary-v076">
         <div class="section-head"><div><h3>工程上下文</h3><p>当前对象与计算准备状态</p></div></div>
@@ -514,6 +516,7 @@
 <script src="/static/design/draft-service.js?v=0.89.9"></script>
 <script src="/static/design/precheck.js?v=0.89.9"></script>
 <script src="/static/design/render-utils.js?v=0.89.9"></script>
+<script src="/static/design/derived-parameters.js?v=0.89.9"></script>
 <script src="/static/design/geometry.js?v=0.89.9"></script>
 <script src="/static/design/winding.js?v=0.89.9"></script>
 <script src="/static/design/materials.js?v=0.89.9"></script>
@@ -521,6 +524,7 @@
 <script src="/static/design/parameter-inspector.js?v=0.89.9"></script>
 <script src="/static/design/renderer.js?v=0.89.9"></script>
 <script src="/static/analysis/labels.js?v=0.89.9"></script>
+<script src="/static/analysis/workspace-client.js?v=0.89.9"></script>
 <script src="/static/runtime/workstation-acceptance.js?v=0.89.9"></script>
 <script src="/static/runtime/production-soak.js?v=0.89.9"></script>
 <script src="/static/runtime/ui-soak-qualification.js?v=0.89.9"></script>
@@ -531,6 +535,7 @@
 <script src="/static/workflow/global-workflow-truth.js?v=0.89.9"></script>
 <script src="/static/workflow/engineer-ux-convergence.js?v=0.89.9"></script>
 <script src="/static/workflow/global-shell-convergence.js?v=0.89.9"></script>
+<script src="/static/workflow/compact-flow-header.js?v=0.89.9"></script>
 <script src="/static/workflow/action-readiness.js?v=0.89.9"></script>
 <script src="/static/routing/result-context.js?v=0.89.9"></script>
 <script src="/static/results/aggregate-client.js?v=0.89.9"></script>

@@ -44,6 +44,7 @@ def derive_winding(parameters: dict[str, Any], template: dict[str, Any] | None =
     winding = template.get("winding") or {}
     defaults = template.get("defaults") or {}
     slots = _num(parameters.get("slot_count", defaults.get("slot_count")))
+    poles = _num(parameters.get("pole_count", defaults.get("pole_count")))
     parallel_paths = _num(parameters.get("parallel_paths", defaults.get("parallel_paths", 1)))
     phases = _num(winding.get("phase_count"))
     divisor = None
@@ -54,13 +55,19 @@ def derive_winding(parameters: dict[str, Any], template: dict[str, Any] | None =
             slots_per_phase_path = slots / divisor
     return {
         "slot_count": slots,
+        "pole_count": poles,
+        "pole_pair_count": poles / 2 if poles is not None else None,
         "phase_count": phases,
         "parallel_paths": parallel_paths,
         "slot_phase_path_divisor": divisor,
         "slots_per_phase_path": slots_per_phase_path,
         "template_slot_count": _num(defaults.get("slot_count")),
+        "template_pole_count": _num(defaults.get("pole_count")),
         "template_parallel_paths": _num(defaults.get("parallel_paths")),
         "require_integer_slots_per_phase_path": bool(winding.get("require_integer_slots_per_phase_path", False)),
+        "require_even_pole_count": bool(winding.get("require_even_pole_count", False)),
+        "require_phase_symmetric_winding": bool(winding.get("require_phase_symmetric_winding", False)),
+        "supports_winding_regeneration": bool(winding.get("supports_winding_regeneration", False)),
     }
 
 
@@ -74,6 +81,53 @@ def _nearest_valid_slot_counts(slots: int, divisor: int) -> list[int]:
         candidates.add(max(divisor, low - divisor))
         candidates.add(low + divisor)
     return sorted(x for x in candidates if x > 0)
+
+
+def _approximate_slot_area(parameters: dict[str, Any]) -> float | None:
+    opening = _num(parameters.get("slot_opening")) or 0.0
+    width = _num(parameters.get("slot_width"))
+    depth = _num(parameters.get("slot_depth"))
+    corner = max(0.0, _num(parameters.get("slot_corner_radius")) or 0.0)
+    if width is None or depth is None or width <= 0 or depth <= 0:
+        return None
+    width = max(width, opening)
+    neck = max(opening, width * 0.45)
+    gross = depth * (width + neck) / 2
+    corner_loss = min(gross * 0.18, math.pi * corner * corner * 0.5)
+    usable = (gross - corner_loss) * 0.86
+    return usable if usable > 0 and math.isfinite(usable) else None
+
+
+def estimate_slot_fill_for_fixed_conductor(
+    parameters: dict[str, Any], baseline_parameters: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Estimate coupled slot fill using a fixed wire/insulation assumption.
+
+    The result is deliberately labelled as a relative Studio estimate.  Exact slot
+    area, wire construction and packing remain Motor-CAD readback authority.
+    """
+
+    turns = _num(parameters.get("turns_per_coil"))
+    baseline_turns = _num(baseline_parameters.get("turns_per_coil"))
+    baseline_fill = _num(baseline_parameters.get("slot_fill_factor"))
+    if not turns or not baseline_turns or not baseline_fill or min(turns, baseline_turns, baseline_fill) <= 0:
+        return None
+    current_area = _approximate_slot_area(parameters)
+    baseline_area = _approximate_slot_area(baseline_parameters)
+    strands = max(1.0, _num(parameters.get("strands_in_hand")) or 1.0)
+    baseline_strands = max(1.0, _num(baseline_parameters.get("strands_in_hand")) or 1.0)
+    slot_area_ratio = baseline_area / current_area if current_area and baseline_area else 1.0
+    value = baseline_fill * (turns / baseline_turns) * (strands / baseline_strands) * slot_area_ratio
+    if not math.isfinite(value) or value <= 0:
+        return None
+    return {
+        "value": value,
+        "turn_ratio": turns / baseline_turns,
+        "strand_ratio": strands / baseline_strands,
+        "slot_area_ratio": slot_area_ratio,
+        "assumption": "fixed_conductor_and_insulation",
+        "authority": "studio_relative_estimate",
+    }
 
 
 def validate_winding_relations(
@@ -92,11 +146,42 @@ def validate_winding_relations(
     issues: list[dict[str, Any]] = []
 
     slots = derived["slot_count"]
+    poles = derived["pole_count"]
     phases = derived["phase_count"]
     paths = derived["parallel_paths"]
     divisor = derived["slot_phase_path_divisor"]
     quotient = derived["slots_per_phase_path"]
     require_integer = derived["require_integer_slots_per_phase_path"]
+
+    if slots is not None and (slots <= 0 or abs(slots - round(slots)) > 1e-9):
+        issues.append(_issue(
+            "WINDING_SLOT_COUNT_INTEGER_REQUIRED",
+            "BLOCKING",
+            "槽数必须为正整数。",
+            "slot_count",
+            suggestion="恢复模板槽数，或输入正整数后重新运行 Studio 设计检查。",
+            details={"slot_count": slots},
+        ))
+
+    if poles is not None:
+        if poles <= 0 or abs(poles - round(poles)) > 1e-9:
+            issues.append(_issue(
+                "WINDING_POLE_COUNT_INTEGER_REQUIRED",
+                "BLOCKING",
+                "极数必须为正整数；该字段填写磁极总数，不是极对数。",
+                "pole_count",
+                suggestion="若设计参数为极对数 p，请在“极数（总极数）”中填写 2p。",
+                details={"pole_count": poles},
+            ))
+        elif derived["require_even_pole_count"] and int(round(poles)) % 2:
+            issues.append(_issue(
+                "WINDING_EVEN_POLE_COUNT_REQUIRED",
+                "BLOCKING",
+                f"当前填写 {int(round(poles))} 极；该模板要求偶数总极数。界面字段不是极对数。",
+                "pole_count",
+                suggestion=f"若目标是 {int(round(poles))} 对极，请填写 {int(round(poles)) * 2} 极；否则选择邻近偶数总极数并重新检查槽极配合。",
+                details={"pole_count": int(round(poles)), "interpreted_as_total_poles": True},
+            ))
 
     if paths is not None:
         if paths <= 0 or abs(paths - round(paths)) > 1e-9:
@@ -123,14 +208,7 @@ def validate_winding_relations(
         phases_i = int(round(float(phases)))
         paths_i = int(round(float(paths)))
         divisor_i = max(1, phases_i * paths_i)
-        if abs(float(slots) - slots_i) > 1e-9:
-            issues.append(_issue(
-                "WINDING_SLOT_COUNT_INTEGER_REQUIRED",
-                "BLOCKING",
-                "槽数必须为整数。",
-                "slot_count",
-            ))
-        elif abs(float(quotient) - round(float(quotient))) > 1e-9:
+        if abs(float(slots) - slots_i) <= 1e-9 and abs(float(quotient) - round(float(quotient))) > 1e-9:
             nearest = _nearest_valid_slot_counts(slots_i, divisor_i)
             baseline = derived.get("template_slot_count")
             baseline_text = ""
@@ -160,6 +238,38 @@ def validate_winding_relations(
                 },
             ))
 
+    if (
+        derived["require_phase_symmetric_winding"]
+        and slots is not None and poles is not None and phases is not None
+        and abs(slots - round(slots)) <= 1e-9 and abs(poles - round(poles)) <= 1e-9
+        and abs(phases - round(phases)) <= 1e-9 and int(round(poles)) > 0
+    ):
+        slots_i = int(round(slots))
+        poles_i = int(round(poles))
+        phases_i = int(round(phases))
+        pole_pairs = poles_i // 2 if poles_i % 2 == 0 else 0
+        periodicity = math.gcd(slots_i, pole_pairs) if pole_pairs > 0 else 0
+        slots_per_period = slots_i // periodicity if periodicity else 0
+        if periodicity and slots_per_period % phases_i:
+            issues.append(_issue(
+                "WINDING_PHASE_SYMMETRY_INVALID",
+                "BLOCKING",
+                (
+                    f"{slots_i} 槽 / {poles_i} 极不能形成当前 {phases_i} 相模板的对称绕组周期"
+                    f"（每周期 {slots_per_period} 槽，不能按 {phases_i} 相均分）。"
+                ),
+                "slot_count",
+                suggestion="恢复模板槽极组合，或选择满足每个绕组周期可按相数均分的槽极组合后重新检查。",
+                details={
+                    "slot_count": slots_i,
+                    "pole_count": poles_i,
+                    "pole_pair_count": pole_pairs,
+                    "phase_count": phases_i,
+                    "periodicity": periodicity,
+                    "slots_per_period": slots_per_period,
+                },
+            ))
+
     fill = _num(parameters.get("slot_fill_factor"))
     if fill is not None and fill > 1.0:
         issues.append(_issue(
@@ -171,15 +281,65 @@ def validate_winding_relations(
             details={"slot_fill_factor": fill},
         ))
 
+    defaults = dict(template.get("defaults") or {})
+    coupled_fill = estimate_slot_fill_for_fixed_conductor(parameters, defaults)
+    baseline_turns = _num(defaults.get("turns_per_coil"))
+    baseline_fill = _num(defaults.get("slot_fill_factor"))
+    turns = _num(parameters.get("turns_per_coil"))
+    fill_stale = (
+        coupled_fill is not None and turns is not None and baseline_turns is not None
+        and abs(turns - baseline_turns) > 1e-9 and fill is not None and baseline_fill is not None
+        and abs(fill - baseline_fill) <= max(1e-8, abs(baseline_fill) * 1e-6)
+    )
+    if fill_stale:
+        estimated = float(coupled_fill["value"])
+        issues.append(_issue(
+            "WINDING_SLOT_FILL_NOT_COUPLED_TO_TURNS",
+            "BLOCKING" if estimated > 1.0 else "WARNING",
+            (
+                f"每线圈匝数已由 {baseline_turns:g} 改为 {turns:g}，但槽满率仍保持模板值 {fill:.4g}；"
+                f"按固定线径与绝缘假设估算应约为 {estimated:.4g}。"
+            ),
+            "slot_fill_factor",
+            suggestion="恢复槽满率自动联动，或在确认线径/并绕根数和实际槽面积后明确输入手动槽满率，再运行 Motor-CAD 原生绕组检查。",
+            details={**coupled_fill, "saved_slot_fill_factor": fill, "template_slot_fill_factor": baseline_fill},
+        ))
+
     # An explicit winding change deserves a visible note even when it is feasible;
     # it helps users understand why the pre-solve worker will regenerate the winding.
     explicit = {str(x) for x in (explicit_parameter_ids or []) if str(x)}
-    changed_winding = sorted(explicit.intersection({"slot_count", "pole_count", "parallel_paths", "turns_per_coil"}))
+    topology_ids = {"slot_count", "pole_count"}
+    changed_winding = sorted(explicit.intersection({*topology_ids, "parallel_paths", "turns_per_coil"}))
+    changed_topology = sorted(
+        parameter_id for parameter_id in explicit.intersection(topology_ids)
+        if derived.get(parameter_id) is not None
+        and derived.get(f"template_{parameter_id}") is not None
+        and abs(float(derived[parameter_id]) - float(derived[f"template_{parameter_id}"])) > 1e-9
+    )
+    if changed_topology and not derived["supports_winding_regeneration"] and not any(i["severity"] == "BLOCKING" for i in issues):
+        baseline_slots = derived.get("template_slot_count")
+        baseline_poles = derived.get("template_pole_count")
+        issues.append(_issue(
+            "WINDING_TOPOLOGY_REGEN_UNQUALIFIED",
+            "BLOCKING",
+            "已修改槽数或极数，但当前模板没有登记可验证的绕组重建能力；继续进入 Motor-CAD 可能保留不兼容的线圈拓扑。",
+            changed_topology[0],
+            suggestion=(
+                f"恢复模板基线 {int(baseline_slots) if baseline_slots is not None else '—'} 槽 / "
+                f"{int(baseline_poles) if baseline_poles is not None else '—'} 极，或改用已登记绕组重建能力的模板。"
+            ),
+            details={
+                "changed_parameters": changed_topology,
+                "template_slot_count": baseline_slots,
+                "template_pole_count": baseline_poles,
+                "supports_winding_regeneration": False,
+            },
+        ))
     if changed_winding and not any(i["severity"] == "BLOCKING" for i in issues):
         issues.append(_issue(
             "WINDING_REGEN_REQUIRED",
             "WARNING",
-            "已修改绕组耦合参数，真实求解前将重新生成绕组并执行Motor-CAD绕组检查。",
+            "已修改绕组耦合参数；Studio 关系检查通过，真实求解前仍会重新生成绕组并执行 Motor-CAD 原生诊断。",
             suggestion="查看运行时 model_validation.json 中的 winding_validation。",
             details={"changed_parameters": changed_winding},
         ))
@@ -190,6 +350,7 @@ def validate_winding_relations(
         "valid": status != "BLOCKING",
         "issues": issues,
         "derived": derived,
+        "coupled_slot_fill_estimate": coupled_fill,
         "authority": "studio_precheck",
         "note": "该检查复现Motor-CAD模板绕组的确定性整数约束；真实模型仍会执行Motor-CAD原生绕组诊断。",
     }

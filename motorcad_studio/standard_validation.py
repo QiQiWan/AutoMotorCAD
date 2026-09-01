@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from copy import deepcopy
 from typing import Any
 
@@ -30,6 +31,10 @@ class StandardValidationPackageService:
         self.starters = starters
         self.analysis_guidance = analysis_guidance
         self.registry = registry
+        # Materialization performs a read-then-create sequence. Keep that sequence
+        # single-flight inside the process so two rapid UI requests cannot create the
+        # same standard analysis definition twice.
+        self._materialize_lock = threading.RLock()
 
     def _context(self, project_id: str, design_revision_id: str) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         revision = self.workspace.get_design_revision(design_revision_id)
@@ -180,9 +185,30 @@ class StandardValidationPackageService:
                 and str(package.get("analysis_template_id") or "") == str(analysis_template_id)
             ):
                 return analysis
+            # Definitions created by an older Studio build may carry the Analysis
+            # Template identity but predate standard_validation_package metadata.
+            # Reuse them instead of materializing a visually identical row.
+            if str(guidance.get("template_id") or "") == str(analysis_template_id):
+                return analysis
         return None
 
     def materialize(
+        self,
+        project_id: str,
+        design_revision_id: str,
+        *,
+        decisions_by_analysis: dict[str, dict[str, Any]] | None = None,
+        notes: str = "",
+    ) -> dict[str, Any]:
+        with self._materialize_lock:
+            return self._materialize_locked(
+                project_id,
+                design_revision_id,
+                decisions_by_analysis=decisions_by_analysis,
+                notes=notes,
+            )
+
+    def _materialize_locked(
         self,
         project_id: str,
         design_revision_id: str,

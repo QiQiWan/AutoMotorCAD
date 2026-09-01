@@ -1,5 +1,6 @@
 /* V0.64 stable Design renderer utilities. No page ownership lives here. */
 (() => {
+  const tr=(zh,en)=>window.MCS_I18N?.t?.(zh,en)??zh;
   const safe=value=>typeof window.esc==='function'
     ? window.esc(value)
     : String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -49,7 +50,16 @@
     const motorObject=projectedObject||window.MCSMotorObject?.resolve?.(data,values,selectedMaterials)||window.MCSPMMotorObject?.resolve?.(data,values,selectedMaterials)||legacyMotorObjectAdapter(data,values,selectedMaterials);
     return{data,values,precheck:ctx.precheck||source.precheck||{},editable:Boolean(ctx.editable),selected:ctx.selected||null,motorObject,visualSource:nativeRequested?'native':'design',visualizationReconciliation:recon};
   };
-  const authorityStrip=(label='Studio 参数化即时示意')=>`<div class="visual-authority-v031"><span>视图用途</span><b>${safe(label)}</b><em>Motor-CAD 原生几何 / 绕组 / FEA 为最终权威</em></div>`;
+  const unitLabel=unit=>{
+    const value=String(unit??'');
+    if((window.MCS_I18N?.language||'zh')!=='zh')return value;
+    return ({turn:'匝',turns:'匝',ratio:'比值',deg:'°'})[value]||value;
+  };
+  const revisionLabel=(value,kind='motor')=>kind==='analysis'
+    ?tr(`分析版本 ${value??'—'}`,`Analysis revision ${value??'—'}`)
+    :tr(`电机版本 ${value??'—'}`,`Motor revision ${value??'—'}`);
+  const topologyLabel=value=>({rfpm_ipm:[`内转子 IPM`,`Inner-rotor IPM`],rfpm_spm:[`内转子 SPM`,`Inner-rotor SPM`],outer_rotor_pm:[`外转子永磁`,`Outer-rotor PM`],afpm:[`轴向磁通永磁`,`Axial-flux PM`]})[String(value||'')]?.[(window.MCS_I18N?.language||'zh')==='en'?1:0]||String(value||tr('电机','Motor'));
+  const authorityStrip=(label=tr('Studio 参数化即时示意','Studio parametric preview'))=>`<div class="visual-authority-v031"><span>${tr('视图用途','View purpose')}</span><b>${safe(label)}</b><em>${tr('Motor-CAD 原生几何、绕组与有限元结果为最终权威','Native Motor-CAD geometry, winding and FEA results are authoritative')}</em></div>`;
   const phaseColors=['#e5484d','#2563eb','#16a36a','#8b5cf6','#e07a24','#64748b'];
-  window.MCSDesignRenderUtils={safe,number,clamp,fmt,parameterRecord,selectAttribute,polar,ringSegment,viewData,authorityStrip,phaseColors};
+  window.MCSDesignRenderUtils={safe,number,clamp,fmt,tr,unitLabel,revisionLabel,topologyLabel,parameterRecord,selectAttribute,polar,ringSegment,viewData,authorityStrip,phaseColors};
 })();

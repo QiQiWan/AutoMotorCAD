@@ -138,6 +138,7 @@
   }
 
   window.addEventListener('mcs:route-ready',event=>{const route=event.detail?.route||event.detail||null;if(route?.designView&&route.designView!==visualState.view)applyRouteView(route);if($q('.tab.active')?.id==='workspace'&&state.workspaceRevision&&(!visualState.data||visualState.revisionId!==state.workspaceRevision.id))decorateDesignViewer()});
+  document.addEventListener('mcs-language-change',()=>{if(visualState.data)renderDesignView()});
   window.MCSDesignViewer={state:visualState,decorate:decorateDesignViewer,render:renderDesignView,applyRouteView,setView,abort:abortPending,openWorkspaceDesign:ownedOpenWorkspaceDesign,selectWorkspaceRevision:ownedSelectWorkspaceRevision};
   // Compatibility boundary for callers cached from pre-V0.64 runtime layers.
   // Keep one stable global alias until the remaining historical scripts are removed.

@@ -550,6 +550,38 @@ class StructuredLogStore:
         problems.sort(key=lambda item: (int(item.get("problem_score") or 0), bool(item.get("root_cause")), int(item.get("count") or 0)), reverse=True)
         root_causes = [item for item in problems if item.get("root_cause") and not item.get("consequence")]
         summary = self.summary(minutes=minutes, session_id=session_id)
+        all_rows = self.query(minutes=minutes, session_id=session_id, task_id=task_id, limit=5000)
+        http_rows = [row for row in all_rows if str(row.get("event_type")) == "HTTP_REQUEST"]
+        slow_http = sorted(
+            http_rows,
+            key=lambda row: float((row.get("payload") or {}).get("elapsed_ms") or 0.0),
+            reverse=True,
+        )[:25]
+        frontend_rows = [
+            row for row in all_rows
+            if str(row.get("channel")) == "frontend"
+            or str(row.get("component")) == "frontend"
+        ][:100]
+        performance = {
+            "http_request_count": len(http_rows),
+            "slow_http_count_over_1000ms": sum(
+                1 for row in http_rows
+                if float((row.get("payload") or {}).get("elapsed_ms") or 0.0) >= 1000.0
+            ),
+            "slowest_http_requests": [
+                {
+                    "method": (row.get("payload") or {}).get("method"),
+                    "path": (row.get("payload") or {}).get("path"),
+                    "status_code": (row.get("payload") or {}).get("status_code"),
+                    "elapsed_ms": (row.get("payload") or {}).get("elapsed_ms"),
+                    "request_id": row.get("request_id"),
+                    "timestamp": row.get("timestamp"),
+                }
+                for row in slow_http
+            ],
+            "frontend_event_count": len(frontend_rows),
+            "recent_frontend_events": frontend_rows,
+        }
         if task_id:
             scoped_rows = self.query(minutes=minutes, session_id=session_id, task_id=task_id, limit=5000)
             summary = {**summary, "task_id": task_id, "task_scoped_total": len(scoped_rows)}
@@ -562,6 +594,8 @@ class StructuredLogStore:
             "root_cause_count": len(root_causes),
             "root_causes": root_causes[: max(1, min(int(limit), 20))],
             "problems": problems[: max(1, min(int(limit), 100))],
+            "performance": performance,
+            "diagnostic_contract_version": "0.89-G4.2",
         }
 
     def cleanup_old_files(self) -> None:

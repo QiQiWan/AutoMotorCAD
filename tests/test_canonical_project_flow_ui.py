@@ -3,10 +3,10 @@ import re
 ROOT=Path(__file__).resolve().parents[1]; STATIC=ROOT/'motorcad_studio'/'static'
 def read(name:str)->str:return (STATIC/name).read_text(encoding='utf-8')
 
-def test_project_shell_has_one_three_stage_engineer_flow():
+def test_project_shell_has_one_four_stage_engineer_flow():
     html=read('index.html');nav=re.search(r'<nav class="project-stage-nav canonical-project-flow engineer-journey-nav-v086r".*?</nav>',html,re.S);assert nav
     rows=re.findall(r'data-tab="([^"]+)"[^>]+data-engineer-stage="([^"]+)"[^>]*>.*?<b>([^<]+)</b>',nav.group(0),re.S)
-    assert rows==[('workspace','design','设计'),('analysisConfig','validate','验证'),('resultViewer','decide','决策')]
+    assert rows==[('workspace','design','设计'),('analysisConfig','validate','验证'),('resultViewer','results','结果'),('resultViewer','decide','决策')]
     for token in ['id="workflowRibbon"','id="projectSecondaryNav"','id="motorcadContextNavV046"','/static/workflow/flow-rail.js']:assert token not in html
 
 def test_solution_is_first_class_routed_page_and_api():

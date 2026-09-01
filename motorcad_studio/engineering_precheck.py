@@ -30,6 +30,23 @@ MATERIAL_COMPONENT_MAP = {
 }
 
 
+def active_input_domains(input_domains: dict[str, dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
+    """Return the physical inputs that are active under their enable switches.
+
+    Disabled controls stay persisted in the immutable Analysis Revision so a user can
+    re-enable a model without retyping values.  They are excluded from validation and
+    solver projection while disabled, preventing an inactive radiation temperature or
+    emissivity from changing (or blocking) a calculation.
+    """
+
+    domains = deepcopy(input_domains or {})
+    radiation = domains.get("radiation")
+    if isinstance(radiation, dict) and radiation.get("radiation_enabled") is not True:
+        radiation.pop("radiation_temperature_c", None)
+        radiation.pop("emissivity", None)
+    return domains
+
+
 def materialize_input_domains(
     input_domains: dict[str, dict[str, Any]] | None,
     *,
@@ -46,7 +63,8 @@ def materialize_input_domains(
     in ``physical_inputs`` and are included in the solver application audit.
     """
 
-    domains = deepcopy(input_domains or {})
+    persisted_domains = deepcopy(input_domains or {})
+    domains = active_input_domains(persisted_domains)
     effective_scenario = deepcopy(scenario or {})
     effective_materials = deepcopy(materials or {})
     effective_solver = deepcopy(solver_settings or {})
@@ -56,7 +74,7 @@ def materialize_input_domains(
             "materials": effective_materials,
             "solver_settings": effective_solver,
         }
-    effective_solver["input_domains"] = domains
+    effective_solver["input_domains"] = persisted_domains
     effective_solver["physical_inputs"] = domains
 
     cooling = domains.get("cooling") if isinstance(domains.get("cooling"), dict) else {}
@@ -213,7 +231,7 @@ def validate_engineering_inputs(
     params = deepcopy(parameters or {})
     scenario = deepcopy(scenario or {})
     materials = deepcopy(materials or {})
-    domains = deepcopy(input_domains or {})
+    domains = active_input_domains(input_domains)
     solver = deepcopy(solver_settings or {})
     flat: dict[str, Any] = {}
     flat.update(solver)

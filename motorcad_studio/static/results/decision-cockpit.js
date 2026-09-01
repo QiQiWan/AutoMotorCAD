@@ -3,7 +3,7 @@
   const q=(s,r=document)=>r?.querySelector?.(s)||null;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const stateLocal={projectId:null,payload:null,loading:false,timer:null,requestToken:0,controller:null};
-  const lang=()=>window.MCS_I18N?.language||'zh';
+  const lang=()=>{const html=String(document.documentElement.lang||'').toLowerCase();if(html.startsWith('zh'))return'zh';if(html.startsWith('en'))return'en';return window.MCS_I18N?.language||'zh'};
   const txt=(zh,en)=>lang()==='en'?(en||zh):zh;
   function currentProjectId(){
     return window.MCSResultContext?.current?.()?.projectId

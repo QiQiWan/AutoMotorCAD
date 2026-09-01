@@ -6,11 +6,13 @@
   const $q = (selector, root = document) => root.querySelector(selector);
   const $$q = (selector, root = document) => [...root.querySelectorAll(selector)];
   const safe = value => window.MCSDesignRenderUtils?.safe?.(value) ?? (typeof window.esc === 'function' ? window.esc(value) : String(value ?? ''));
+  const revisionLabel = value => window.MCSDesignRenderUtils?.revisionLabel?.(value, 'motor') || String(value ?? '—');
 
   const wb = {
     revisionId: null,
     data: null,
     values: {},
+    baseValues: {},
     changed: new Set(),
     selected: null,
     group: 'topology',
@@ -28,6 +30,8 @@
     previewFrame: 0,
     editVersion: 0,
     shellAbort: null,
+    slotFillMode: 'auto',
+    slotFillEstimate: null,
   };
 
   const stableValue = value => {
@@ -61,6 +65,47 @@
     if (a !== '' && b !== '' && Number.isFinite(na) && Number.isFinite(nb)) return Math.abs(na - nb) <= Math.max(1e-9, Math.abs(nb) * 1e-9);
     return String(a ?? '') === String(b ?? '');
   };
+  const slotFillDrivers = new Set(['turns_per_coil','strands_in_hand','slot_width','slot_depth','slot_opening','slot_corner_radius']);
+  function motorObjectFor(values) {
+    return window.MCSMotorObject?.resolve?.(wb.data, values || {}, wb.materials)
+      || window.MCSPMMotorObject?.resolve?.(wb.data, values || {}, wb.materials)
+      || null;
+  }
+  function applySlotFillCoupling(changedId) {
+    if (changedId === 'slot_fill_factor') { wb.slotFillMode = 'manual'; wb.slotFillEstimate = null; return false; }
+    if (wb.slotFillMode !== 'auto' || !slotFillDrivers.has(changedId) || !recordFor('slot_fill_factor')) return false;
+    const estimate = window.MCSDesignDerivedParameters?.estimateSlotFill?.(
+      wb.values,
+      wb.baseValues,
+      {motorObject: motorObjectFor(wb.values), baselineMotorObject: motorObjectFor(wb.baseValues)},
+    );
+    if (!estimate) return false;
+    wb.slotFillEstimate = estimate;
+    if (sameValue(wb.values.slot_fill_factor, estimate.value)) return false;
+    wb.values.slot_fill_factor = estimate.value;
+    refreshChanged('slot_fill_factor');
+    const input = $q('[data-workbench-input="slot_fill_factor"]');
+    if (input) input.value = String(estimate.value);
+    return true;
+  }
+  function restoreAutomaticSlotFill() {
+    wb.slotFillMode = 'auto';
+    const driver = slotFillDrivers.has(wb.selected) ? wb.selected : 'turns_per_coil';
+    const before = wb.values.slot_fill_factor;
+    applySlotFillCoupling(driver);
+    if (!sameValue(before, wb.values.slot_fill_factor)) markEdited();
+    renderParameters(); renderVisual(); renderSelected(); renderPrecheck(); renderEvidence();
+    draftService?.schedule?.({reason: 'slot-fill-auto'});
+  }
+  function inferSlotFillMode() {
+    const estimate = window.MCSDesignDerivedParameters?.estimateSlotFill?.(
+      wb.values,
+      wb.baseValues,
+      {motorObject: motorObjectFor(wb.values), baselineMotorObject: motorObjectFor(wb.baseValues)},
+    );
+    wb.slotFillEstimate = estimate;
+    wb.slotFillMode = estimate && !sameValue(wb.values.slot_fill_factor, estimate.value) ? 'manual' : 'auto';
+  }
 
   function draftPayload() {
     const design = state.workspaceDesign, revision = state.workspaceRevision;
@@ -124,7 +169,7 @@
   function conflictRevisionLabel(conflict = draftConflict()) {
     const id = conflict?.base_revision_id || conflict;
     const row = (state.workspaceDesign?.revisions || []).find(item => item.id === id);
-    return row?.revision ? `Rev.${row.revision}` : '另一个 Design Revision';
+    return row?.revision ? revisionLabel(row.revision) : (window.MCS_I18N?.t?.('另一个电机版本','Another motor revision')||'另一个电机版本');
   }
   function markEdited() {
     wb.editVersion += 1;
@@ -216,7 +261,7 @@
     const canvas = $q('#workspaceCanvas'), inspector = $q('#workspaceInspector');
     if (!canvas || !revision) return;
     document.body.classList.add('design-editing-v062');
-    canvas.innerHTML = `<div class="workspace-object-header model-workbench-header-v024 workbench-draft-header-v062"><div><span class="eyebrow">电机设计草稿</span><h2>${safe(revision.design_name)} · 基于 Rev.${safe(revision.revision)}</h2><p>几何、绕组和材料修改会自动保留为草稿；确认后点击“保存设计”。</p><div class="draft-status-line-v065"><span id="workbenchDraftStatusV062" class="draft-save-status-v062">${safe(draftStatusText())}</span><button id="workbenchDraftRetryV065" type="button" class="link-button-v065 hidden">重试保存</button></div></div><div class="actions"><button id="workbenchDiscardV062" type="button" class="danger-quiet">放弃草稿</button><button id="workbenchCancelV024" type="button">退出编辑（保留草稿）</button><button id="workbenchSaveV024" class="primary" type="button">保存设计</button></div></div>
+    canvas.innerHTML = `<div class="workspace-object-header model-workbench-header-v024 workbench-draft-header-v062"><div><span class="eyebrow">电机设计草稿</span><h2>${safe(revision.design_name)} · ${safe(revisionLabel(revision.revision))}</h2><p>几何、绕组和材料修改会自动保留为草稿；确认后点击“保存设计”。</p><div class="draft-status-line-v065"><span id="workbenchDraftStatusV062" class="draft-save-status-v062">${safe(draftStatusText())}</span><button id="workbenchDraftRetryV065" type="button" class="link-button-v065 hidden">重试保存</button></div></div><div class="actions"><button id="workbenchDiscardV062" type="button" class="danger-quiet">放弃草稿</button><button id="workbenchCancelV024" type="button">退出编辑（保留草稿）</button><button id="workbenchSaveV024" class="primary" type="button">保存设计</button></div></div>
     <div id="workbenchDraftConflictV065" class="hidden"></div>
     <div id="editorTransactionStateV088D" class="editor-transaction-state-v088d" aria-label="设计事务与 Motor-CAD 状态"></div>
     <div class="editor-transaction-rule-v088d">几何、绕组和材料属于同一份未保存设计；切换步骤不会创建新的设计分支。保存后系统会自动关联当前 Motor-CAD 检查证据。</div>
@@ -260,6 +305,8 @@
     const group = (wb.data?.groups || []).find(row => row.id === wb.group), title = $q('#workbenchGroupTitleV024');
     if (title) title.textContent = group?.label || wb.group;
     box.innerHTML = window.MCSDesignParameterInspector?.editorParameterRows?.({data: wb.data, group: wb.group, values: wb.values, changed: wb.changed, selected: wb.selected}) || '<div class="workspace-empty compact">当前分组没有可编辑设计参数。</div>';
+    const fillRow = box.querySelector('[data-workbench-param-row="slot_fill_factor"]');
+    if (fillRow) fillRow.insertAdjacentHTML('afterbegin', `<div class="slot-fill-coupling-v089g41 ${wb.slotFillMode}"><b>${wb.slotFillMode === 'auto' ? '自动联动' : '手动值'}</b><span>${wb.slotFillMode === 'auto' ? '按固定线径/绝缘假设，随匝数与槽面积更新；Motor-CAD 回读为最终值。' : '当前槽满率已手动锁定，不再随匝数变化。'}</span>${wb.slotFillMode === 'manual' ? '<button type="button" data-workbench-slot-fill-auto>恢复自动联动</button>' : ''}</div>`);
     updateChangeCount();
   }
   function updateChangeCount() {
@@ -430,6 +477,7 @@
     const before = wb.values[id];
     wb.values[id] = Number(next); refreshChanged(id);
     if (!sameValue(before, wb.values[id])) markEdited();
+    applySlotFillCoupling(id);
     const input = $q(`[data-workbench-input="${CSS.escape(id)}"]`); if (input && String(input.value) !== String(next)) input.value = String(next);
     if (render) { renderParameters(); renderVisual(); renderSelected(); renderPrecheck(); renderEvidence(); draftService?.schedule?.({reason: 'parameter-edit'}); }
   }
@@ -527,13 +575,15 @@
       const created = await api(`/api/solutions/${encodeURIComponent(design.id)}/draft/commit`, {method: 'POST', body: JSON.stringify({expected_version: expectedVersion, commit_key: commitKey, notes: notes || `设计参数保存（自动历史）`, analysis_definition_id: analysisDefinitionId})});
       wb.commitKey = null; wb.commitFingerprint = null;
       draftService?.begin?.({}); verification?.dispose?.(); wb.saveBusy = false;
-      state.workspaceProject = await api(`/api/projects/${encodeURIComponent(state.activeProjectId)}`);
+      const priorRevisions=(design.revisions||[]).filter(row=>String(row.id)!==String(created.id));
+      const updatedDesign={...design,updated_at:created.created_at||design.updated_at,revisions:[created,...priorRevisions]};
+      if(state.workspaceProject){state.workspaceProject={...state.workspaceProject,designs:(state.workspaceProject.designs||[]).map(row=>row.id===design.id?{...row,updated_at:updatedDesign.updated_at}:row)};}
       document.body.classList.remove('design-editing-v062');
       window.MCSDesignStore?.setMode?.('read', {source: 'editor-save'});
       window.MCSDesignStore?.selectParameter?.(null, {source: 'editor-save'});
-      window.MCSUnifiedAnalysis?.refresh?.().catch?.(()=>{});
-      toast(created.idempotent_replay ? `已恢复先前完成的保存；仍为 Rev.${created.revision}，未重复创建版本。` : `设计已保存。模板基线未改动；Rev.${created.revision} 已作为自动历史快照保留。`, 'SUCCESS', 6200);
-      await openWorkspaceDesign(design.id);
+      queueMicrotask(()=>window.MCSUnifiedAnalysis?.refresh?.({skipFlush:true}).catch?.(()=>{}));
+      toast(created.idempotent_replay ? `已恢复先前完成的保存；仍为 ${revisionLabel(created.revision)}，未重复创建版本。` : `设计已保存。模板基线未改动；${revisionLabel(created.revision)} 已作为自动历史快照保留。`, 'SUCCESS', 6200);
+      await openWorkspaceDesign(design.id,null,updatedDesign);
       if (created.id) await Promise.resolve(selectWorkspaceRevision(created.id));
       window.MCSDesignStore?.selectParameter?.(null, {source: 'editor-save-overview'});
       window.MCSRouter?.setRevisionEditMode?.(false, {view: wb.view, replace: true});
@@ -620,16 +670,20 @@
       const region = event.target.closest('[data-workbench-region]'); if (region) { selectRegion(region.dataset.workbenchRegion); return; }
       const select = event.target.closest('[data-workbench-select]'); if (select) { selectParameter(select.dataset.workbenchSelect); return; }
       const restore = event.target.closest('[data-workbench-restore]'); if (restore) { const row = recordFor(restore.dataset.paramId), value = restore.dataset.workbenchRestore === 'previous' ? row?.previous_feasible_value : row?.template_default; if (value !== undefined) setValue(row.id, value); return; }
+      if (event.target.closest('[data-workbench-slot-fill-auto]')) { restoreAutomaticSlotFill(); return; }
       const set = event.target.closest('[data-workbench-set]'); if (set) { setValue(set.dataset.workbenchSet, Number(set.dataset.workbenchValue)); return; }
       const material = event.target.closest('[data-workbench-material-component]'); if (material) {
         if (draftConflict()) return;
         const component = material.dataset.workbenchMaterialComponent, type = material.dataset.materialTypeV062 || '';
-        window.MCSMaterialLibrary?.pick?.({kind: 'solid', materialType: type, componentLabel: component, title: `选择 ${component} 材料`, onSelect: row => {
+        const componentSpec=(window.MCSDesignMaterials?.MATERIAL_COMPONENTS_V062||[]).find(item=>item.key===component||(item.aliases||[]).includes(component));
+        const componentLabel=window.MCS_I18N?.t?.(componentSpec?.label||component,componentSpec?.en||component)||componentSpec?.label||component;
+        if (!window.MCSMaterialLibrary?.pick) { toast(window.MCS_I18N?.t?.('材料库模块尚未就绪，请刷新页面后重试。','The material library is not ready. Refresh the page and try again.')||'材料库模块尚未就绪。', 'ERROR', 7000); return; }
+        try { await window.MCSMaterialLibrary.pick({kind: 'solid', materialType: type, componentLabel, title: window.MCS_I18N?.t?.(`选择${componentLabel}材料`,`Choose material for ${componentLabel}`)||`选择${componentLabel}材料`, onSelect: row => {
           const components = {...(wb.materials.component_materials || {})}, provenance = {...(wb.materials.material_provenance || {})};
           components[component] = row.name; provenance[component] = {material_record_id: row.id, source_kind: row.source_kind, source_database_path: row.source_database_path, source_database_hash: row.source_database_hash, material_section_hash: row.material_section_hash, motorcad_version: row.motorcad_version};
           const before = objectSnapshot(wb.materials); wb.materials = {...wb.materials, component_materials: components, material_provenance: provenance}; wb.materialDirty = objectSnapshot(wb.materials) !== objectSnapshot(wb.baseMaterials);
           if (before !== objectSnapshot(wb.materials)) markEdited(); renderVisual(); renderPrecheck(); renderEvidence(); updateChangeCount(); draftService?.schedule?.({reason: 'material-edit'});
-        }}); return;
+        }}); } catch (error) { toast(`${window.MCS_I18N?.t?.('材料库打开失败','Failed to open material library')||'材料库打开失败'}：${error.message||error}`, 'ERROR', 7000); } return;
       }
       const stage = event.target.closest('[data-workbench-stage-v062]'); if (stage) { navigateEditorView(workbenchDefaultViewForStage(stage.dataset.workbenchStageV062), 'editor-stage'); return; }
       const view = event.target.closest('[data-workbench-view]'); if (view) { navigateEditorView(view.dataset.workbenchView, 'editor-tab'); return; }
@@ -647,6 +701,7 @@
       const id = input.dataset.workbenchInput, number = Number(input.value); if (!Number.isFinite(number)) return;
       const next = recordFor(id)?.type === 'integer' ? Math.round(number) : number, before = wb.values[id]; wb.values[id] = next; refreshChanged(id); wb.selected = id;
       if (!sameValue(before, next)) markEdited();
+      applySlotFillCoupling(id);
       window.MCSDesignStore?.selectParameter?.(id, {source: 'editor-input'}); input.closest('[data-workbench-param-row]')?.classList.toggle('changed', wb.changed.has(id)); updateChangeCount(); renderPrecheck(); renderEvidence(); draftService?.schedule?.({reason: 'parameter-input'});
       cancelAnimationFrame(wb.previewFrame); wb.previewFrame = requestAnimationFrame(() => { renderSelected(); renderVisual(); });
     }, {signal});
@@ -667,6 +722,7 @@
       wb.shellAbort?.abort(); verification?.dispose?.();
       wb.revisionId = revision.id; wb.data = data; wb.values = {...(data.effective_parameters || {})}; wb.visualSource = 'design';
       (data.parameters || []).forEach(row => { if (!(row.id in wb.values)) wb.values[row.id] = row.value; });
+      wb.baseValues = cloneValue(wb.values); wb.slotFillMode = 'auto'; wb.slotFillEstimate = null;
       wb.baseMaterials = editableMaterials(data, revision);
       wb.materials = cloneValue(wb.baseMaterials);
       wb.changed = new Set(); wb.materialDirty = false; wb.explicitIds = new Set(revision.explicit_parameter_ids || []); wb.windingText = null; wb.editVersion = 0; wb.commitKey = null; wb.commitFingerprint = null; wb.leavePrepared = false;
@@ -675,6 +731,7 @@
         wb.values = {...wb.values, ...(draft.parameters || {})}; wb.materials = draft.materials || wb.materials; wb.explicitIds = new Set(draft.explicit_parameter_ids || revision.explicit_parameter_ids || []);
         (data.parameters || []).forEach(row => refreshChanged(row.id)); wb.materialDirty = objectSnapshot(wb.materials) !== objectSnapshot(wb.baseMaterials); if (totalChangeCount()) wb.editVersion = 1;
       } else if (draft) conflict = draft;
+      inferSlotFillMode();
       draftService?.begin?.({draft: draft && draft.base_revision_id === revision.id ? draft : null, conflict});
       verification?.begin?.(totalChangeCount() ? null : data.precheck || null);
       wb.selected = (data.parameters || [])[0]?.id || null; wb.group = recordFor(wb.selected)?.category || data.groups?.[0]?.id || 'topology';
@@ -750,6 +807,7 @@
     wb.leavePrepared = false; verification?.dispose?.(); wb.shellAbort?.abort(); document.body.classList.remove('design-editing-v062');
     window.MCSDesignStore?.setMode?.('read', {source: 'navigation-transaction-commit'});
   });
+  document.addEventListener('mcs-language-change',()=>{if(wb.data&&window.MCSDesignStore?.getState?.()?.mode==='edit')renderVisual()});
 
   window.MCSDesignEditor = {open, openView, applyRouteView, prepareRouteChange, inspectTransaction: editorGuardState, selectParameter, setValue, runStudioCheck, runNativeCheck, saveRevision, discardDraft, exitWorkbenchPreservingDraft, state: wb, draftService, verification};
 })();

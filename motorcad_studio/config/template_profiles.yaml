@@ -7,6 +7,9 @@ profiles:
     winding_constraints:
       phase_count: 3
       require_integer_slots_per_phase_path: true
+      require_even_pole_count: true
+      require_phase_symmetric_winding: true
+      supports_winding_regeneration: true
       evidence: Motor-CAD 2026R1 native MessageLog; Slot_Number/Phases/Parallel Paths must be integer for this template winding definition.
   e9_eMobility_IPM:
     system_template_id: RFPM-IR-IPM-STANDARD

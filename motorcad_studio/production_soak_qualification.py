@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import platform
+import threading
 import zipfile
 
 import psutil
@@ -105,11 +106,17 @@ class ProductionHardeningRuntimeSnapshotService:
         self.database = database
 
     def snapshot(self) -> dict[str, Any]:
-        process = psutil.Process(os.getpid())
+        telemetry_error = None
         try:
+            process: psutil.Process | None = psutil.Process(os.getpid())
             children = process.children(recursive=True)
-        except psutil.Error:
+        except psutil.Error as exc:
+            # Container PID namespaces and a concurrently recycled process table can
+            # make psutil briefly report the current PID as gone.  Soak telemetry is
+            # diagnostic and must degrade instead of taking down the runtime API.
+            process = None
             children = []
+            telemetry_error = type(exc).__name__
         child_rows: list[dict[str, Any]] = []
         motorcad_children: list[dict[str, Any]] = []
         for child in children:
@@ -132,16 +139,32 @@ class ProductionHardeningRuntimeSnapshotService:
         runtime = self.task_manager.lifecycle_snapshot()
         worker_pool = dict(runtime.get("worker_pool") or {})
         scheduler = dict(runtime.get("scheduler") or {})
-        rss_mb = round(process.memory_info().rss / (1024 * 1024), 3)
+        if process is not None:
+            try:
+                rss_mb = round(process.memory_info().rss / (1024 * 1024), 3)
+                thread_count = process.num_threads()
+            except psutil.Error as exc:
+                process = None
+                telemetry_error = type(exc).__name__
+        if process is None:
+            try:
+                import resource
+                raw_rss = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+                rss_mb = round(raw_rss / (1024 * (1024 if platform.system() == "Darwin" else 1)), 3)
+            except (ImportError, OSError, ValueError):
+                rss_mb = 0.001
+            thread_count = threading.active_count()
         return {
             "authority": "ProductionHardeningRuntimeSnapshotV1",
             "contract_version": PRODUCTION_SOAK_QUALIFICATION_CONTRACT_VERSION,
             "captured_at": _utc_now(),
             "studio_version": EXPECTED_STUDIO_VERSION,
             "platform": platform.platform(),
-            "pid": process.pid,
-            "studio_rss_mb": rss_mb,
-            "studio_thread_count": process.num_threads(),
+            "pid": process.pid if process is not None else os.getpid(),
+            "studio_rss_mb": max(0.001, rss_mb),
+            "studio_thread_count": thread_count,
+            "process_telemetry_available": process is not None,
+            "process_telemetry_error": telemetry_error,
             "child_process_count": len(child_rows),
             "motorcad_child_count": len(motorcad_children),
             "children": child_rows,

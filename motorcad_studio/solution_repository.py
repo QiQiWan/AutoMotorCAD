@@ -80,16 +80,93 @@ class SolutionRepository:
         rows = self.db.query_all("SELECT * FROM solutions WHERE project_id=? ORDER BY updated_at DESC", (project_id,))
         return [self._decode_solution(row) or {} for row in rows]
 
-    def get_solution(self, solution_id: str, *, include_revisions: bool = True) -> dict[str, Any] | None:
+    def list_for_project_with_revisions(
+        self,
+        project_id: str,
+        *,
+        revision_limit: int | None = None,
+        include_revision_ids: set[str] | list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Load project solutions and the revisions needed by the caller.
+
+        ``revision_limit`` is applied per Solution.  Explicitly referenced revisions
+        are retained even when they are older than that window, which lets the
+        Analysis workspace stay small without losing an analysis-to-motor link.
+        """
+
+        solutions = self.list_for_project(project_id)
+        by_id = {str(row.get("id")): row for row in solutions}
+        for row in solutions:
+            row["revisions"] = []
+        include_ids = sorted({str(value) for value in (include_revision_ids or []) if str(value)})
+        if revision_limit is None:
+            revision_rows = self.db.query_all(
+                """SELECT mr.*
+                     FROM motor_revisions mr
+                     JOIN solutions s ON s.id=mr.solution_id
+                    WHERE s.project_id=?
+                    ORDER BY s.updated_at DESC, mr.revision DESC""",
+                (project_id,),
+            )
+        else:
+            limit = max(1, min(int(revision_limit), 100))
+            placeholders = ",".join("?" for _ in include_ids)
+            include_clause = f" OR ranked.id IN ({placeholders})" if include_ids else ""
+            revision_rows = self.db.query_all(
+                f"""SELECT ranked.* FROM (
+                        SELECT mr.*, ROW_NUMBER() OVER(PARTITION BY mr.solution_id ORDER BY mr.revision DESC) AS revision_rank,
+                               s.updated_at AS solution_updated_at
+                          FROM motor_revisions mr
+                          JOIN solutions s ON s.id=mr.solution_id
+                         WHERE s.project_id=?
+                    ) ranked
+                    WHERE ranked.revision_rank<=?{include_clause}
+                    ORDER BY ranked.solution_updated_at DESC, ranked.revision DESC""",
+                (project_id, limit, *include_ids),
+            )
+        for raw in revision_rows:
+            raw = dict(raw)
+            raw.pop("revision_rank", None)
+            raw.pop("solution_updated_at", None)
+            revision = self._decode_revision(raw) or {}
+            parent = by_id.get(str(revision.get("solution_id") or ""))
+            if parent is not None:
+                parent["revisions"].append(revision)
+        return solutions
+
+    def get_solution(
+        self, solution_id: str, *, include_revisions: bool = True, revision_limit: int | None = None
+    ) -> dict[str, Any] | None:
         solution = self._decode_solution(self.db.query_one("SELECT * FROM solutions WHERE id=?", (solution_id,)))
         if solution is None:
             return None
         if include_revisions:
-            rows = self.db.query_all(
-                "SELECT * FROM motor_revisions WHERE solution_id=? ORDER BY revision DESC", (solution_id,)
-            )
+            sql = "SELECT * FROM motor_revisions WHERE solution_id=? ORDER BY revision DESC"
+            params: tuple[Any, ...] = (solution_id,)
+            if revision_limit is not None:
+                sql += " LIMIT ?"
+                params = (solution_id, max(1, min(int(revision_limit), 1000)))
+            rows = self.db.query_all(sql, params)
             solution["revisions"] = [self._decode_revision(row) or {} for row in rows]
         return solution
+
+    def get_latest_revision(self, solution_id: str) -> dict[str, Any] | None:
+        return self._decode_revision(self.db.query_one(
+            "SELECT * FROM motor_revisions WHERE solution_id=? ORDER BY revision DESC LIMIT 1", (solution_id,)
+        ))
+
+    def find_revision_by_commit_key(self, solution_id: str, commit_key: str) -> dict[str, Any] | None:
+        if not commit_key:
+            return None
+        row = self.db.query_one(
+            """SELECT * FROM motor_revisions
+                 WHERE solution_id=?
+                   AND json_valid(COALESCE(editor_transaction_json,'{}'))
+                   AND json_extract(editor_transaction_json,'$.commit_key')=?
+                 ORDER BY revision DESC LIMIT 1""",
+            (solution_id, str(commit_key)),
+        )
+        return self._decode_revision(row)
 
     def get_revision(self, revision_id: str) -> dict[str, Any] | None:
         return self._decode_revision(self.db.query_one("SELECT * FROM motor_revisions WHERE id=?", (revision_id,)))
@@ -327,6 +404,52 @@ class SolutionRepository:
                 return False
             conn.execute("DELETE FROM solution_drafts WHERE solution_id=?", (solution_id,))
             return True
+
+    def delete_solution(self, project_id: str, solution_id: str) -> dict[str, Any]:
+        """Delete an unreferenced motor configuration and its immutable revisions.
+
+        Referenced revisions remain protected because analyses, tasks and evidence
+        must retain a valid engineering lineage.  The caller receives the blocking
+        table/count list instead of a generic foreign-key failure.
+        """
+        with self.db.transaction() as conn:
+            solution = conn.execute(
+                "SELECT * FROM solutions WHERE id=? AND project_id=?", (solution_id, project_id)
+            ).fetchone()
+            if not solution:
+                raise KeyError(solution_id)
+            revision_rows = conn.execute(
+                "SELECT id FROM motor_revisions WHERE solution_id=?", (solution_id,)
+            ).fetchall()
+            revision_ids = [str(row["id"]) for row in revision_rows]
+            blockers: list[dict[str, Any]] = []
+            if revision_ids:
+                placeholders = ",".join("?" for _ in revision_ids)
+                table_rows = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                ).fetchall()
+                ignored = {"motor_revisions", "solution_drafts"}
+                for table_row in table_rows:
+                    table = str(table_row["name"])
+                    if table in ignored or not table.replace("_", "").isalnum():
+                        continue
+                    columns = {str(row["name"]) for row in conn.execute(f'PRAGMA table_info("{table}")').fetchall()}
+                    for column in ("design_revision_id", "motor_revision_id", "base_motor_revision_id"):
+                        if column not in columns:
+                            continue
+                        count = int(conn.execute(
+                            f'SELECT COUNT(*) AS count FROM "{table}" WHERE "{column}" IN ({placeholders})',
+                            tuple(revision_ids),
+                        ).fetchone()["count"])
+                        if count:
+                            blockers.append({"table": table, "column": column, "count": count})
+            if blockers:
+                raise ValueError({"code": "MOTOR_CONFIGURATION_REFERENCED", "blockers": blockers})
+            conn.execute("DELETE FROM solution_drafts WHERE solution_id=?", (solution_id,))
+            conn.execute("DELETE FROM motor_revisions WHERE solution_id=?", (solution_id,))
+            conn.execute("DELETE FROM solutions WHERE id=?", (solution_id,))
+            conn.execute("UPDATE projects SET updated_at=? WHERE id=?", (self.db.now(), project_id))
+        return {"status": "deleted", "project_id": project_id, "solution_id": solution_id, "revision_count": len(revision_ids)}
 
     def record_native_reconciliation(
         self, solution_id: str, *, expected_transaction_hash: str, expected_intent_hash: str, reconciliation: dict[str, Any]

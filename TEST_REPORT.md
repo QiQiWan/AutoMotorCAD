@@ -1,3 +1,25 @@
+# V0.89-G4.1 IPM / winding / material / performance verification
+
+- G4.1 dedicated regression: **7/7 PASS**.
+- G4.1 plus G4 workflow compatibility: **13/13 PASS**.
+- Complete backend/product qualification: **31/31 non-E2E files PASS** using the repository's per-file process and runtime-data isolation contract.
+- Production JavaScript syntax: **87/87 PASS**; Python `compileall`: **PASS**.
+- Browser HMI collection: **33 SKIPPED** because Playwright is not installed in this Linux build environment; no browser PASS is newly claimed.
+- Licensed Windows + Motor-CAD 2026R1 native geometry, winding readback and solve qualification: **PENDING**.
+
+The G4.1 tests cover bounded/latest-only workspace payloads, single-bundle analysis editor writes, indexed commit replay, IPM preview separation, turn-driven conductor markers and relative slot fill, stale/impossible fill guards, material edit entry/readiness failures and engineering-context language authorities. See `docs/V0.89-G4.1_IPM_WINDING_MATERIAL_PERFORMANCE_MODULARIZATION.md`.
+
+# V0.89-G4 workflow repair verification
+
+- New G4 regression file: **6/6 PASS**.
+- G4 plus targeted compatibility checks: **8/8 PASS**.
+- All production JavaScript syntax (`node --check`): **PASS**.
+- Python package compile (`compileall`): **PASS**.
+- Full non-E2E single-process run before final targeted replay: **223 PASS / 4 SKIP / 29 deselected / 3 FAIL**. The static compatibility and PID-namespace telemetry failures were fixed and replayed PASS. The remaining task-submission failure is the pre-existing suite-lifecycle contamination where an earlier TestClient closes the global TaskManager; the exact business test passes in an isolated process.
+- Licensed Windows + Motor-CAD 2026R1 winding/validation qualification: **PENDING**.
+
+The release therefore claims the G4 local contracts and regressions, not formal workstation qualification. See `docs/V0.89-G4_WORKFLOW_REPAIR_IMPLEMENTATION_REPORT.md`.
+
 # V0.89-G2.3 targeted runtime-log repair verification
 
 - Modified Python modules compile: PASS.
@@ -235,3 +257,16 @@ See `docs/V0.89-E_UI_SOAK_RECOVERY_FAULT_INJECTION_QUALIFICATION.md`.
 - The legacy G1R component Chromium file reaches 5/6 PASS; its remaining shell-grid assertion predates G3.2/G3.3 and conflicts with the existing G2.2/G3.1 compact-shell rule that intentionally hides the duplicated current-context cell at desktop width. No new G3.2/G3.3 failure is attributed to that assertion.
 - A monolithic non-E2E pytest process is not used as a new release qualification signal because pre-existing tests mix lifespan-managed `TestClient` instances with a process-global non-lifespan client; closing one lifespan intentionally shuts the global TaskManager, while the affected optimization test passes in an isolated process.
 - Formal Windows + licensed Motor-CAD 2026R1 qualification remains PENDING; this increment makes no new workstation PASS claim.
+# V0.89-G4.2 results / 3D field / performance / diagnostics verification
+
+- G4.2 dedicated regression: **5/5 PASS**.
+- G4.2 plus G4.1 and G4 compatibility: **18/18 PASS**.
+- Modified JavaScript syntax: **PASS**; Python `compileall`: **PASS**.
+- Licensed Windows + Motor-CAD 2026R1 result-load timing and 29-frame interaction qualification: **PENDING**.
+# V0.89-G4.3 result / validation / decision separation verification
+
+- G4.3 and related navigation/result contracts: **19/19 PASS**.
+- Existing G1/G1R/G2/F shell and release-gate compatibility: **31/31 PASS**.
+- G4.3 + G4.2 + G4.1 + G4 targeted set: **23/23 PASS**.
+- Modified JavaScript syntax and Python compile: **PASS**.
+- Windows browser pixel qualification at 100/125/150% scale: **PENDING**.

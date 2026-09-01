@@ -1,6 +1,6 @@
 # Clean Release Manifest
 
-Release: **MotorCAD Studio 0.89.9 / V0.89-G3.2 + G3.3**
+Release: **MotorCAD Studio 0.89.9 / V0.89-G4.4**
 
 This package is intentionally **latest-only**. The source distribution contains the current runtime implementation, current authority contracts, current regression surface and the minimum current documentation required to operate/qualify the product.
 
@@ -27,7 +27,7 @@ Retained because they remain part of the active product contract:
 - V0.88-D editor transaction/native-state reconciliation authority;
 - V0.88-E native-preview/design-visualization reconciliation authority;
 - V0.88-F native spatial-geometry/result-overlay authority;
-- V0.89-A global workflow/context authority, V0.89-B HMI action qualification authority, V0.89-C navigation/editor transaction authority, V0.89-D Windows Native Golden Journey qualification authority, V0.89-E UI Soak/Recovery/Fault Injection qualification authority, V0.89-F Engineer UX/Release Candidate authorities V0.89-G1 Global Shell/Typography/Copy convergence authority, V0.89-G1R usability-repair contracts, V0.89-G2 Workflow Action Readiness authority, and V0.89-G3.1 Result Shell/Decision/i18n/FEA-lifecycle convergence, V0.89-G3.2 ResultBundle module authority and V0.89-G3.3 Native FEA/observable-HMI convergence;
+- V0.89-A global workflow/context authority, V0.89-B HMI action qualification authority, V0.89-C navigation/editor transaction authority, V0.89-D Windows Native Golden Journey qualification authority, V0.89-E UI Soak/Recovery/Fault Injection qualification authority, V0.89-F Engineer UX/Release Candidate authority, V0.89-G1 Global Shell/Typography/Copy convergence authority, V0.89-G1R usability-repair contracts, V0.89-G2 Workflow Action Readiness authority, V0.89-G3.1 Result Shell/Decision/i18n/FEA-lifecycle convergence, V0.89-G3.2 ResultBundle module authority, V0.89-G3.3 Native FEA/observable-HMI convergence, V0.89-G4 workflow repair and V0.89-G4.1 derived-design/bounded-editor modules;
 - current V0.88-F Windows Native qualification, V0.89-D live UI Golden Journey qualification, Production Soak authority, V0.89-E live UI resilience qualification and V0.89-F RC/human-acceptance gate;
 - compact current-release regression tests;
 - current architecture, engineer workflow, Motor-CAD onboarding, official mapping and production-qualification documentation.
@@ -82,4 +82,44 @@ G3.1 does not replace or pre-approve the formal Windows/Motor-CAD qualification 
 - Inherited G1 shell regression: **7/7 PASS**
 - Chromium full-shell route journey: **1/1 PASS**
 - Fresh complete current-suite inventory: **not rerun in this incremental package**
+- Formal Windows + licensed Motor-CAD 2026R1 qualification: **PENDING; 0% newly claimed**
+
+## V0.89-G4.4 final cleanup
+
+G4.4 adds one authoritative compact desktop project-shell geometry rule and its
+focused regression/documentation. No generated runtime data, caches, logs or
+native evidence are included.
+
+Final clean-tree evidence:
+
+- Files excluding `RELEASE_MANIFEST.json`: **453**
+- Static production shell: **87 JS + 13 CSS**
+- Dedicated shell-height regression: **4/4 PASS**
+- Targeted shell/results/navigation static regression: **13/13 PASS**
+- Python package compile and related JavaScript syntax: **PASS**
+- Formal Windows + licensed Motor-CAD 2026R1 qualification: **PENDING; 0% newly claimed**
+
+## V0.89-G4.1 final cleanup
+
+G4/G4.1 retain only the current UI-convergence, observable-job, derived-design, material-draft and bounded Analysis Workspace implementation. Generated runtime catalogs/templates, SQLite/WAL state, logs, `.venv`, pytest caches, Python bytecode and packaging metadata are excluded. Canonical template inputs remain under `motorcad_studio/seed_data`; `data/` ships with `.gitkeep` only and is rebuilt at startup.
+
+Final clean-tree evidence:
+
+- Files excluding `RELEASE_MANIFEST.json`: **447**
+- `data/`: `.gitkeep` only
+- Python/pytest caches and generated egg metadata: **0**
+- Static production shell: **87 JS + 13 CSS**, uniquely loaded and pinned to `0.89.9`
+- G4.1 dedicated regression: **7/7 PASS**
+- G4.1 + G4 targeted regression: **13/13 PASS**
+- Isolated non-E2E qualification: **31/31 files PASS**
+- Current Linux browser HMI: **33 SKIPPED** because Playwright is unavailable; no new browser PASS claimed
+- Formal Windows + licensed Motor-CAD 2026R1 qualification: **PENDING; 0% newly claimed**
+
+## V0.89-G4.5 final cleanup
+
+G4.5 contains only current source, tests and the repair report. Uploaded logs, extracted runtime data, SQLite/WAL state, virtual environments, caches and generated native evidence are excluded from the release.
+
+- Static production shell: **87 JS + 13 CSS**, pinned to product version `0.89.9`
+- G4.5 and inherited targeted compatibility: **71/71 PASS**
+- Python compile and all production JavaScript syntax: **PASS**
 - Formal Windows + licensed Motor-CAD 2026R1 qualification: **PENDING; 0% newly claimed**
