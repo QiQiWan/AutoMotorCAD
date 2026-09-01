@@ -30,12 +30,12 @@
     qa('[data-starter-use]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.addEventListener('click',()=>openCreate(b.dataset.starterUse))});
     qa('[data-starter-detail]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.addEventListener('click',()=>openDetail(b.dataset.starterDetail))});
   }
-  function inputRow(spec){const current=spec.default_value??'';const range=(spec.recommended_min!=null&&spec.recommended_max!=null)?`建议 ${spec.recommended_min}–${spec.recommended_max} ${spec.unit||''}`:'按模板默认值';return `<label class="starter-input-v087"><span>${esc(spec.label)}${spec.required?'<b class="required-mark-v087">必填</b>':''}</span><div class="input-with-unit-v087"><input type="number" data-starter-input="${esc(spec.parameter_id)}" value="${esc(current)}" ${spec.step!=null?`step="${esc(spec.step)}"`:''} ${spec.hard_min!=null?`min="${esc(spec.hard_min)}"`:''} ${spec.hard_max!=null?`max="${esc(spec.hard_max)}"`:''}><em>${esc(spec.unit||'')}</em></div><small>${esc(range)}${spec.description?` · ${esc(spec.description)}`:''}</small></label>`}
+  function inputRow(spec){const current=spec.default_value??'';const range=(spec.recommended_min!=null&&spec.recommended_max!=null)?`建议 ${spec.recommended_min}–${spec.recommended_max} ${spec.unit||''}`:'按模板默认值';return `<label class="starter-input-v087"><span>${esc(spec.label)}${spec.required?'<b class="required-mark-v087">必填</b>':''}</span><div class="input-with-unit-v087"><input type="number" data-starter-input="${esc(spec.parameter_id)}" data-template-default="${esc(current)}" value="${esc(current)}" ${spec.step!=null?`step="${esc(spec.step)}"`:''} ${spec.hard_min!=null?`min="${esc(spec.hard_min)}"`:''} ${spec.hard_max!=null?`max="${esc(spec.hard_max)}"`:''}><em>${esc(spec.unit||'')}</em></div><small>${esc(range)}${spec.description?` · ${esc(spec.description)}`:''}</small></label>`}
   function openCreate(id){
     const starter=(state.payload?.starters||[]).find(x=>x.id===id);if(!starter)return;
     const host=q('#goldenStarterCreateV087');if(!host)return;
     const pid=projectId();state.selected=starter;host.classList.remove('hidden');
-    host.innerHTML=`<div class="section-head"><div><span class="eyebrow">${esc(starter.short_label)} · GUIDED CREATE</span><h2>创建 ${esc(starter.label)}</h2><p>首次只确认设计名称和少量关键参数；未填写项继续使用受控模板默认值。</p></div><button type="button" data-starter-close>关闭</button></div>
+    host.innerHTML=`<div class="section-head"><div><span class="eyebrow">${esc(starter.short_label)} · GUIDED CREATE</span><h2>创建 ${esc(starter.label)}</h2><p>首次只确认设计名称和少量关键参数；保持模板显示值不变时，不会向 Motor-CAD 重写这些参数，原生模板几何将原样继承。</p></div><button type="button" data-starter-close>关闭</button></div>
       ${pid?'':`<div class="issue WARNING"><b>尚未进入项目</b><p>请先进入项目，再创建预制电机设计。</p><button type="button" data-go-projects-v087>进入项目管理</button></div>`}
       <div class="golden-starter-form-grid-v087"><label class="starter-name-v087"><span>设计名称</span><input id="goldenStarterNameV087" maxlength="120" value="${esc(starter.default_name||starter.label)}"></label>${(starter.guided_inputs||[]).map(inputRow).join('')}</div>
       <div class="starter-package-v087"><div><span>创建后标准验证</span><b>${(starter.standard_analysis_steps||[]).map(x=>esc(x.short_label||x.label)).join(' · ')}</b></div><div><span>推荐优化变量</span><b>${(starter.optimization_parameter_specs||[]).map(x=>esc(x.label||x.parameter_id)).join(' · ')}</b></div></div>
@@ -52,10 +52,19 @@
     host.innerHTML=`<div class="section-head"><div><span class="eyebrow">ENGINEERING SCOPE</span><h2>${esc(s.label)}</h2><p>${esc(s.topology_label)} · ${esc(s.application)}</p></div><button type="button" data-starter-close>关闭</button></div><div class="starter-detail-grid-v087"><div><span>设计参数组</span><b>${(s.design_groups||[]).map(esc).join(' / ')}</b></div><div><span>标准分析包</span><b>${(s.standard_analysis_steps||[]).map(x=>esc(x.short_label||x.label)).join(' / ')}</b></div><div><span>结果 Scorecard</span><b>${(s.scorecard_metrics||[]).map(x=>esc(x.label||x.metric_id)).join(' / ')}</b></div><div><span>优化变量</span><b>${(s.optimization_parameter_specs||[]).map(x=>esc(x.label||x.parameter_id)).join(' / ')}</b></div></div>${Object.keys(s.mapping_readiness?.deferred_parameters||{}).length?`<div class="callout info"><b>暂缓开放参数</b><br>${Object.entries(s.mapping_readiness.deferred_parameters).map(([id,row])=>`${esc(id)}：${esc(row.reason||row.status)}`).join('<br>')}</div>`:''}<div class="callout warning"><b>当前资格状态</b><br>${esc(qualificationLabel(s.qualification))}。Studio 不会把“模板存在”误标记为 Windows Motor-CAD 生产验证通过。</div><div class="actions"><button class="primary" type="button" data-starter-use="${esc(s.id)}">使用此预制设计</button></div>`;
     qa('[data-starter-close]',host).forEach(b=>b.addEventListener('click',()=>host.classList.add('hidden')));bind();
   }
+  function changedFromTemplate(el){
+    if(el.value==='')return false;
+    const current=Number(el.value),baseline=Number(el.dataset.templateDefault);
+    if(Number.isFinite(current)&&Number.isFinite(baseline))return Math.abs(current-baseline)>1e-12*Math.max(1,Math.abs(current),Math.abs(baseline));
+    return String(el.value)!==String(el.dataset.templateDefault??'');
+  }
   async function createStarter(starter){
     const pid=projectId();if(!pid)return window.toast?.('请先进入项目','WARNING');
     const btn=q('#goldenStarterConfirmV087'),status=q('#goldenStarterCreateStatusV087');if(btn)btn.disabled=true;if(status)status.textContent='正在创建受控 Rev.1…';
-    const inputs={};qa('[data-starter-input]').forEach(el=>{if(el.value!=='')inputs[el.dataset.starterInput]=Number(el.value)});
+    // Displaying a template value is not user intent. Only changed fields become
+    // explicit_parameter_ids downstream. This is critical for AFPM templates whose
+    // coupled native geometry can be invalidated by needlessly re-writing defaults.
+    const inputs={};qa('[data-starter-input]').forEach(el=>{if(changedFromTemplate(el))inputs[el.dataset.starterInput]=Number(el.value)});
     const name=q('#goldenStarterNameV087')?.value?.trim()||starter.default_name||starter.label;
     try{
       const result=await apiCall(`/api/projects/${encodeURIComponent(pid)}/design-starters/${encodeURIComponent(starter.id)}`,{method:'POST',body:JSON.stringify({name,inputs})});
@@ -67,5 +76,5 @@
   }
   async function load(){if(state.loading)return;state.loading=true;try{state.payload=await apiCall('/api/design-starters');render()}catch(e){const status=q('#goldenStarterStatusV087');if(status){status.textContent='读取失败';status.className='status-chip error'}const grid=q('#goldenStarterGridV087');if(grid)grid.innerHTML=`<div class="issue ERROR">${esc(e.message||e)}</div>`}finally{state.loading=false}}
   document.addEventListener('DOMContentLoaded',load,{once:true});window.addEventListener('mcs:engineering-context-changed',()=>bind());
-  window.MCSDesignStarters={load,openCreate,state};
+  window.MCSDesignStarters={load,openCreate,state,changedFromTemplate};
 })();

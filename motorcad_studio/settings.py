@@ -111,7 +111,11 @@ def load_settings() -> Settings:
     runtime_dir = Path(os.getenv("MOTORCAD_STUDIO_RUNTIME_DIR", str(data_dir / "runtime"))).resolve()
     baselines_dir = Path(os.getenv("MOTORCAD_STUDIO_BASELINES_DIR", str(data_dir / "baselines"))).resolve()
     factory_dir = Path(os.getenv("MOTORCAD_STUDIO_FACTORY_DIR", str(data_dir / "factory"))).resolve()
-    logs_dir = Path(os.getenv("MOTORCAD_STUDIO_LOG_DIR", str(data_dir / "logs"))).resolve()
+    # Source checkouts keep live operational logs at <project-root>/logs so engineers
+    # can tail one stable location while a validation/calculation is running. Installed
+    # packages keep their writable per-user data location unless explicitly overridden.
+    default_logs_dir = root / "logs" if source_checkout else data_dir / "logs"
+    logs_dir = Path(os.getenv("MOTORCAD_STUDIO_LOG_DIR", str(default_logs_dir))).expanduser().resolve()
     for directory in (data_dir, templates_dir, results_dir, runtime_dir, baselines_dir, factory_dir, logs_dir):
         directory.mkdir(parents=True, exist_ok=True)
     return Settings(
