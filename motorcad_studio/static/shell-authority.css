@@ -1,0 +1,203 @@
+/* V0.89-G4.8 final project-shell authority.
+   Keep one late-loaded owner for the global nav and the four-stage project shell.
+   Earlier convergence files remain compatibility inputs only and must not define
+   the final desktop geometry after this stylesheet is loaded. */
+@media (min-width:821px){
+  html,body{max-width:100%;overflow-x:hidden}
+  .global-nav{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin-left:0!important;
+    padding-inline:8px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    scrollbar-width:none!important;
+  }
+  .global-nav::-webkit-scrollbar{display:none!important}
+  .global-nav>button{
+    flex:0 0 auto!important;
+    min-width:0!important;
+    margin-left:0!important;
+    white-space:nowrap!important;
+  }
+
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell{
+    display:grid!important;
+    grid-template-columns:minmax(286px,318px) minmax(0,1fr)!important;
+    grid-template-rows:52px!important;
+    align-items:stretch!important;
+    width:100%!important;
+    max-width:100%!important;
+    height:52px!important;
+    min-height:52px!important;
+    max-height:52px!important;
+    margin:0!important;
+    padding:0!important;
+    gap:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-shell-context{
+    grid-column:1!important;
+    grid-row:1!important;
+    display:grid!important;
+    grid-template-columns:34px minmax(0,1fr)!important;
+    align-items:center!important;
+    gap:8px!important;
+    width:100%!important;
+    min-width:0!important;
+    height:52px!important;
+    min-height:52px!important;
+    padding:4px 9px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    border-right:1px solid var(--border)!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .back-to-projects{
+    display:grid!important;
+    place-items:center!important;
+    position:relative!important;
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    text-indent:-9999px!important;
+    white-space:nowrap!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .back-to-projects::after{
+    content:'←'!important;
+    position:absolute!important;
+    inset:0!important;
+    display:grid!important;
+    place-items:center!important;
+    text-indent:0!important;
+    font-size:17px!important;
+    line-height:1!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title{
+    display:grid!important;
+    grid-template-rows:auto auto!important;
+    align-content:center!important;
+    gap:1px!important;
+    min-width:0!important;
+    width:100%!important;
+    height:44px!important;
+    overflow:hidden!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>span,
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>b{
+    display:block!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>span{
+    font-size:10px!important;
+    line-height:1.1!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>b{
+    font-size:13px!important;
+    line-height:1.2!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>small{
+    display:none!important;
+  }
+
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav{
+    grid-column:2!important;
+    grid-row:1!important;
+    justify-self:start!important;
+    align-self:stretch!important;
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(136px,205px))!important;
+    width:min(100%,820px)!important;
+    max-width:820px!important;
+    min-width:0!important;
+    height:52px!important;
+    min-height:52px!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button{
+    display:grid!important;
+    grid-template-columns:24px max-content minmax(0,1fr)!important;
+    grid-template-rows:1fr!important;
+    align-items:center!important;
+    column-gap:7px!important;
+    width:auto!important;
+    min-width:0!important;
+    height:52px!important;
+    min-height:52px!important;
+    max-height:52px!important;
+    margin:0!important;
+    padding:4px 10px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    white-space:nowrap!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>span{
+    grid-column:1!important;
+    grid-row:1!important;
+    align-self:center!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>b{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:center!important;
+    min-width:0!important;
+    margin:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    line-height:1.15!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>.engineer-stage-chip-v086r{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:center!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:2px 5px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:9px!important;
+    line-height:1.1!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineeringContextBreadcrumbV089A,
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineerJourneyCueV086R,
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineerFocusBarV089F{
+    display:none!important;
+  }
+}
+
+@media (min-width:821px) and (max-width:1180px){
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell{
+    grid-template-columns:minmax(250px,284px) minmax(0,1fr)!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav{
+    grid-template-columns:repeat(4,minmax(108px,1fr))!important;
+    width:100%!important;
+    max-width:100%!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button{
+    grid-template-columns:22px minmax(0,1fr)!important;
+    column-gap:6px!important;
+    padding-inline:7px!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>b{grid-column:2!important}
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>.engineer-stage-chip-v086r{display:none!important}
+}
