@@ -53,9 +53,14 @@ def test_afpm_native_closure_tracks_axial_rotor_diameter() -> None:
 
 
 def test_desktop_shell_has_one_final_four_stage_authority() -> None:
-    css = (ROOT / "motorcad_studio" / "static" / "ui-convergence-g4.css").read_text(encoding="utf-8")
-    assert "V0.89-G4.8: single desktop shell authority" in css
-    assert "grid-template-columns:repeat(4,minmax(0,1fr))!important" in css
-    assert "overflow-x:hidden!important" in css
-    assert "grid-template-columns:36px minmax(0,1fr)!important" in css
+    css = (ROOT / "motorcad_studio" / "static" / "shell-authority.css").read_text(encoding="utf-8")
+    shell_js = (ROOT / "motorcad_studio" / "static" / "workflow" / "global-shell-convergence.js").read_text(encoding="utf-8")
+    assert "V0.89-G4.8 final project-shell authority" in css
+    assert "grid-template-columns:repeat(4,minmax(136px,205px))!important" in css
+    assert "width:min(100%,820px)!important" in css
+    assert "overflow-x:hidden" in css
+    assert "grid-template-columns:34px minmax(0,1fr)!important" in css
     assert ".back-to-projects::after" in css
+    assert "shell-authority.css?v=0.89.9-g48" in shell_js
+    assert "PROJECT_SHELL_HORIZONTAL_OVERFLOW" in shell_js
+    assert "PROJECT_STAGE_NAV_HORIZONTAL_OVERFLOW" in shell_js
