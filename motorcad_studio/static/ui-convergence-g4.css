@@ -26,85 +26,157 @@
   .studio-v089g4 .compact-flow-header-v089g4 .actions{width:100%}
   .studio-v089g4 .compact-flow-help-v089g4>p{position:static;width:100%;margin-top:7px;box-shadow:none}
 }
-/* V0.89-G4.2: keep the three primary engineering stages visible at desktop
-   widths.  Earlier min-width rules could push the first stage underneath the
-   project context column when diagnostics/results mounted a wider toolbar. */
-@media (min-width:821px){
-  .project-shell{grid-template-columns:minmax(250px,320px) minmax(0,1fr)!important;overflow:visible!important}
-  .project-stage-nav{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%!important;overflow:visible!important;isolation:isolate}
-  .project-stage-nav button{position:relative!important;z-index:1;min-width:0!important;width:auto!important;min-height:58px!important;padding:8px 10px!important;display:grid!important;grid-template-columns:24px minmax(0,1fr)!important;grid-template-rows:auto auto!important;column-gap:8px!important;align-content:center!important;align-items:center!important;white-space:nowrap!important;overflow:visible!important;line-height:1.2!important}
-  .project-stage-nav button>span{grid-row:1/3!important;grid-column:1!important;position:relative!important;z-index:2}
-  .project-stage-nav button>b{grid-row:1!important;grid-column:2!important;display:block!important;overflow:visible!important;text-overflow:clip!important;line-height:1.25!important;position:relative!important;z-index:2}
-  .project-stage-nav button>.engineer-stage-chip-v086r{grid-row:2!important;grid-column:2!important;display:block!important;margin:2px 0 0!important;overflow:visible!important;line-height:1.25!important;position:relative!important;z-index:2}
-  .project-shell-context{min-width:0!important;overflow:hidden!important}
-  .global-nav{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin}
-}
 
-/* V0.89-G4.5: one authoritative single-row desktop project shell.
-   Status hints, breadcrumb and journey copy are hidden in the normal workflow;
-   the four stage buttons already communicate current/completed state. */
+/* V0.89-G4.8: single desktop shell authority.
+   Historical G2/G4 rules remain earlier in the cascade for compatibility, but this
+   block owns the final desktop geometry and deliberately removes horizontal scroll. */
 @media (min-width:821px){
+  .global-nav{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+    overflow-y:hidden!important;
+    scrollbar-width:none!important;
+    box-sizing:border-box!important;
+  }
+  .global-nav::-webkit-scrollbar{display:none!important}
+  .global-nav>button{flex:0 0 auto!important;min-width:0!important;white-space:nowrap!important}
+
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell{
     display:grid!important;
-    grid-template-columns:minmax(230px,300px) minmax(0,1fr)!important;
+    grid-template-columns:minmax(300px,340px) minmax(0,1fr)!important;
     grid-template-rows:56px!important;
     align-items:stretch!important;
     width:100%!important;
+    max-width:100%!important;
     height:56px!important;
     min-height:56px!important;
     max-height:56px!important;
     overflow:hidden!important;
     padding:0!important;
     gap:0!important;
+    box-sizing:border-box!important;
   }
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-shell-context{
     grid-column:1!important;
     grid-row:1!important;
+    display:grid!important;
+    grid-template-columns:36px minmax(0,1fr)!important;
+    align-items:center!important;
+    gap:8px!important;
     width:auto!important;
+    min-width:0!important;
     height:56px!important;
     min-height:56px!important;
-    padding:5px 12px!important;
+    padding:5px 10px!important;
     box-sizing:border-box!important;
     overflow:hidden!important;
+    border-right:1px solid var(--border)!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .back-to-projects{
+    display:grid!important;
+    place-items:center!important;
+    width:36px!important;
+    min-width:36px!important;
+    max-width:36px!important;
+    height:34px!important;
+    min-height:34px!important;
+    padding:0!important;
+    margin:0!important;
+    overflow:hidden!important;
+    white-space:nowrap!important;
+    text-indent:-9999px!important;
+    position:relative!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .back-to-projects::after{
+    content:'←'!important;
+    text-indent:0!important;
+    position:absolute!important;
+    inset:0!important;
+    display:grid!important;
+    place-items:center!important;
+    font-size:17px!important;
+    line-height:1!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title{
+    min-width:0!important;
+    width:100%!important;
+    overflow:hidden!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>span,
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>b,
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>small{
+    display:block!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
   }
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav{
     grid-column:2!important;
     grid-row:1!important;
+    display:grid!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
     width:auto!important;
+    min-width:0!important;
     height:56px!important;
     min-height:56px!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
+    isolation:isolate!important;
   }
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button{
+    position:relative!important;
+    z-index:1!important;
+    display:grid!important;
+    grid-template-columns:24px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    column-gap:8px!important;
+    align-content:center!important;
+    align-items:center!important;
     width:auto!important;
+    min-width:0!important;
     height:56px!important;
     min-height:56px!important;
     padding:5px 10px!important;
     overflow:hidden!important;
     box-sizing:border-box!important;
+    white-space:nowrap!important;
+  }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>span{
+    grid-row:1/3!important;
+    grid-column:1!important;
   }
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>b,
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>.engineer-stage-chip-v086r{
+    grid-column:2!important;
     min-width:0!important;
     overflow:hidden!important;
     text-overflow:ellipsis!important;
     white-space:nowrap!important;
   }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>b{grid-row:1!important}
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>.project-stage-nav>button>.engineer-stage-chip-v086r{grid-row:2!important;margin:2px 0 0!important}
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineeringContextBreadcrumbV089A,
   body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineerJourneyCueV086R,
-  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineerFocusBarV089F{
-    display:none!important;
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell>#engineerFocusBarV089F{display:none!important}
+}
+
+@media (min-width:821px) and (max-width:1100px){
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell{
+    grid-template-columns:minmax(250px,285px) minmax(0,1fr)!important;
   }
+  body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) #projectShell .project-shell-title>small{display:none!important}
 }
 
 /* Product pages keep actions and engineering data; low-value explanatory copy
    remains available only in expert/developer modes. */
 body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) .visual-authority-v031,
 body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) .visual-heading-v031>div>p,
-body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) .material-apply-guidance-v066{
-  display:none!important;
-}
+body:not([data-user-mode="expert"]):not([data-user-mode="developer"]) .material-apply-guidance-v066{display:none!important}
 .workspace-design-card-v089g45{position:relative;display:grid!important;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;padding:0!important;overflow:hidden}
 .workspace-design-open-v089g45{display:flex;min-width:0;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border:0;background:transparent;text-align:left}
 .workspace-design-delete-v089g45{align-self:center;margin-right:10px;min-height:32px;padding:5px 9px}
