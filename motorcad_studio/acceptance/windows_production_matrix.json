@@ -4,7 +4,7 @@
   "target_motorcad_version": "2026R1",
   "environment_gates": {
     "platform": "Windows",
-    "studio_version": "0.91.8",
+    "studio_version": "0.92.0",
     "motorcad_binary_version": "2026R1",
     "pymotorcad_version": null,
     "pymotorcad_policy": "capability-qualified",

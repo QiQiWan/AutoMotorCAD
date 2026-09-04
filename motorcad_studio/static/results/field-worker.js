@@ -1,4 +1,4 @@
-/* MotorCAD Studio V0.91.8 — off-main-thread FEA geometry preparation worker. */
+/* MotorCAD Studio V0.92.0 — off-main-thread FEA geometry preparation worker. */
 'use strict';
 
 const COLOR_STOPS = [

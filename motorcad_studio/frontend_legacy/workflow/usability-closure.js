@@ -1,5 +1,5 @@
 /* V0.70 stable module; migrated from historical v058.js. */
-/* MotorCAD Studio V0.91.8 — usability and reliability closure. */
+/* MotorCAD Studio V0.92.0 — usability and reliability closure. */
 (() => {
   const q=(selector,root=document)=>root.querySelector(selector);
   const qa=(selector,root=document)=>[...root.querySelectorAll(selector)];

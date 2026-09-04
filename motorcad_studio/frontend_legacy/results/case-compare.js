@@ -15,12 +15,18 @@
   function selectedIds(){return [...ctl.selected];}
   function exactRoute(ids=selectedIds()){const suffix=`case-compare/${encodeURIComponent(ctl.taskId)}`;return ids.length>=2?projectPath(`${suffix}/cases/${encodeURIComponent(ids.join(','))}`):projectPath(suffix);}
   function taskOptions(){return tasks().map(row=>`<option value="${safe(row.id)}" ${row.id===ctl.taskId?'selected':''}>${safe(row.name||row.id)} · ${safe(row.status||'—')} · ${Number(row.case_count||0)} Case</option>`).join('');}
-  function renderLanding(){const host=ctl.host,rows=tasks();ctl.taskId=ctl.taskId||ctl.route?.caseCompareTaskId||rows[0]?.id||null;host.innerHTML=`<section class="case-compare-v069 panel">
-    <div class="section-head"><div><span class="eyebrow">RESULTSET AGGREGATE</span><h2>Case 工程结果比较</h2><p>在同一个不可变 Task / Execution Plan 内选择 2–8 个 ResultBundle。比较 Gate、指标单位对齐、Trust、基准差异与 Pareto 统一由 ResultSet Aggregate 计算。</p></div></div>
-    <div class="case-compare-picker-v069"><label>计算任务<select data-case-compare-task-v069>${taskOptions()}</select></label><button type="button" class="primary" data-case-compare-load-v069 ${rows.length?'':'disabled'}>选择 Case</button></div>
-    <div data-case-compare-body-v069>${rows.length?'<div class="help-empty"><b>选择一个任务</b><span>规范比较只接受已经冻结为 ResultBundle 的 Case；历史兼容结果需要重新计算后进入正式比较。</span></div>':'<div class="help-empty"><b>没有可比较的任务</b><span>至少需要一个包含两个 ResultBundle Case 的计算任务。</span></div>'}</div>
-  </section>`;
-    q('[data-case-compare-task-v069]',host)?.addEventListener('change',event=>ctl.taskId=event.target.value);
+  function renderLanding(){
+    const host=ctl.host,rows=tasks();ctl.taskId=ctl.taskId||ctl.route?.caseCompareTaskId||rows[0]?.id||null;
+    const selected=rows.find(row=>String(row.id)===String(ctl.taskId))||rows[0]||null;
+    host.innerHTML=`<section class="case-compare-v069 case-compare-v0919 panel">
+      <div class="case-compare-hero-v0919"><div><span class="eyebrow">OPERATING-POINT COMPARISON</span><h2>工况比较</h2><p>在同一冻结计算任务中选择 2–8 个 ResultBundle，对齐工况、输入、工程指标与可信度。不同电机版本请使用“版本比较”。</p></div><span class="case-compare-scope-v0919">同一 Task / Execution Plan</span></div>
+      <ol class="case-compare-flow-v0919"><li class="active"><span>1</span><div><b>选择任务</b><small>确定同一冻结计算上下文</small></div></li><li><span>2</span><div><b>选择工况</b><small>勾选 2–8 个 ResultBundle</small></div></li><li><span>3</span><div><b>工程对照</b><small>指标、输入、Trust、差异</small></div></li></ol>
+      <div class="case-compare-picker-v069 case-compare-picker-v0919"><label><span>计算任务</span><select data-case-compare-task-v069>${taskOptions()}</select><small>${rows.length?`${rows.length} 个任务满足“至少两个 ResultBundle”的比较条件。`:'当前项目尚无满足比较条件的任务。'}</small></label><button type="button" class="primary" data-case-compare-load-v069 ${rows.length?'':'disabled'}>加载工况 →</button></div>
+      ${selected?`<div class="case-compare-selected-summary-v0919"><div><span>当前任务</span><b>${safe(selected.name||selected.id)}</b></div><div><span>任务状态</span><b>${safe(selected.status||'—')}</b></div><div><span>Case</span><b>${Number(selected.case_count||0)}</b></div><div><span>可比较 ResultBundle</span><b>${Number(selected.result_bundle_cases||0)}</b></div></div>`:''}
+      <div data-case-compare-body-v069>${rows.length?'<div class="case-compare-start-v0919"><b>选择任务后加载工况</b><span>系统只呈现具有正式 ResultBundle 身份的工况，历史 projection 不会混入正式比较。</span></div>':'<div class="case-compare-start-v0919 empty"><b>没有可比较的计算任务</b><span>先完成包含至少两个工况的批量/参数研究计算，再回到这里进行横向比较。</span></div>'}</div>
+    </section>`;
+    const select=q('[data-case-compare-task-v069]',host);
+    select?.addEventListener('change',event=>{ctl.taskId=event.target.value;renderLanding()});
     q('[data-case-compare-load-v069]',host)?.addEventListener('click',()=>{if(ctl.taskId)nav(exactRoute([]))});
   }
   async function loadTask(){const body=q('[data-case-compare-body-v069]',ctl.host);if(!ctl.taskId||!body)return;body.innerHTML='<div class="viewer-loading-v058"><span class="spinner-dot"></span><b>正在读取 Case 与 ResultBundle 身份…</b></div>';

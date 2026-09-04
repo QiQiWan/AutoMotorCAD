@@ -37,6 +37,7 @@ PACKAGE = ROOT / "motorcad_studio"
 STATIC = PACKAGE / "static"
 LEGACY_SOURCE = PACKAGE / "frontend_legacy"
 EXPECTED_ROOT_FILES = {
+    ".gitignore",
     "MODULE_CATALOG.json",
     "PACKAGE_CONTENT_MANIFEST.json",
     "README.md",

@@ -1,4 +1,4 @@
-# MotorCAD Studio 0.91.6
+# MotorCAD Studio 0.92.0
 
 MotorCAD Studio 是面向 Motor-CAD 的本地工程工作台，覆盖项目与方案管理、电机设计、材料配置、计算前检查、任务执行、结果查看、三维有限元场数据、优化、数据工厂、资格证据和原生运行时安全控制。
 
@@ -59,7 +59,7 @@ Python 版本要求为 3.10 或更高。正式 Motor-CAD 计算还要求目标�
 %LOCALAPPDATA%\MotorCADStudio\data
 ```
 
-`data`、`runtime`、`results`、`logs`、`baselines` 和 `factory` 属于运行时可变状态，不参与程序文件 SHA-256 清单。工程数据、结果和运行状态默认继续放在用户数据目录；从 0.91.6 开始，诊断日志单独固定在程序根目录 `logs`，便于现场直接打包排查。
+`data`、`runtime`、`results`、`logs`、`baselines` 和 `factory` 属于运行时可变状态，不参与程序文件 SHA-256 清单。工程数据、结果和运行状态默认继续放在用户数据目录；诊断日志单独固定在程序根目录 `logs`，便于现场直接打包排查。
 
 日志默认位于程序根目录：
 
@@ -71,7 +71,7 @@ AutoMotorCAD_Studio\logs
 
 ## 当前架构状态
 
-0.91.6 延续 0.91 系列的模块化架构，并针对 Windows 实机检查链增加三项稳定性修复：深度运行环境检查前后端单飞/合并、Motor-CAD 短生命周期进程退出竞态保护、根目录分层诊断日志。
+0.91.9 延续 0.91 系列的模块化架构，并进一步收敛设计资格/计算就绪两级门禁、ResultBundle evidence-first 结果工作台、单一 Binary FieldData FEA 渲染热路径以及真实热结果提取。
 
 - Optimization、Data Factory、Qualification、Native Runtime Safety 和 Requirements 已进入统一事务控制平面，支持幂等命令、乐观并发、Transactional Outbox、不可变证据、租约和 Fencing Token。
 - 后端公开处理器已按 13 个有界上下文物理拆分，兼容路由操作数为 0，全部 OpenAPI 操作带 `x-module-owner`。

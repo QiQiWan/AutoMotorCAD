@@ -2,7 +2,7 @@
 
 ## 1. 应用装配
 
-MotorCAD Studio 0.91.6 使用单一 Composition Root、密封 ServiceContainer、FastAPI Application Factory 和协调式生命周期。
+MotorCAD Studio 0.91.9 使用单一 Composition Root、密封 ServiceContainer、FastAPI Application Factory 和协调式生命周期。
 
 ```text
 main.py

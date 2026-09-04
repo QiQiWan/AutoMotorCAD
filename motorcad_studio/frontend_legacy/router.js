@@ -94,6 +94,7 @@
       if(rest[1]==='tasks')return{tab:'tasks',projectId,taskId:rest[2]?dec(rest[2]):null};
       if(rest[1]==='monitor')return{tab:'monitor',projectId,taskId:rest[2]?dec(rest[2]):null};
     }
+    if(rest[0]==='decision')return{tab:'resultViewer',projectId,resultsMode:'decision'};
     if(rest[0]==='results'){
       if(rest[1]==='case-compare')return{tab:'resultViewer',projectId,resultsMode:'caseCompare',caseCompareTaskId:rest[2]?dec(rest[2]):null,caseCompareCaseIds:rest[3]==='cases'&&rest[4]?dec(rest[4]).split(',').filter(Boolean):[],autoCaseCompare:rest[3]==='cases'&&Boolean(rest[4])};
       if(rest[1]==='compare')return{tab:'resultViewer',projectId,resultsMode:'compare',designId:rest[2]?dec(rest[2]):null,revisionIds:rest[3]==='revisions'&&rest[4]?dec(rest[4]).split(',').filter(Boolean):[],autoCompare:rest[3]==='revisions'&&Boolean(rest[4])};
@@ -102,6 +103,7 @@
         if(rest[2]==='analyses')return{tab:'resultViewer',projectId,resultsMode:'optimization',analysisId:rest[3]?dec(rest[3]):null};
         return{tab:'resultViewer',projectId,resultsMode:'optimization'};
       }
+      if(rest[1]==='viewer')return{tab:'resultViewer',projectId,resultsMode:'case'};
       if(rest[1]==='bundles')return{tab:'resultViewer',projectId,resultsMode:'case',resultBundleId:rest[2]?dec(rest[2]):null};
       if(rest[1]==='tasks')return{tab:'resultViewer',projectId,resultsMode:'case',taskId:rest[2]?dec(rest[2]):null,caseId:rest[3]==='cases'&&rest[4]?dec(rest[4]):null,legacyResultIdentity:true};
       return{tab:'resultViewer',projectId,resultsMode:'overview'};
@@ -155,7 +157,8 @@
     else if(path.includes('/designs'))label='电机配置';
     else if(path.includes('/simulation/tasks'))label='任务记录';
     else if(path.includes('/simulation/monitor'))label='仿真 · 实时求解';
-    else if(path.includes('/results'))label='结果查看';
+    else if(path.includes('/decision'))label='工程决策';
+    else if(path.includes('/results'))label='工程结果';
     else if(path.includes('/data'))label='数据';
     else if(path.endsWith('/overview'))label='项目概览';
     else if(path.endsWith('/settings'))label='项目基本信息';
@@ -196,6 +199,16 @@
     return project;
   }
 
+
+  function syncResultStageNav(route){
+    if(route?.tab!=='resultViewer')return;
+    const destination=route.resultsMode==='decision'?'decision':'viewer';
+    document.body.dataset.resultsMode=route.resultsMode||'overview';
+    document.querySelectorAll('[data-tab="resultViewer"][data-results-destination]').forEach(node=>{
+      node.classList.toggle('active',node.dataset.resultsDestination===destination);
+    });
+  }
+
   function activateRouteTab(tab){
     state.routeOwnsLoadV025=true;
     try{activateTab(tab)}finally{state.routeOwnsLoadV025=false}
@@ -211,6 +224,7 @@
     document.body.dataset.routePrimed=route.tab;
     document.querySelectorAll('.tab').forEach(node=>node.classList.toggle('active',node.id===route.tab));
     document.querySelectorAll('[data-tab]').forEach(node=>node.classList.toggle('active',node.dataset.tab===route.tab));
+    syncResultStageNav(route);
     updateTitle(route,path);
     return true;
   }
@@ -257,12 +271,13 @@
         state.projectManagerTrashMode=Boolean(route.trash);
       }
       activateRouteTab(route.tab);
+      syncResultStageNav(route);
       await window.MCSRouteControllers?.mount(route,ctx);
       ctx.assertActive();
-      if(route.tab==='resultViewer'&&route.resultsMode==='case'){
-        // ResultBundle lineage owns the durable result URL, including the project
-        // segment. This normalizes legacy Task/Case links and also repairs a
-        // caller-supplied project segment that disagrees with the bundle lineage.
+      if(route.tab==='resultViewer'&&route.resultsMode==='case'&&(route.resultBundleId||route.taskId||route.caseId)){
+        // Only identity-bearing case routes are canonicalized. The stable
+        // /results/viewer landing route must not be hijacked by a stale bundle
+        // left in the in-memory result context from an earlier visit.
         const resultContext=window.MCSResultContext?.current?.()||{};
         const canonical=resultContext.lineage?.canonical_routes?.results||null;
         const bundleId=resultContext.resultBundleId||engineeringContext().resultBundleId||null;

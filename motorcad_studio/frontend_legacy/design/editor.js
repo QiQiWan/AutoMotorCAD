@@ -336,14 +336,26 @@
     const reconciliation = editorVisualizationReconciliation();
     const effectiveSource = window.MCSDesignRenderer?.resolveVisualSource?.(reconciliation, wb.visualSource, 'edit') || 'design';
     if (wb.visualSource !== 'design' && effectiveSource === 'design' && !reconciliation.native_render_allowed) wb.visualSource = 'design';
-    const draftData = {...wb.data, effective_parameters: wb.values, materials: wb.materials, draft_validation: check, editable: true, visualization_reconciliation: reconciliation};
+    const draftData = {...wb.data, effective_parameters: wb.values, materials: wb.materials, draft_validation: check, dirty_count: totalChangeCount(), editable: true, visualization_reconciliation: reconciliation};
     const ctx = {data: draftData, values: wb.values, materials: wb.materials, precheck: check.precheckCurrent ? check.precheck : null, selected: wb.selected, editable: true, visualSource: effectiveSource, visualizationReconciliation: reconciliation};
     const auxiliary = window.MCSDesignRenderer?.renderAuxiliaryView?.(wb.view, draftData);
     const toolbar = ['radial','axial','winding','slot','materials'].includes(wb.view) ? (window.MCSDesignRenderer?.toolbar?.(draftData,{source:wb.visualSource,mode:'edit',reconciliation}) || '') : '';
     const viewHtml = auxiliary ?? window.MCSDesignRenderer?.renderWorkbenchView?.(wb.view, ctx);
     box.innerHTML = toolbar + (viewHtml ?? '<div class="native-empty-v031">当前设计视图不可用。</div>');
     const next = window.MCSDesignNavigation?.next?.(wb.view, wb.data, {mode: 'edit'});
-    if (next) box.insertAdjacentHTML('beforeend', `<div class="design-next-step-v063 design-next-step-v064 design-next-step-v065"><div><span>编辑流程</span><b>${safe(next.label)}</b><small>${next.target === 'commit' ? '保存前可先运行设计验证；草稿会持续自动保存。' : '草稿会自动保存，可在各设计阶段之间直接切换。'}</small></div><button type="button" class="primary" data-workbench-next-v063="${safe(next.target)}">${safe(next.label)} →</button></div>`);
+    if (next) {
+      const qualified = designQualificationPassed();
+      const hasChanges = totalChangeCount() > 0;
+      const terminal = next.target === 'commit';
+      const target = terminal ? (qualified ? 'analysis' : 'native') : next.target;
+      const label = terminal
+        ? (qualified ? (hasChanges ? '保存新设计版本并进入分析配置' : '进入分析配置') : '完成设计资格')
+        : next.label;
+      const detail = terminal
+        ? (qualified ? (hasChanges ? '先冻结当前草稿为新 Revision，再进入计算工况与求解设置。' : '当前 Revision 已通过设计资格，可直接进入分析配置，不重复创建版本。') : '先完成 Studio 结构一致性与 Motor-CAD 原生模型可接受性验证。')
+        : '草稿会自动保存，可在各设计阶段之间直接切换。';
+      box.insertAdjacentHTML('beforeend', `<div class="design-next-step-v063 design-next-step-v064 design-next-step-v065 design-next-step-v0919"><div><span>${terminal?'推荐下一步':'编辑流程'}</span><b>${safe(label)}</b><small>${safe(detail)}</small></div><button type="button" class="primary" data-workbench-next-v063="${safe(target)}">${safe(label)} →</button></div>`);
+    }
     highlightSelectedRegion();
   }
 
@@ -355,6 +367,35 @@
   function currentPrecheck() {
     const check = verification?.snapshot?.() || {};
     return check.precheckCurrent ? check.precheck : null;
+  }
+  function designQualificationPassed() {
+    const check = verification?.snapshot?.() || {};
+    const precheck = check.precheckCurrent ? check.precheck : null;
+    const blocking = (precheck?.issues || []).some(issue => issue.severity === 'BLOCKING');
+    return Boolean(precheck && !blocking && check.nativeCurrent && check.nativeCheck?.status === 'PASS');
+  }
+  function analysisRoute() {
+    const projectId = state.activeProjectId || window.MCSEngineeringContext?.get?.()?.projectId;
+    if (!projectId) return null;
+    return `/app/projects/${encodeURIComponent(projectId)}/simulation/analyses`;
+  }
+  async function continueToAnalysis() {
+    if (!designQualificationPassed()) {
+      if (wb.view !== 'native') navigateEditorView('native', 'qualification-required');
+      toast('请先完成设计资格验证，再进入分析配置。', 'WARNING', 5200);
+      return false;
+    }
+    if (totalChangeCount()) {
+      const saved = await saveRevision();
+      if (!saved) return false;
+    } else {
+      try { await draftService?.flush?.({silent: true, reason: 'continue-analysis'}); }
+      catch (error) { toast(`草稿状态保存失败：${error.message}`, 'ERROR', 6500); return false; }
+    }
+    const route = analysisRoute();
+    if (route && window.MCSRouter?.navigate) return Boolean(await window.MCSRouter.navigate(route, {source:'design-qualified'}));
+    window.showTab?.('analysisConfig');
+    return true;
   }
   function renderPrecheck() {
     const box = $q('#workbenchStatusV024'); if (!box || !wb.data) return;
@@ -552,7 +593,11 @@
     return actionLock(`design-commit:${designId}`, () => saveRevisionImpl(options));
   }
   async function saveRevisionImpl(options = {}) {
-    if (wb.saveBusy || !totalChangeCount() || draftConflict()) return false;
+    if (wb.saveBusy || draftConflict()) return false;
+    if (!totalChangeCount()) {
+      if (!options?.silentNoChanges) toast('当前草稿没有修改，无需创建重复设计版本。', 'INFO', 3800);
+      return false;
+    }
     // Product-facing save is intentionally simple. Internally the immutable commit
     // carries a durable commit_key. If the server completed but the browser lost the
     // response, a retry returns the exact same Revision instead of creating another.
@@ -689,7 +734,8 @@
       }
       const stage = event.target.closest('[data-workbench-stage-v062]'); if (stage) { navigateEditorView(workbenchDefaultViewForStage(stage.dataset.workbenchStageV062), 'editor-stage'); return; }
       const view = event.target.closest('[data-workbench-view]'); if (view) { navigateEditorView(view.dataset.workbenchView, 'editor-tab'); return; }
-      const next = event.target.closest('[data-workbench-next-v063]'); if (next) { const target = next.dataset.workbenchNextV063; if (target === 'commit') { saveRevision(); return; } navigateEditorView(target, 'editor-next'); return; }
+      const continueButton = event.target.closest('[data-workbench-continue-analysis-v0919]'); if (continueButton) { await continueToAnalysis(); return; }
+      const next = event.target.closest('[data-workbench-next-v063]'); if (next) { const target = next.dataset.workbenchNextV063; if (target === 'analysis') { await continueToAnalysis(); return; } if (target === 'commit') { await saveRevision(); return; } navigateEditorView(target, 'editor-next'); return; }
       const issue = event.target.closest('[data-workbench-issue]'); if (issue) { const row = currentPrecheck()?.issues?.[Number(issue.dataset.workbenchIssue)], id = (row?.parameter_ids || []).find(parameterId => recordFor(parameterId)); if (id) selectParameter(id); return; }
       if (event.target.closest('[data-workbench-run-studio-check-v065]')) { await runStudioCheck(); return; }
       if (event.target.closest('[data-workbench-run-native-check-v065]')) { await runNativeCheck(); return; }
@@ -780,7 +826,7 @@
   function applyRouteView(route) {
     let requested = route?.designView || window.MCSAppCore?.viewForRoute?.(route?.designSection, route?.designSubview);
     if (requested === 'evidence') requested = 'native'; if (!requested) return;
-    wb.view = requested; window.MCSDesignStore?.setView?.(requested, {source: 'editor-route'}); if (wb.data) { renderVisual(); draftService?.schedule?.({reason: 'route-view'}); }
+    wb.view = requested; window.MCSDesignStore?.setView?.(requested, {source: 'editor-route'}); if (wb.data) { if (!wb.shellAbort || wb.shellAbort.signal.aborted) bindShell(); renderVisual(); draftService?.schedule?.({reason: 'route-view'}); }
   }
   async function prepareRouteChange(route) {
     if (!wb.data || window.MCSDesignStore?.getState?.()?.mode !== 'edit') return true;
@@ -833,5 +879,5 @@
   });
   document.addEventListener('mcs-language-change',()=>{if(wb.data&&window.MCSDesignStore?.getState?.()?.mode==='edit')renderVisual()});
 
-  window.MCSDesignEditor = {open, openView, applyRouteView, prepareRouteChange, inspectTransaction: editorGuardState, selectParameter, setValue, runStudioCheck, runNativeCheck, saveRevision, discardDraft, exitWorkbenchPreservingDraft, state: wb, draftService, verification};
+  window.MCSDesignEditor = {open, openView, applyRouteView, prepareRouteChange, inspectTransaction: editorGuardState, selectParameter, setValue, runStudioCheck, runNativeCheck, saveRevision, continueToAnalysis, designQualificationPassed, discardDraft, exitWorkbenchPreservingDraft, state: wb, draftService, verification};
 })();

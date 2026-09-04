@@ -23,7 +23,7 @@ from ..fea_evidence import NativeFEAEvidenceExporter, NativeFEAExportConfig
 from ..fea_pipeline import build_fea_plan, validate_fea_manifest
 from ..native_spatial import bind_fea_manifest_lineage, NativeSpatialResultOverlayAuthority
 from ..result_extraction import build_extraction_contract
-from ..native_tables import parse_native_delimited_table
+from ..native_tables import parse_native_delimited_table, parse_thermal_node_table
 from ..native_closure_registry import compare_values, classify_parameter_tolerance, summarize_check, finalize_native_closure_result, native_closure_evidence_hash, native_closure_scope, native_closure_key
 from ..winding_guard import parse_motorcad_winding_messages, validate_winding_relations
 from ..winding_definition import write_winding_definition
@@ -3164,12 +3164,37 @@ class MotorCADSolverAdapter(SolverAdapter):
                 context=context, scenario=scenario,
             ))
 
-        def export_native(solution_type: str, stem: str) -> None:
+        def export_native(solution_type: str, stem: str) -> str | None:
             path, error = self._export_native_results(mc, solution_type, work_dir, stem)
             if path:
                 artifacts.append(path)
-            elif error:
+                return path
+            if error:
                 warnings.append(f"Motor-CAD原生结果CSV导出失败 [{solution_type}]: {error}")
+            return None
+
+        def extract_thermal_native_table(path: str | None) -> None:
+            """Promote real native thermal-node rows into the ResultBundle when available.
+
+            The output remains optional.  A SteadyState export that contains only
+            summary key/value rows is intentionally rejected rather than being shown
+            as a fabricated heat-network topology.
+            """
+            output_id = "thermal_node_table"
+            if output_id not in output_ids or not path:
+                return
+            table, error = parse_thermal_node_table(path)
+            output_audit[output_id] = {
+                "context": "Therm",
+                "extractor": "native_steady_state_table",
+                "source": path if table else None,
+                "row_count": int((table or {}).get("row_count") or 0),
+                "errors": [error] if error else [],
+            }
+            if table:
+                tables[output_id] = table
+            elif error:
+                warnings.append(f"Motor-CAD稳态热结果未提供可识别的结构化节点表: {error}")
 
         def export_multi_force_table() -> None:
             """Export the official multiforce file and materialize a bounded UI table."""
@@ -3549,7 +3574,8 @@ class MotorCADSolverAdapter(SolverAdapter):
                 binding_executor.invoke_calculation(mc, binding_plan)
                 progress("THERMAL_EXTRACTING", 0.82, "提取稳态热结果")
                 extract_context("Therm", output_ids)
-                export_native("SteadyState", "motorcad_thermal_steady_results")
+                thermal_native_path = export_native("SteadyState", "motorcad_thermal_steady_results")
+                extract_thermal_native_table(thermal_native_path)
 
             elif analysis == AnalysisType.THERMAL_TRANSIENT:
                 progress("THERMAL_TRANSIENT_SOLVING", 0.35, "执行瞬态热计算")
@@ -3618,7 +3644,8 @@ class MotorCADSolverAdapter(SolverAdapter):
                 licenses["Therm"] = self._ensure_license(mc, "Therm")
                 mc.do_steady_state_analysis()
                 extract_context("Therm", output_ids)
-                export_native("SteadyState", "motorcad_thermal_steady_results")
+                thermal_native_path = export_native("SteadyState", "motorcad_thermal_steady_results")
+                extract_thermal_native_table(thermal_native_path)
 
             elif analysis == AnalysisType.EMAG_THERMAL_COUPLED:
                 progress("COUPLED_SOLVING", 0.38, "执行Motor-CAD原生电磁-热耦合计算")
@@ -3630,7 +3657,8 @@ class MotorCADSolverAdapter(SolverAdapter):
                 extract_context("EMag", output_ids)
                 extract_context("Therm", output_ids)
                 export_native("EMagnetic", "motorcad_emagnetic_results")
-                export_native("SteadyState", "motorcad_thermal_steady_results")
+                thermal_native_path = export_native("SteadyState", "motorcad_thermal_steady_results")
+                extract_thermal_native_table(thermal_native_path)
 
             elif analysis == AnalysisType.MECHANICAL:
                 progress("MECHANICAL_PREPARING", 0.30, "切换机械上下文并写入机械专家参数")

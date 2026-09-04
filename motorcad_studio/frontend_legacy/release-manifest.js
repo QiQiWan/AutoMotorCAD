@@ -1,12 +1,12 @@
-/* Generated from motorcad_studio.release for the V0.91.8 distribution. */
+/* Generated from motorcad_studio.release for the V0.92.0 distribution. */
 (() => {
   const manifest = {
     "authority": "StudioReleaseAuthorityV1",
     "productName": "MotorCAD Studio",
-    "productVersion": "0.91.8",
-    "releaseTrain": "0.91",
-    "buildId": "20260904-0918",
-    "assetVersion": "0.91.8",
+    "productVersion": "0.92.0",
+    "releaseTrain": "0.92",
+    "buildId": "20260904-0920",
+    "assetVersion": "0.92.0",
     "apiContractVersion": "1",
     "moduleCatalogVersion": "7",
     "compatibilityPolicy": {

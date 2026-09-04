@@ -104,7 +104,18 @@ class RequirementsApplicationOperationsMixin:
             for metric_id, spec in schema.items():
                 if str(spec.get('type') or 'scalar') != 'scalar':
                     continue
-                row = merged.setdefault(str(metric_id), {'metric_id': str(metric_id), 'label': str(spec.get('label') or metric_id), 'unit': str(spec.get('unit') or ''), 'analyses': sorted(set(spec.get('analyses') or [])), 'default_selected': bool(spec.get('default_selected')), 'source_template_ids': []})
+                semantic = dict(getattr(self.registry, 'metric_semantics', {}).get(str(metric_id)) or {})
+                row = merged.setdefault(str(metric_id), {
+                    'metric_id': str(metric_id),
+                    'label': str(spec.get('label') or metric_id),
+                    'description': str(semantic.get('description') or spec.get('selection_note') or ''),
+                    'engineering_group': str(semantic.get('engineering_group') or ''),
+                    'favorable_direction': str(semantic.get('favorable_direction') or ''),
+                    'unit': str(spec.get('unit') or ''),
+                    'analyses': sorted(set(spec.get('analyses') or [])),
+                    'default_selected': bool(spec.get('default_selected')),
+                    'source_template_ids': [],
+                })
                 row['source_template_ids'].append(template_id)
                 row['analyses'] = sorted(set(row.get('analyses') or []) | set(spec.get('analyses') or []))
         items = sorted(merged.values(), key=lambda row: (not row.get('default_selected'), str(row.get('label') or ''), row['metric_id']))

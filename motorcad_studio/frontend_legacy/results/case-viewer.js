@@ -15,7 +15,23 @@ const viewerStatusLabel=value=>({SUCCEEDED:'求解完成',CACHED:'复用有效�
 async function loadViewerCases(taskId,routeCtx=null,options={}){const sel=$('#viewerCaseSelect');if(!sel)return null;const token=state.viewerCaseLoadToken=(state.viewerCaseLoadToken||0)+1,op=viewerProgress({id:`viewer-cases-${taskId}`,label:'加载计算记录',stage:'读取任务工况',detail:'正在加载结果索引与质量状态',percent:12,button:sel});sel.disabled=true;sel.innerHTML='<option value="">正在读取计算记录…</option>';try{const page=await api(`/api/tasks/${encodeURIComponent(taskId)}/cases?offset=0&limit=500`,routeCtx?.signal?{signal:routeCtx.signal}:{});if(token!==state.viewerCaseLoadToken||(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))){op.close();return null}const rows=page.items||[];op.update({percent:82,stage:'整理计算记录',detail:`已读取 ${rows.length} 个工况`});sel.innerHTML='<option value="">'+uiText('选择计算记录','Select case')+'</option>'+rows.map((c,index)=>`<option value="${esc(c.id)}">工况 ${index+1} · ${esc(viewerStatusLabel(c.execution_status))} · ${esc(viewerStatusLabel(c.quality_status))}</option>`).join('');sel.disabled=false;op.done(`已加载 ${rows.length} 个计算记录`);if(rows.length){const preferred=rows.find(row=>['VALID','WARNING'].includes(row.quality_status)&&['SUCCEEDED','CACHED'].includes(row.execution_status))||rows.find(row=>['SUCCEEDED','CACHED'].includes(row.execution_status))||rows[0];sel.value=preferred.id;if(options.autoOpen!==false)return await openCaseViewer(routeCtx)}else{$('#viewerContent')?.classList.add('hidden');$('#viewerEmpty')?.classList.remove('hidden')}return page}catch(e){op.fail(e.message);if(token===state.viewerCaseLoadToken){sel.disabled=false;sel.innerHTML='<option value="">计算记录读取失败</option>'}if(window.MCSPageRuntime?.isAbortError?.(e))return null;toast(`计算记录读取失败：${e.message}`,'ERROR');return null}}
 function resultLanguage(){const html=String(document.documentElement.lang||'').toLowerCase();if(html.startsWith('zh'))return'zh';if(html.startsWith('en'))return'en';return window.MCS_I18N?.language||state.language||'zh'}
 function viewerModuleLabel(key,item){return resultLanguage()==='en'?(item.label_en||key):(item.label_zh||key)}
-function renderViewerModuleNav(active='overview'){const nav=$('#viewerModuleNav');if(!nav||!state.viewer)return;const rows=Object.entries(state.viewer.modules||{}),available=rows.filter(([key,m])=>m.available||key==='overview'),unavailable=rows.length-available.length;nav.innerHTML=`<div class="viewer-nav-title"><b>${uiText('当前可查看内容','Available result views')}</b><span>${uiText(`${available.length} 个模块具有本次计算数据`,`${available.length} result view(s) contain data`)}</span></div>`+available.map(([key,m])=>`<button type="button" data-viewer-module="${esc(key)}" class="viewer-module ${key===active?'active':''}"><span>${esc(viewerModuleLabel(key,m))}</span><small>${esc(resultLanguage()==='en'?(m.description_en||''):(m.description_zh||''))}</small></button>`).join('')+(unavailable?`<div class="viewer-unavailable-summary-v059"><b>${uiText(`${unavailable} 个模块未生成数据`,`${unavailable} result view(s) have no data`)}</b><span>${uiText('当前算例未提取这些结果；需要时请返回分析设置补充输出。','These results were not extracted for this case; add the required outputs in analysis settings when needed.')}</span></div>`:'');$$('[data-viewer-module]').forEach(b=>b.addEventListener('click',async()=>{const key=b.dataset.viewerModule;try{await ensureViewerModuleData(key)}catch(error){toast(`大结果数据读取失败：${error.message}`,'ERROR');return}window.renderViewerModule?.(key)}))}
+function renderViewerModuleNav(active='overview'){
+  const nav=$('#viewerModuleNav');if(!nav||!state.viewer)return;
+  const rows=Object.entries(state.viewer.modules||{}),inventory=state.viewer.result_data_inventory||state.resultBundleAggregate?.result_inventory?.items||[];
+  const available=rows.filter(([key,m])=>m.available||key==='overview');
+  const availableKeys=new Set(available.map(([key])=>key));
+  const missingDeclared=inventory.filter(row=>{
+    const status=String(row?.status||row?.availability||'').toUpperCase();
+    if(!['MISSING','INVALID','INCOMPLETE','FAILED'].includes(status))return false;
+    const declared=Array.isArray(row?.viewer_modules)?row.viewer_modules.map(String):[];
+    return declared.some(key=>!availableKeys.has(key));
+  });
+  const missingUnique=[...new Map(missingDeclared.map(row=>[String(row.result_id||row.id||row.label||''),row])).values()].filter(row=>row.result_id||row.id||row.label);
+  nav.innerHTML=`<div class="viewer-nav-title viewer-nav-title-v0919"><b>${uiText('当前结果','Current result')}</b><span>${uiText(`${available.length} 个数据视图可用`,`${available.length} data view(s) available`)}</span></div>`+
+    available.map(([key,m])=>`<button type="button" data-viewer-module="${esc(key)}" class="viewer-module ${key===active?'active':''}"><span>${esc(viewerModuleLabel(key,m))}</span><small>${esc(resultLanguage()==='en'?(m.description_en||''):(m.description_zh||''))}</small></button>`).join('')+
+    (missingUnique.length?`<details class="viewer-contract-gaps-v0919"><summary>${uiText(`结果合同缺项 ${missingUnique.length}`,`${missingUnique.length} contract gap(s)`)}</summary><div>${missingUnique.slice(0,6).map(row=>`<span><b>${esc(row.label||row.result_id||row.id)}</b><small>${esc(row.issue||row.reason||uiText('当前计算未提取','Not extracted in this run'))}</small></span>`).join('')}</div></details>`:'');
+  $$('[data-viewer-module]',nav).forEach(b=>b.addEventListener('click',async()=>{const key=b.dataset.viewerModule;try{await ensureViewerModuleData(key)}catch(error){toast(`大结果数据读取失败：${error.message}`,'ERROR');return}window.renderViewerModule?.(key)}));
+}
 function scalarLabel(id){return state.registry?.outputs?.[id]?.label||state.viewer?.output_schema?.[id]?.label||id}function scalarUnit(id){return state.registry?.outputs?.[id]?.unit||state.viewer?.output_schema?.[id]?.unit||''}
 function renderLineSvg(series,title=''){const xs=(series?.x||[]).map(Number),ys=(series?.y||[]).map(Number);if(!xs.length||xs.length!==ys.length)return'<div class="help-empty">无有效曲线数据</div>';const w=760,h=330,p=48,xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys),dx=xmax-xmin||1,dy=ymax-ymin||1,px=x=>p+(x-xmin)/dx*(w-2*p),py=y=>h-p-(y-ymin)/dy*(h-2*p),pts=xs.map((x,i)=>`${px(x).toFixed(1)},${py(ys[i]).toFixed(1)}`).join(' ');return `<div class="viewer-chart"><div class="viewer-chart-title"><b>${esc(title)}</b><span>${esc(series.x_label||'X')} [${esc(series.x_unit||'-')}] · ${esc(series.y_label||'Y')} [${esc(series.y_unit||'-')}]</span></div><svg viewBox="0 0 ${w} ${h}"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" class="chart-axis"/><line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" class="chart-axis"/><polyline points="${pts}" class="chart-line" fill="none"/><text x="${p}" y="${h-15}" class="chart-label">${xmin.toFixed(2)}</text><text x="${w-p}" y="${h-15}" text-anchor="end" class="chart-label">${xmax.toFixed(2)}</text><text x="8" y="${h-p}" class="chart-label">${ymin.toFixed(2)}</text><text x="8" y="${p+5}" class="chart-label">${ymax.toFixed(2)}</text></svg></div>`}
 function normalizeMap(map){let x=(map?.x||[]).map(Number),y=(map?.y||[]).map(Number),z=map?.z||map?.data||[];if(Array.isArray(z)&&z.length&&Array.isArray(z[0]))return{x,y,z};if(x.length&&y.length&&Array.isArray(z)&&z.length===x.length*y.length){const rows=[];for(let j=0;j<y.length;j++)rows.push(z.slice(j*x.length,(j+1)*x.length).map(Number));return{x,y,z:rows}}return{x,y,z:[]}}
@@ -46,9 +62,36 @@ function renderViewerLosses(v){
   const bars=ids.map(k=>{const val=Number(scalars[k]),pct=denom>0?Math.max(0,Math.min(100,val/denom*100)):0;return `<div class="loss-row"><div><span>${esc(scalarLabel(k))}</span><b>${val.toFixed(2)} ${esc(scalarUnit(k))}</b></div><div class="loss-track"><span style="width:${pct.toFixed(2)}%"></span></div><small>${pct.toFixed(1)}%</small></div>`}).join('');
   return `<div class="viewer-section-title"><h3>${uiText('损耗组成','Loss composition')}</h3><p>${uiText('分项占比以当前可用总损耗为基准；若缺少分项，比例仅代表已提取部分。','Shares use the available total loss. If components are missing, the chart represents extracted components only.')}</p></div>${Number.isFinite(total)?`<div class="viewer-total-loss"><span>${uiText('总损耗','Total loss')}</span><b>${total.toFixed(2)} W</b></div>`:''}<div class="loss-breakdown">${bars||'<div class="help-empty">当前Case没有已提取的损耗分项。</div>'}</div>`;
 }
-function engineeringInputLabel(key){const common={shaft_speed_rpm:'转速',peak_current_a:'峰值电流',rms_current_a:'有效值电流',ambient_temperature_c:'环境温度',coolant_inlet_temperature_c:'冷却液入口温度',coolant_flow_rate_lpm:'冷却液流量',cooling_type:'冷却方式',material_name:'材料名称',analysis_type:'分析类型',calculation_type:'计算方式'};return state.registry?.parameters?.[key]?.label||common[key]||String(key||'参数').replaceAll('_',' ').replaceAll('-',' ')}
-function engineeringInputRows(value,prefix='',depth=0,rows=[]){if(rows.length>=160)return rows;const primitive=value===null||value===undefined||['string','number','boolean'].includes(typeof value);if(primitive){const shown=value===null||value===undefined||value===''?'未配置':value===true?'是':value===false?'否':value;rows.push({label:prefix||'值',value:shown});return rows}if(Array.isArray(value)){if(!value.length)rows.push({label:prefix||'配置',value:'未配置'});else if(value.every(item=>item===null||['string','number','boolean'].includes(typeof item)))rows.push({label:prefix||'配置',value:value.map(item=>item===true?'是':item===false?'否':item??'未配置').join('、')});else value.slice(0,20).forEach((item,index)=>engineeringInputRows(item,`${prefix||'配置'} · 第 ${index+1} 组`,depth+1,rows));return rows}const entries=Object.entries(value||{});if(!entries.length){rows.push({label:prefix||'配置',value:'未配置'});return rows}if(depth>=3){rows.push({label:prefix||'配置',value:`已配置 ${entries.length} 项`});return rows}entries.forEach(([key,item])=>engineeringInputRows(item,prefix?`${prefix} · ${engineeringInputLabel(key)}`:engineeringInputLabel(key),depth+1,rows));return rows}
-function renderInputTables(v){const groups=[['工程参数',v.inputs?.parameters],['工况',v.inputs?.scenario],['材料',v.inputs?.materials],['求解设置',v.inputs?.solver_settings]];return groups.map(([name,obj])=>{const rows=engineeringInputRows(obj);return `<details class="viewer-data-group" open><summary>${esc(name)} · ${rows.length} 项</summary><div class="property-grid dense engineer-input-grid-v059">${rows.map(row=>`<span>${esc(row.label)}</span><b>${esc(row.value)}</b>`).join('')||'<span class="muted">未配置</span>'}</div></details>`}).join('')}
+function engineeringInputMeta(key){
+  const common={
+    shaft_speed_rpm:['转速','电机机械转速，用于定义当前运行工况。','rpm'],peak_current_a:['峰值电流','驱动器/绕组电流峰值。','A'],rms_current_a:['有效值电流','绕组电流 RMS 值。','A'],ambient_temperature_c:['环境温度','外部环境参考温度。','°C'],coolant_inlet_temperature_c:['冷却液入口温度','冷却回路入口边界温度。','°C'],coolant_flow_rate_lpm:['冷却液流量','冷却回路体积流量。','L/min'],cooling_type:['冷却方式','当前分析工况采用的冷却边界类型。',''],material_name:['材料名称','Motor-CAD 中绑定的材料标识。',''],analysis_type:['分析类型','本次计算使用的物理分析类型。',''],calculation_type:['计算方式','求解流程或计算配方。',''],pole_number:['极数（总极数）','转子永磁极总数。',''],slot_number:['槽数','定子槽总数。',''],stator_outer_diameter:['定子外径','定子铁心外圆直径。','mm'],stator_bore:['定子内径 / 定子孔径','定子内圆（气隙侧）直径。','mm'],airgap:['气隙','定转子有效机械气隙。','mm'],dc_bus_voltage:['直流母线电压','逆变器直流侧母线电压。','V'],phase_advance:['相位超前角','电流相位相对参考位置的超前角。','deg']
+  };
+  const registry=state.registry?.parameters?.[key]||state.viewer?.parameter_schema?.[key]||{};
+  const fallback=common[key]||[];
+  const label=registry.label_zh||registry.label||fallback[0]||String(key||'参数').replaceAll('_',' ').replaceAll('-',' ');
+  const description=registry.description_zh||registry.description||registry.help||fallback[1]||'当前计算冻结输入中的工程字段。';
+  const unit=registry.unit||fallback[2]||'';
+  return{label,description,unit};
+}
+function engineeringInputLabel(key){return engineeringInputMeta(key).label}
+function engineeringInputRows(value,prefix='',idPath='',depth=0,rows=[]){
+  if(rows.length>=200)return rows;
+  const primitive=value===null||value===undefined||['string','number','boolean'].includes(typeof value);
+  if(primitive){const shown=value===null||value===undefined||value===''?'未配置':value===true?'是':value===false?'否':value;const leaf=String(idPath||'value').split('.').pop(),meta=engineeringInputMeta(leaf);rows.push({label:prefix||meta.label,id:idPath||leaf,description:meta.description,unit:meta.unit,value:shown});return rows}
+  if(Array.isArray(value)){
+    if(!value.length)rows.push({label:prefix||'配置',id:idPath||'configuration',description:'当前输入集合为空。',unit:'',value:'未配置'});
+    else if(value.every(item=>item===null||['string','number','boolean'].includes(typeof item))){const leaf=String(idPath||'configuration').split('.').pop(),meta=engineeringInputMeta(leaf);rows.push({label:prefix||meta.label,id:idPath||leaf,description:meta.description,unit:meta.unit,value:value.map(item=>item===true?'是':item===false?'否':item??'未配置').join('、')});}
+    else value.slice(0,24).forEach((item,index)=>engineeringInputRows(item,`${prefix||'配置'} · 第 ${index+1} 组`,`${idPath||'items'}[${index}]`,depth+1,rows));
+    return rows;
+  }
+  const entries=Object.entries(value||{});if(!entries.length){rows.push({label:prefix||'配置',id:idPath||'configuration',description:'当前输入对象为空。',unit:'',value:'未配置'});return rows}
+  if(depth>=4){rows.push({label:prefix||'配置',id:idPath||'configuration',description:'嵌套工程配置对象。',unit:'',value:`已配置 ${entries.length} 项`});return rows}
+  entries.forEach(([key,item])=>engineeringInputRows(item,prefix?`${prefix} · ${engineeringInputLabel(key)}`:engineeringInputLabel(key),idPath?`${idPath}.${key}`:key,depth+1,rows));return rows
+}
+function renderInputTables(v){
+  const groups=[['设计参数',v.inputs?.parameters],['运行工况',v.inputs?.scenario],['材料与介质',v.inputs?.materials],['求解与输出设置',v.inputs?.solver_settings]];
+  return `<div class="engineering-input-intro-v0919"><div><span class="eyebrow">FROZEN INPUT CONTRACT</span><h3>本次计算实际使用的输入</h3><p>字段中文名用于快速阅读；字段标识保留原始工程 ID，描述与单位来自参数注册表或内置工程元数据。</p></div></div>`+groups.map(([name,obj])=>{const rows=engineeringInputRows(obj);return `<details class="viewer-data-group engineering-input-group-v0919" open><summary>${esc(name)} · ${rows.length} 项</summary>${rows.length?`<div class="table-wrap engineering-input-table-wrap-v0919"><table class="engineering-input-table-v0919"><thead><tr><th>中文名称</th><th>字段标识</th><th>说明</th><th>数值</th><th>单位</th></tr></thead><tbody>${rows.map(row=>`<tr><td><b>${esc(row.label)}</b></td><td><code>${esc(row.id)}</code></td><td>${esc(row.description)}</td><td class="input-value-v0919">${esc(row.value)}</td><td>${esc(row.unit||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="help-empty">未配置</div>'}</details>`}).join('')
+}
 function genericEmpty(title,detail){return `<div class="help-empty result-module-empty-v089g3"><b>${esc(title)}</b><span>${esc(detail)}</span></div>`}
 function renderResultTable(table,title){
   const rows=Array.isArray(table)?table:(table?.rows||table?.data||[]);if(!Array.isArray(rows)||!rows.length)return'';
@@ -71,12 +114,16 @@ function renderViewerGraphs(v){
 function renderThermalFamily(v,mode='thermal'){
   const r=v.results||{},match=mode==='thermal_schematic'?/thermal|node|resistan|capacit|boundary|heat/i:mode==='temperatures'?/temp|heat|coolant/i:/temp|heat|thermal|coolant/i;
   let html='';
+  if(mode!=='thermal_schematic'){
+    const scalarRows=Object.entries(r.scalars||{}).filter(([key,value])=>match.test(key)&&Number.isFinite(Number(value)));
+    if(scalarRows.length)html+=`<div class="thermal-scalar-strip-v0919">${scalarRows.slice(0,8).map(([key,value])=>`<article><span>${esc(scalarLabel(key))}</span><b>${esc(Number(value).toLocaleString(undefined,{maximumFractionDigits:3}))}<small>${esc(scalarUnit(key)||(/temp/i.test(key)?'°C':'—'))}</small></b><code>${esc(key)}</code></article>`).join('')}</div>`;
+  }
   Object.entries(r.series||{}).filter(([k])=>match.test(k)).forEach(([k,x])=>html+=renderLineSvg(x,scalarLabel(k)));
   Object.entries(r.maps||{}).filter(([k])=>match.test(k)).forEach(([k,x])=>html+=renderHeatMap(x,scalarLabel(k)));
   Object.entries(r.fields||{}).filter(([k])=>match.test(k)).forEach(([k,x])=>html+=renderMeshField(x,scalarLabel(k)));
   Object.entries(r.tables||{}).filter(([k])=>match.test(k)).forEach(([k,x])=>html+=renderResultTable(x,scalarLabel(k)));
-  const title=mode==='thermal_schematic'?uiText('热网络拓扑数据尚未提取','Thermal-network topology was not extracted'):mode==='temperatures'?uiText('温度/热流数据尚未提取','Temperature / heat-flow data was not extracted'):uiText('当前算例没有热结果','No thermal results for this case');
-  return html||genericEmpty(title,uiText('当前结果合同没有对应数据。页面保持可用，并明确提示缺项。','The current result contract contains no matching data; the page remains usable and reports the missing evidence explicitly.'));
+  const title=mode==='thermal_schematic'?uiText('本次结果没有结构化热网络','No structured thermal network in this result'):mode==='temperatures'?uiText('本次结果没有温度/热流数据','No temperature / heat-flow data in this result'):uiText('当前算例没有热结果','No thermal results for this case');
+  return html||genericEmpty(title,uiText('仅显示 ResultBundle 实际拥有的数据；未声明或未提取的热模块不会生成占位图。','Only data actually present in the ResultBundle are shown; undeclared or unextracted thermal views do not render placeholders.'));
 }
 function renderMechanicalFamily(v,mode='mechanical'){
   const r=v.results||{},match=mode==='stress'?/stress|displacement|strain/i:mode==='nvh'?/force|nvh|modal|campbell|harmonic/i:/stress|force|nvh|modal|campbell|displacement/i;
@@ -109,23 +156,46 @@ function renderViewerModule(key){
   if(inspector){const calibrated=(v.result_calibrations||[]).filter(x=>x.status==='VERIFIED'),module=v.modules?.[key]||{};inspector.innerHTML=`<b>${esc(viewerModuleLabel(key,module))}</b><p>${esc(resultLanguage()==='en'?(module.description_en||''):(module.description_zh||''))}</p>${(module.official_apis||[]).length?`<small>PyMotorCAD API: ${(module.official_apis||[]).map(x=>`<code>${esc(x)}</code>`).join(' ')}</small>`:''}${calibrated.length?`<div class="viewer-note">${uiText(`当前模板有 ${calibrated.length} 项实机结果校准映射。`,`This template has ${calibrated.length} verified result-calibration mapping(s).`)}</div>`:''}`}
   $$('[data-viewer-scalar]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.viewerScalar;if(inspector)inspector.innerHTML=`<b>${esc(scalarLabel(k))}</b><div class="property-grid"><span>Result ID</span><b>${esc(k)}</b><span>${uiText('值','Value')}</span><b>${esc(v.results.scalars[k])} ${esc(scalarUnit(k))}</b></div>`}))
 }
-function applyViewerPayload(viewer,token=null,routeCtx=null){if(!viewer)return null;if(token!==null&&token!==state.viewerOpenToken)return null;if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;state.viewer=viewer;$('#viewerEmpty')?.classList.add('hidden');$('#viewerContent')?.classList.remove('hidden');const recipe=state.viewer.analysis_recipe?.label||state.viewer.case.analysis||'计算分析',solveLabel=window.MCSAnalysisLabels?.solveModeLabel?.(state.viewer.case.solver_mode)||state.viewer.case.solver_mode||'求解';if($('#viewerCaseHeader')){const trustBadge=window.MCSResultsTrust?.renderBadge?.(state.viewer.trust)||'';$('#viewerCaseHeader').innerHTML=`<div class="viewer-case-title"><div><span class="eyebrow">CHUNK-NATIVE RESULT DATA</span><h2>${esc(recipe)}</h2><p>${esc(solveLabel)} · ${esc(state.viewer.case.template_name||state.viewer.case.template_id||'当前电机模型')}</p><small class="case-technical-id-v058">Case ${esc(state.viewer.case.id)} · ResultBundle ${esc(String(state.viewer.case.result_bundle_hash||'Legacy').slice(0,12))} · ExecutionPlan ${esc(String(state.viewer.case.execution_plan_hash||'Compatibility').slice(0,12))}</small></div><div class="quality-badges">${trustBadge}<span class="status ${esc(state.viewer.case.quality_status)}">${esc(viewerStatusLabel(state.viewer.case.quality_status))}</span></div></div>`;}window.renderViewerModule?.('overview');return state.viewer}
+function applyViewerPayload(viewer,token=null,routeCtx=null){
+  if(!viewer)return null;if(token!==null&&token!==state.viewerOpenToken)return null;if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
+  state.viewer=viewer;$('#viewerEmpty')?.classList.add('hidden');$('#viewerContent')?.classList.remove('hidden');
+  const recipe=state.viewer.analysis_recipe?.label||state.viewer.case.analysis||'计算分析',solveLabel=window.MCSAnalysisLabels?.solveModeLabel?.(state.viewer.case.solver_mode)||state.viewer.case.solver_mode||'求解';
+  const contract=state.viewer.result_contract||{},extraction=contract.extraction||{},fea=contract.fea||{};
+  if($('#viewerCaseHeader')){
+    const trustBadge=window.MCSResultsTrust?.renderBadge?.(state.viewer.trust)||'';
+    const extractionText=extraction.requested_count!=null?`${Number(extraction.extracted_count||0)}/${Number(extraction.requested_count||0)}`:'—';
+    $('#viewerCaseHeader').innerHTML=`<div class="viewer-case-title viewer-case-title-v0919"><div class="viewer-case-copy-v0919"><span class="eyebrow">RESULTBUNDLE · ENGINEERING EVIDENCE</span><h2>${esc(recipe)}</h2><p>${esc(solveLabel)} · ${esc(state.viewer.case.template_name||state.viewer.case.template_id||'当前电机模型')}</p><div class="viewer-case-identity-v0919"><span>Case <b>${esc(state.viewer.case.id||'—')}</b></span><span>结果提取 <b>${esc(extractionText)}</b></span><span>FEA <b>${esc(viewerStatusLabel(fea.status||'NOT_ASSESSED'))}</b></span><span>Bundle <b>${esc(String(state.viewer.case.result_bundle_hash||'Legacy').slice(0,12))}</b></span></div></div><div class="quality-badges viewer-case-quality-v0919">${trustBadge}<span class="status ${esc(state.viewer.case.quality_status)}">${esc(viewerStatusLabel(state.viewer.case.quality_status))}</span></div></div>`;
+  }
+  window.renderViewerModule?.('overview');return state.viewer;
+}
 async function openCaseViewer(routeCtx=null){const id=$('#viewerCaseSelect')?.value;if(!id)return toast(uiText('请选择计算记录','Select a Case'),'WARNING');const op=viewerProgress({id:`viewer-case-${id}`,label:'打开工程结果',stage:'解析结果身份',detail:'正在解析 Case / ResultBundle 关联',percent:8,button:$('#viewerCaseSelect')});try{if(window.MCSResultContext?.resolveCase&&window.MCSResultContext?.current?.().caseId!==id){await window.MCSResultContext.resolveCase(id,routeCtx,{source:'results:case-viewer'});if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx)){op.close();return null}}const token=state.viewerOpenToken=(state.viewerOpenToken||0)+1,canvas=$('#viewerCanvas');if(canvas)canvas.innerHTML='<div class="viewer-loading-v058"><span class="spinner-dot"></span><b>正在读取结果与有限元场…</b></div>';op.update({percent:38,stage:'读取 ResultBundle',detail:'加载模块投影、结果清单与轻量结果'});const bundleId=window.MCSResultContext?.current?.().resultBundleId||null;let viewer;if(bundleId){const payload=window.MCSResultBundleAggregate?.get?await window.MCSResultBundleAggregate.get(bundleId,{include:'viewer',signal:routeCtx?.signal}):await api(`/api/result-bundles/${encodeURIComponent(bundleId)}/aggregate?include=viewer`,routeCtx?.signal?{signal:routeCtx.signal}:{});viewer=payload?.aggregate?.viewer||null}else viewer=await api(`/api/cases/${encodeURIComponent(id)}/viewer`,routeCtx?.signal?{signal:routeCtx.signal}:{});op.update({percent:92,stage:'生成工程视图',detail:'根据 ResultBundle 模块契约建立可用结果导航'});const applied=applyViewerPayload(viewer,token,routeCtx);op.done('工程结果已就绪');return applied}catch(e){op.fail(e.message);const canvas=$('#viewerCanvas');if(window.MCSPageRuntime?.isAbortError?.(e))return null;if(canvas)canvas.innerHTML='<div class="help-empty"><b>结果读取失败</b><span>可刷新后重试，或下载任务诊断包定位原因。</span></div>';toast(`结果读取失败：${e.message}`,'ERROR');return null}}
 async function openBundleAggregateViewer(bundleId,routeCtx=null){if(!bundleId)return null;const token=state.viewerOpenToken=(state.viewerOpenToken||0)+1,canvas=$('#viewerCanvas'),op=viewerProgress({id:`viewer-bundle-${bundleId}`,label:'加载 ResultBundle',stage:'读取聚合结果',detail:'正在加载模块投影与结果索引',percent:12});if(canvas)canvas.innerHTML='<div class="viewer-loading-v058"><span class="spinner-dot"></span><b>正在读取 ResultBundle Aggregate…</b></div>';try{const payload=window.MCSResultBundleAggregate?.get?await window.MCSResultBundleAggregate.get(bundleId,{include:'viewer',signal:routeCtx?.signal}):await api(`/api/result-bundles/${encodeURIComponent(bundleId)}/aggregate?include=viewer`,routeCtx?.signal?{signal:routeCtx.signal}:{}),aggregate=payload?.aggregate||{},viewer=aggregate.viewer||null;if(!viewer)throw new Error('Aggregate 中缺少 viewer projection');op.update({percent:88,stage:'构建结果模块',detail:'根据 ResultBundleModuleProjectionV1 生成查看器导航'});state.resultBundleAggregate=aggregate;const applied=applyViewerPayload(viewer,token,routeCtx);op.done('ResultBundle 已加载');return applied}catch(e){op.fail(e.message);if(token!==state.viewerOpenToken||window.MCSPageRuntime?.isAbortError?.(e))return null;if(canvas)canvas.innerHTML='<div class="help-empty"><b>ResultBundle Aggregate 读取失败</b><span>可刷新后重试，或检查 Engineering Lineage 完整性。</span></div>';toast(`结果读取失败：${e.message}`,'ERROR');return null}}
 
 
 
-  async function mount(route, routeCtx=null){
-    setResultViewerMode('case');
-    await loadResultViewerLanding(routeCtx,{autoOpen:!route?.taskId&&!route?.resultBundleId});
-    if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
-    if(route?.resultBundleId){
-      const identity=window.MCSResultContext?.current?.()||{},taskId=route.taskId||identity.taskId||null,caseId=route.caseId||identity.caseId||null;
+  async function hydrateViewerSelectorsInBackground(route,routeCtx){
+    try{
+      await loadResultViewerLanding(routeCtx,{autoOpen:false});
+      if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return;
+      const identity=window.MCSResultContext?.current?.()||{},taskId=route?.taskId||identity.taskId||null,caseId=route?.caseId||identity.caseId||null;
       if(taskId){const taskSelect=$('#viewerTaskSelect');if(taskSelect)taskSelect.value=taskId;await loadViewerCases(taskId,routeCtx,{autoOpen:false});}
       if(caseId){const caseSelect=$('#viewerCaseSelect');if(caseSelect)caseSelect.value=caseId;}
+    }catch(error){if(!window.MCSPageRuntime?.isAbortError?.(error))console.warn('result selector hydration failed',error)}
+  }
+  async function mount(route, routeCtx=null){
+    setResultViewerMode('case');
+    // Direct ResultBundle URLs are the dominant engineering-review path. Render the
+    // aggregate first and hydrate task/catalog selectors afterwards so selector I/O
+    // cannot hold the first meaningful result paint hostage.
+    if(route?.resultBundleId){
+      const identity=window.MCSResultContext?.current?.()||{},taskId=route.taskId||identity.taskId||null,caseId=route.caseId||identity.caseId||null;
       await openBundleAggregateViewer(route.resultBundleId,routeCtx);
+      if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
+      queueMicrotask(()=>hydrateViewerSelectorsInBackground(route,routeCtx));
       return {taskId,caseId,resultBundleId:route.resultBundleId};
     }
+    await loadResultViewerLanding(routeCtx,{autoOpen:!route?.taskId});
+    if(routeCtx&&!window.MCSPageRuntime?.isContextActive?.(routeCtx))return null;
     if(!route?.taskId)return {taskId:null,caseId:null};
     const taskSelect=$('#viewerTaskSelect');if(taskSelect)taskSelect.value=route.taskId;
     await loadViewerCases(route.taskId,routeCtx,{autoOpen:!route.caseId});
@@ -144,7 +214,7 @@ async function openBundleAggregateViewer(bundleId,routeCtx=null){if(!bundleId)re
     const resultIdentity=window.MCSResultContext?.current?.()||{},bundleId=resultIdentity.resultBundleId||null;
     if(bundleId)return `/app/projects/${encodeURIComponent(projectId)}/results/bundles/${encodeURIComponent(bundleId)}`;
     const taskId=$('#viewerTaskSelect')?.value||resultIdentity.taskId||null,caseId=$('#viewerCaseSelect')?.value||state.viewer?.case?.id||resultIdentity.caseId||null;
-    if(!taskId)return `/app/projects/${encodeURIComponent(projectId)}/results/tasks`;
+    if(!taskId)return `/app/projects/${encodeURIComponent(projectId)}/results/viewer`;
     return `/app/projects/${encodeURIComponent(projectId)}/results/tasks/${encodeURIComponent(taskId)}${caseId?`/cases/${encodeURIComponent(caseId)}`:''}`;
   }
   document.addEventListener('mcs-language-change',()=>{state.language=resultLanguage();if(state.viewer)window.renderViewerModule?.(state.activeViewerModule||'overview')});

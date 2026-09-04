@@ -1,4 +1,4 @@
-/* MotorCAD Studio V0.91.8 — deterministic bilingual UI authority. */
+/* MotorCAD Studio V0.92.0 — deterministic bilingual UI authority. */
 (() => {
   const STORAGE_KEY = 'motorcad-studio-language';
   const SUPPORTED = new Set(['zh', 'en']);

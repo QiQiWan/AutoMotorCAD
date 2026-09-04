@@ -6,7 +6,7 @@ from .db import Database
 
 
 class EngineerJourneyService:
-    """Read-only V0.87-A projection for the visible Design -> Validate -> Decide journey."""
+    """Read-only projection for the visible Design -> Compute -> Results -> Decision journey."""
 
     def __init__(self, db: Database, requirements: Any = None, manufacturing: Any = None):
         self.db = db
@@ -41,71 +41,170 @@ class EngineerJourneyService:
         ctx = self._context(project_id)
         motor, analysis, result = ctx["motor_revision"], ctx["analysis_revision"], ctx["result_bundle"]
         design_status = "COMPLETE" if motor else "CURRENT"
-        validate_status = "COMPLETE" if result else ("CURRENT" if motor else "BLOCKED")
-        decide_status = "CURRENT" if result else "BLOCKED"
+        compute_status = "COMPLETE" if result else ("CURRENT" if motor else "BLOCKED")
+        results_status = "CURRENT" if result else "BLOCKED"
+        decision_status = "PENDING" if result else "BLOCKED"
         if not motor:
             action = {"id": "CREATE_DESIGN", "label": "创建设计", "route": f"/app/projects/{project_id}/designs", "stage": "design"}
             current_stage = "design"
         elif not analysis:
-            action = {"id": "CONFIGURE_VALIDATION", "label": "配置分析", "route": f"/app/projects/{project_id}/simulation/analyses", "stage": "validate"}
+            action = {"id": "CONFIGURE_ANALYSIS", "label": "配置分析与计算", "route": f"/app/projects/{project_id}/simulation/analyses", "stage": "validate"}
             current_stage = "validate"
         elif not result:
-            action = {"id": "RUN_VALIDATION", "label": "检查并计算", "route": f"/app/projects/{project_id}/simulation/analyses/{analysis['analysis_id']}", "stage": "validate"}
+            action = {"id": "RUN_ANALYSIS", "label": "完成计算就绪检查并计算", "route": f"/app/projects/{project_id}/simulation/analyses/{analysis['analysis_id']}", "stage": "validate"}
             current_stage = "validate"
         else:
-            action = {"id": "REVIEW_DECISION", "label": "查看设计结论", "route": f"/app/projects/{project_id}/results", "stage": "decide"}
-            current_stage = "decide"
+            action = {"id": "REVIEW_RESULTS", "label": "查看计算结果", "route": f"/app/projects/{project_id}/results", "stage": "results"}
+            current_stage = "results"
         stages = [
             {"id": "design", "label": "设计", "status": design_status, "route": f"/app/projects/{project_id}/designs", "summary": "建立并冻结电机设计版本"},
-            {"id": "validate", "label": "验证", "status": validate_status, "route": f"/app/projects/{project_id}/simulation/analyses", "summary": "配置工况并执行工程分析"},
-            {"id": "decide", "label": "决策", "status": decide_status, "route": f"/app/projects/{project_id}/results", "summary": "基于结果、要求和鲁棒性证据做设计判断"},
+            {"id": "validate", "label": "计算", "status": compute_status, "route": f"/app/projects/{project_id}/simulation/analyses", "summary": "配置分析、完成计算就绪检查并执行求解"},
+            {"id": "results", "label": "结果", "status": results_status, "route": f"/app/projects/{project_id}/results", "summary": "查看工况结果、曲线、场数据和结果证据"},
+            {"id": "decide", "label": "决策", "status": decision_status, "route": f"/app/projects/{project_id}/decision", "summary": "依据工程要求和结果证据形成设计判断"},
         ]
         return {
-            "schema_version": 1, "object_type": "engineer_journey", "authority": "EngineerJourneyV1", "contract_version": "0.87-A",
-            "project_id": project_id, "context": ctx, "stages": stages, "current_stage": current_stage,
-            "primary_next_action": action, "visible_stage_count": 3,
+            "schema_version": 1,
+            "object_type": "engineer_journey",
+            "authority": "EngineerJourneyV1",
+            "contract_version": "0.92",
+            "project_id": project_id,
+            "context": ctx,
+            "stages": stages,
+            "current_stage": current_stage,
+            "primary_next_action": action,
+            "visible_stage_count": 4,
         }
 
     def decision_cockpit(self, project_id: str) -> dict[str, Any]:
         journey = self.journey(project_id)
         result = journey["context"].get("result_bundle")
+        active_requirements = self.requirements.active(project_id) if self.requirements else None
         blockers: list[dict[str, str]] = []
-        requirement_summary = None
+        requirement_summary: dict[str, Any] | None = None
+        requirement_evaluation: dict[str, Any] | None = None
+
+        quality_status = str((result or {}).get("quality_status") or "UNKNOWN")
+        result_quality_ok = bool(result) and quality_status in {"VALID", "WARNING"}
         if not result:
             blockers.append({"code": "RESULT_REQUIRED", "message": "尚无可用于工程判断的计算结果。"})
-        elif str(result.get("quality_status") or "") not in {"VALID", "WARNING"}:
-            blockers.append({"code": "RESULT_QUALITY", "message": f"当前结果质量状态为 {result.get('quality_status') or 'UNKNOWN'}。"})
-        if self.requirements:
-            active = self.requirements.active(project_id)
-            if active and result:
-                try:
-                    ev = self.requirements.evaluate_result_bundle(result["id"], requirement_set=active)
-                    rows = ev.get("requirements") or []
-                    requirement_summary = {
-                        "configured": len(rows),
-                        "pass": sum(1 for r in rows if r.get("status") in {"PASS", "OBSERVED"}),
-                        "warning": sum(1 for r in rows if r.get("status") == "WARNING"),
-                        "fail": sum(1 for r in rows if r.get("status") == "FAIL"),
-                        "formal_result_qualified": bool(ev.get("formal_result_qualified")),
-                    }
-                    if not ev.get("formal_result_qualified"):
-                        blockers.append({"code": "RESULT_TRUST", "message": "结果尚未达到正式工程资格要求。"})
-                    if requirement_summary["fail"]:
-                        blockers.append({"code": "REQUIREMENT_FAILED", "message": f"有 {requirement_summary['fail']} 项工程要求未满足。"})
-                except Exception as exc:
-                    blockers.append({"code": "REQUIREMENT_EVALUATION", "message": str(exc)})
-        manufacturing = self.manufacturing.latest_qualification(project_id) if self.manufacturing else None
-        can_decide = bool(result) and not any(b["code"] in {"RESULT_REQUIRED", "RESULT_QUALITY", "RESULT_TRUST", "REQUIREMENT_EVALUATION"} for b in blockers)
-        if not result:
-            action = journey["primary_next_action"]
-        elif blockers:
-            action = {"id": "REVIEW_BLOCKERS", "label": "查看需要处理的问题", "route": f"/app/projects/{project_id}/results", "stage": "decide"}
+        elif not result_quality_ok:
+            blockers.append({"code": "RESULT_QUALITY", "message": f"当前结果质量状态为 {quality_status}，不能用于正式工程判断。"})
+
+        if not active_requirements:
+            blockers.append({"code": "REQUIREMENTS_REQUIRED", "message": "尚未定义工程要求，当前只能查看结果，不能形成“满足/不满足”的正式结论。"})
+        elif result and self.requirements:
+            try:
+                requirement_evaluation = self.requirements.evaluate_result_bundle(result["id"], requirement_set=active_requirements)
+                rows = requirement_evaluation.get("requirements") or []
+                summary = requirement_evaluation.get("summary") or {}
+                policy_blockers = list(requirement_evaluation.get("policy_blockers") or [])
+                requirement_summary = {
+                    "configured": len(active_requirements.get("requirements") or []),
+                    "applicable": int(summary.get("applicable_count") or 0),
+                    "hard_constraints": int(summary.get("hard_constraint_count") or 0),
+                    "pass": sum(1 for row in rows if row.get("status") in {"PASS", "OBSERVED"}),
+                    "warning": int(summary.get("warning_count") or 0),
+                    "fail": int(summary.get("hard_fail_count") or 0),
+                    "missing": int(summary.get("missing_count") or 0),
+                    "unit_mismatch": int(summary.get("unit_mismatch_count") or 0),
+                    "formal_result_qualified": bool(requirement_evaluation.get("formal_result_qualified")),
+                    "formal_requirement_qualified": bool(requirement_evaluation.get("formal_requirement_qualified")),
+                    "policy_blockers": policy_blockers,
+                }
+                if "FORMAL_RESULT_REQUIRED" in policy_blockers:
+                    blockers.append({"code": "RESULT_TRUST", "message": "当前结果尚未达到项目要求的正式结果可信度。"})
+                if "HARD_CONSTRAINT_EVIDENCE_MISSING" in policy_blockers:
+                    blockers.append({"code": "REQUIREMENT_EVIDENCE_MISSING", "message": "有必须满足的指标缺少计算结果，当前无法完成正式判定。"})
+                if "REQUIREMENT_UNIT_MISMATCH" in policy_blockers:
+                    blockers.append({"code": "REQUIREMENT_UNIT_MISMATCH", "message": "有工程要求与计算结果的单位不一致，需要先修正单位。"})
+                if requirement_summary["fail"]:
+                    blockers.append({"code": "REQUIREMENT_FAILED", "message": f"有 {requirement_summary['fail']} 项必须满足的工程指标未达到要求。"})
+            except Exception as exc:
+                blockers.append({"code": "REQUIREMENT_EVALUATION", "message": f"工程要求评价失败：{exc}"})
+        elif active_requirements:
+            requirement_summary = {
+                "configured": len(active_requirements.get("requirements") or []),
+                "applicable": 0,
+                "hard_constraints": sum(1 for row in active_requirements.get("requirements") or [] if row.get("kind") == "HARD_CONSTRAINT"),
+                "pass": 0,
+                "warning": 0,
+                "fail": 0,
+                "missing": 0,
+                "unit_mismatch": 0,
+                "formal_result_qualified": False,
+                "formal_requirement_qualified": False,
+                "policy_blockers": [],
+            }
+
+        blocking_codes = {row["code"] for row in blockers}
+        not_ready_codes = {
+            "RESULT_REQUIRED",
+            "RESULT_QUALITY",
+            "REQUIREMENTS_REQUIRED",
+            "RESULT_TRUST",
+            "REQUIREMENT_EVIDENCE_MISSING",
+            "REQUIREMENT_UNIT_MISMATCH",
+            "REQUIREMENT_EVALUATION",
+        }
+        evidence_ready = result_quality_ok and not (blocking_codes & not_ready_codes)
+        hard_fail = bool(requirement_summary and requirement_summary.get("fail"))
+        warning_count = int((requirement_summary or {}).get("warning") or 0)
+
+        if not evidence_ready:
+            decision_outcome = "NOT_READY"
+            decision_headline = "尚不能形成正式工程结论"
+            decision_summary = "先补齐结果证据和工程要求，再判断当前设计是否满足项目目标。"
+            can_decide = False
+        elif hard_fail:
+            decision_outcome = "NOT_ACCEPTABLE"
+            decision_headline = "当前设计未满足工程要求"
+            decision_summary = "正式结果已经具备判定条件，但至少一项必须满足的指标未达标，建议调整设计后重新计算。"
+            can_decide = True
+        elif warning_count:
+            decision_outcome = "ACCEPTABLE_WITH_WARNING"
+            decision_headline = "当前设计满足硬性要求，但存在预警项"
+            decision_summary = "可以进入后续工程判断，同时建议检查接近边界的指标裕度。"
+            can_decide = True
         else:
-            action = {"id": "COMPARE_OR_OPTIMIZE", "label": "对比或优化设计", "route": f"/app/projects/{project_id}/results", "stage": "decide"}
+            decision_outcome = "ACCEPTABLE"
+            decision_headline = "当前设计满足已定义的工程要求"
+            decision_summary = "当前结果证据、单位和工程要求均具备正式判定条件。"
+            can_decide = True
+
+        if not result:
+            action = {"id": "RUN_ANALYSIS", "label": "返回分析并计算", "route": f"/app/projects/{project_id}/simulation/analyses", "stage": "validate"}
+        elif "REQUIREMENTS_REQUIRED" in blocking_codes:
+            action = {"id": "DEFINE_REQUIREMENTS", "label": "定义工程要求", "route": f"/app/projects/{project_id}/decision", "stage": "decide"}
+        elif not evidence_ready:
+            action = {"id": "REVIEW_RESULTS", "label": "查看结果与缺失证据", "route": f"/app/projects/{project_id}/results", "stage": "results"}
+        elif hard_fail:
+            action = {"id": "REVIEW_REQUIREMENT_FAILURES", "label": "查看未满足指标", "route": f"/app/projects/{project_id}/decision", "stage": "decide"}
+        else:
+            action = {"id": "COMPARE_OR_OPTIMIZE", "label": "进入版本比较", "route": f"/app/projects/{project_id}/results/compare", "stage": "decide"}
+
+        checks = [
+            {"id": "result", "label": "结果证据", "status": "PASS" if result_quality_ok else ("FAIL" if result else "MISSING")},
+            {"id": "requirements", "label": "工程要求", "status": "PASS" if active_requirements else "MISSING"},
+            {"id": "evidence", "label": "判定完整性", "status": "PASS" if evidence_ready else "FAIL"},
+        ]
+        manufacturing = self.manufacturing.latest_qualification(project_id) if self.manufacturing else None
         return {
-            "schema_version": 1, "object_type": "engineering_decision_cockpit", "authority": "EngineeringDecisionCockpitV1", "contract_version": "0.87-A",
-            "project_id": project_id, "can_decide": can_decide, "blockers": blockers,
-            "primary_next_action": action, "latest_result": result, "requirement_summary": requirement_summary,
+            "schema_version": 1,
+            "object_type": "engineering_decision_cockpit",
+            "authority": "EngineeringDecisionCockpitV1",
+            "contract_version": "0.92",
+            "project_id": project_id,
+            "can_decide": can_decide,
+            "decision_outcome": decision_outcome,
+            "decision_headline": decision_headline,
+            "decision_summary": decision_summary,
+            "checks": checks,
+            "blockers": blockers,
+            "primary_next_action": action,
+            "latest_result": result,
+            "requirements_configured": bool(active_requirements),
+            "requirement_summary": requirement_summary,
+            "requirement_evaluation": requirement_evaluation,
             "manufacturing_qualification": manufacturing,
             "advanced_evidence_collapsed_by_default": True,
         }

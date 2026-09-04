@@ -1,4 +1,4 @@
-/* MotorCAD Studio V0.91.8 model-feasibility UI. */
+/* MotorCAD Studio V0.92.0 model-feasibility UI. */
 (function(){
   let timer=null,localAbort=null,lastLocalKey='',lastLocalResult=null,localPromise=null,runtimePromise=null;
   function currentPayload(){try{return collectPayload()}catch{return null}}

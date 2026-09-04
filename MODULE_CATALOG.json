@@ -1,7 +1,7 @@
 {
   "authority": "StudioProductModuleCatalogV1",
   "catalog_version": "7",
-  "product_version": "0.91.8",
+  "product_version": "0.92.0",
   "compatible": true,
   "module_count": 48,
   "backend_catalog_count": 41,
@@ -12,7 +12,7 @@
   "modules": [
     {
       "module_id": "analysis.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -23,7 +23,7 @@
     },
     {
       "module_id": "analysis.domain",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -34,7 +34,7 @@
     },
     {
       "module_id": "api.http",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -45,7 +45,7 @@
     },
     {
       "module_id": "api.operations",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -56,7 +56,7 @@
     },
     {
       "module_id": "control-plane.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -67,7 +67,7 @@
     },
     {
       "module_id": "core.configuration",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -78,7 +78,7 @@
     },
     {
       "module_id": "core.release",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -89,7 +89,7 @@
     },
     {
       "module_id": "data-factory.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -100,7 +100,7 @@
     },
     {
       "module_id": "engineering.context",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -111,7 +111,7 @@
     },
     {
       "module_id": "engineering.experience",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -122,7 +122,7 @@
     },
     {
       "module_id": "execution.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -133,7 +133,7 @@
     },
     {
       "module_id": "execution.runtime",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -144,7 +144,7 @@
     },
     {
       "module_id": "field-data.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -155,7 +155,7 @@
     },
     {
       "module_id": "frontend.action-readiness",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -166,7 +166,7 @@
     },
     {
       "module_id": "frontend.analysis",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -179,7 +179,7 @@
     },
     {
       "module_id": "frontend.binary-field-viewer",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -192,7 +192,7 @@
     },
     {
       "module_id": "frontend.context",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -203,7 +203,7 @@
     },
     {
       "module_id": "frontend.control-plane",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -216,7 +216,7 @@
     },
     {
       "module_id": "frontend.core",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -229,7 +229,7 @@
     },
     {
       "module_id": "frontend.design",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -242,7 +242,7 @@
     },
     {
       "module_id": "frontend.fea-viewer",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -253,7 +253,7 @@
     },
     {
       "module_id": "frontend.i18n",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -264,7 +264,7 @@
     },
     {
       "module_id": "frontend.release",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -275,7 +275,7 @@
     },
     {
       "module_id": "frontend.results",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -288,7 +288,7 @@
     },
     {
       "module_id": "frontend.router",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -299,7 +299,7 @@
     },
     {
       "module_id": "frontend.runtime-capsule",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -312,7 +312,7 @@
     },
     {
       "module_id": "frontend.shell",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog",
@@ -325,7 +325,7 @@
     },
     {
       "module_id": "frontend.standard-validation",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "browser-catalog"
@@ -336,7 +336,7 @@
     },
     {
       "module_id": "motor.domain",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -347,7 +347,7 @@
     },
     {
       "module_id": "motor.plugins",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -358,7 +358,7 @@
     },
     {
       "module_id": "native.closure",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -369,7 +369,7 @@
     },
     {
       "module_id": "native.motorcad",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -380,7 +380,7 @@
     },
     {
       "module_id": "optimization.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -391,7 +391,7 @@
     },
     {
       "module_id": "optimization.domain",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -402,7 +402,7 @@
     },
     {
       "module_id": "platform.bootstrap",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -413,7 +413,7 @@
     },
     {
       "module_id": "platform.observability",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -424,7 +424,7 @@
     },
     {
       "module_id": "platform.release",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -435,7 +435,7 @@
     },
     {
       "module_id": "platform.semantics",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -446,7 +446,7 @@
     },
     {
       "module_id": "platform.system",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -457,7 +457,7 @@
     },
     {
       "module_id": "qualification",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -468,7 +468,7 @@
     },
     {
       "module_id": "qualification.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -479,7 +479,7 @@
     },
     {
       "module_id": "requirements.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -490,7 +490,7 @@
     },
     {
       "module_id": "result.domain",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -501,7 +501,7 @@
     },
     {
       "module_id": "results.application",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -512,7 +512,7 @@
     },
     {
       "module_id": "workspace.materials",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -523,7 +523,7 @@
     },
     {
       "module_id": "workspace.motor-design",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -534,7 +534,7 @@
     },
     {
       "module_id": "workspace.projects",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"
@@ -545,7 +545,7 @@
     },
     {
       "module_id": "workspace.solutions",
-      "implementation_version": "0.91.8",
+      "implementation_version": "0.92.0",
       "contract_version": "1",
       "surfaces": [
         "backend-catalog"

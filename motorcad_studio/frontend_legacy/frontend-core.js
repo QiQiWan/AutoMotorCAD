@@ -24,7 +24,16 @@
   }
 
   function isAbortError(error) {
+    if (typeof error === 'string') return ['route-change','already-disposed','navigation-superseded'].includes(error);
     return Boolean(error && (error.name === 'AbortError' || error.code === 'ABORT_ERR' || error.mcsRouteAbort));
+  }
+
+  function routeAbortError(reason = 'route-change') {
+    let error;
+    try { error = new DOMException(String(reason), 'AbortError'); }
+    catch { error = new Error(String(reason)); error.name = 'AbortError'; }
+    error.mcsRouteAbort = true;
+    return error;
   }
 
   function isContextActive(context) {
@@ -58,7 +67,7 @@
   function disposeContext(context, reason = 'route-change') {
     if (!context || context.disposed) return;
     context.disposed = true;
-    try { context.controller.abort(reason); } catch {}
+    try { context.controller.abort(routeAbortError(reason)); } catch {}
     for (const dispose of context.disposers.splice(0).reverse()) {
       try { dispose(reason); } catch (error) { console.warn('route disposer failed', error); }
     }

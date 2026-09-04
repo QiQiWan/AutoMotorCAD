@@ -1,4 +1,4 @@
-/* MotorCAD Studio V0.91.8 — native, interactive WebGL FEA field viewer.
+/* MotorCAD Studio V0.92.0 — native, interactive WebGL FEA field viewer.
  *
  * The viewer consumes the versioned FieldData manifest and LOD endpoints, with
  * compatibility fallback to the original FEA evidence endpoints. Geometry
@@ -1504,7 +1504,10 @@
       if (['overview','output_data','fea','graphs','thermal_schematic','temperatures','stress','nvh'].includes(key)) canvas.insertAdjacentHTML('afterbegin',contractPanel());
       if (key === 'fea') {
         canvas.insertAdjacentHTML('beforeend','<div id="nativeFieldHostV052"></div>');
-        mountNativeField();
+        // The binary indexed viewer owns the hot path when available. Starting the
+        // legacy JSON/WebGL viewer in parallel doubled FEA transfer/geometry work
+        // and was the main cause of whole-page stalls on 29-frame field results.
+        if (document.documentElement.dataset.binaryFieldViewerPreferred !== '1') mountNativeField();
       }
       return result;
     };

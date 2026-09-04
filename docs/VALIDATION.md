@@ -2,7 +2,7 @@
 
 ## 1. 四项优化完成度
 
-| 优化范围 | 0.91.8 状态 | 自动化结论 |
+| 优化范围 | 0.92.0 状态 | 自动化结论 |
 |---|---|---|
 | M5-B/M5-C 控制平面 | Command Ledger、Outbox、Optimization、Data Factory、Qualification、Native Runtime、Requirements 已实现并接入 Composition Root | 完成离线事务与合同验证 |
 | 后端兼容处理器清理 | 251 个公共处理器按 13 个有界上下文物理组织，兼容操作为 0 | 后端模块化率 100% |
@@ -86,7 +86,7 @@ Pytest 还覆盖：
 - `/app/...` 深链接在旧运行时网络初始化前先进行 URL prime，现代 Bootstrap 在工程上下文恢复期间显示 route hydration shield，避免刷新先显示默认页、数秒后再跳回目标页；
 - 历史 0.91.6 现场日志曾记录 PyMotorCAD 0.8.6，并采用过 0.8.8 固定资格基线；0.91.8 已取消该产品级版本绑定，实际 PyMotorCAD 版本仅作为环境证据，正式 Native 资格按 Motor-CAD 目标版本、API 可导入性/能力和工作站实测证据判定。
 
-完整 Pytest 数量以 0.91.8 发布包的最终自动化验证结果为准。由于本验证环境不是目标 Windows + Licensed Motor-CAD 2026 R1，`e14_eMobility_AFM` 的真实 Native 打开、模型检查和求解仍必须在目标工作站重新执行后才能判定模板的正式 Motor-CAD 资格。
+0.91.9 完整 Pytest：111 passed。由于本验证环境不是目标 Windows + Licensed Motor-CAD 2026 R1，`e14_eMobility_AFM` 的真实 Native 打开、模型检查和求解仍必须在目标工作站重新执行后才能判定模板的正式 Motor-CAD 资格。
 
 ### 2.3 0.91.7 实机日志与性能/AFPM 提交专项回归
 
@@ -117,6 +117,28 @@ Pytest 还覆盖：
 
 本轮上传日志中 100 个 HTTP 请求均返回 2xx。慢请求主要集中在安装发现（最高约 8.43 s）、分析创建（约 10.34 s）、Native check（约 20.40 s）以及显式 deep preflight（约 9.57 s）。分析路由还记录到 18.93 s、8.65 s 等明显卡顿。0.91.8 已移除普通页面最重的 host discovery 与同步只读锁争用，并修正 route lifecycle；目标工作站复测需要重新量化 warm/cold latency，禁止将自动化静态测试结果当成真实 Windows 性能结论。
 
+### 2.5 0.91.9 设计资格、结果工作台、FEA/热结果专项回归
+
+0.91.9 针对第三组现场界面与日志增加以下发布回归：
+
+- 设计编辑器从验证页返回时必须重新建立有效 Shell 生命周期；Design Qualification 通过后必须提供“进入分析配置”交接动作。
+- 没有草稿变化时点击“保存设计新版本”不得静默无响应：明确提示无需产生重复 Revision；存在变化时保存新 Revision 后继续进入分析配置。
+- 设计阶段统一显示“设计资格”，分析阶段统一显示“计算就绪检查”；后者复用 Design Revision 原生资格，只对工况、物理输入、Solver、输出合同和运行环境做计算阶段门禁。
+- Result Viewer 只把实际有数据的模块放在主导航；真实 Result Contract 缺项单独折叠显示，不适用于当前分析类型的模块不再以“未生成数据”堆满侧栏。
+- 输入快照表必须同时显示中文名称、原始字段标识、字段说明、数值和单位。
+- Binary Field Viewer 必须在旧 JSON/CPU FEA 查看器启动前取得渲染所有权；二进制能力探测失败时才允许 legacy fallback，Feature dispose 后恢复 fallback 条件。
+- 二进制 FieldData 缓存命中不得先解析 frame/viewer chunk JSON；缓存文件命中校验使用源身份/manifest/文件大小，避免每帧重复顺序读取完整 `.mcfd` 做 SHA-256。
+- WebGL 查看器覆盖轨道旋转、平移、缩放、透视/正交、标准视角、网格边线、节点拾取、剖切、播放与全屏；帧切换使用 AbortController 和串行播放，禁止异步 `setInterval` 形成请求堆积。
+- FEA 空间资格必须显式区分 `physical_z=true` 的真实物理三维与只有 X/Y 的 2.5D 工程平面；标量高度仅为视觉表达，不能提升物理维度。
+- 热结果不得构造虚假的热网络。`thermal_node_table` 只有在 Motor-CAD SteadyState CSV 同时具备温度字段和节点/部件身份字段时才生成；普通汇总 CSV 保持缺失状态。
+- 工况比较必须限定同一 Task / Execution Plan，并采用“任务 → 2–8 个 Case → 工程对照”流程。
+
+本轮系统日志共有 48 个 HTTP 请求，全部返回 2xx。最慢请求为设计 Motor-CAD Native check 21.67 s、Analysis Definition 创建 4.77 s、安装发现 3.21 s 和 Execute 2.77 s；前端记录的 ResultBundle 路由达到 20.20 s，分析配置路由达到 5.66 s。任务诊断 95 条事件中有 19 条 WARNING、0 条 ERROR，Case 求解完成但 ResultBundle 质量为 WARNING，直接质量缺项为可选 `thermal_node_table`。
+
+现场 FEA 证据包含 29 帧、每帧 24,716 个原始点/单元记录、展示层 6,000 点，累计原始点记录 716,764；可用字段为 B、Pt 和 CurrentDensity。该结果的 Viewer Contract 明确为 `2.5d_engineering_plane`，`spatial_geometry_hash` 缺失，因此本次历史 ResultBundle 不能被描述为已获得物理三维有限元体场。0.91.9 查看器已经具备三维交互框架；真实三维坐标/体网格需要后续 Motor-CAD 导出链提供 Z 与空间 Lineage 后才能进入物理 3D 模式。
+
+自动化测试新增原生稳态热表语义解析、summary CSV 拒绝、Binary/Legacy FEA 单热路径、设计资格交接和热结果不伪造等回归。真实 Windows + Licensed Motor-CAD 2026 R1 的首帧时间、连续帧时间、浏览器 GPU 帧率以及新 SteadyState CSV 的实际列结构仍属于目标工作站验收范围。
+
 ## 3. 当前结构指标
 
 - 产品模块合同：48；
@@ -131,7 +153,7 @@ Pytest 还覆盖：
 - 浏览器直接 JavaScript 入口：1；
 - 浏览器直接 CSS 入口：1；
 - Runtime Capsule 源文件：89；
-- Runtime Capsule 当前大小：1,477,811 字节；
+- Runtime Capsule 当前大小：1,509,955 字节；
 - Frontend Lifecycle Soak：500/500；
 - 数据库 Schema：56；
 - 控制平面 Schema：3。

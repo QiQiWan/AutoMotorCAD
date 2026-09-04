@@ -59,6 +59,11 @@
     ['data-field-view-mode', 'FIELD_VIEW_MODE'],
     ['data-result-mode', 'RESULT_MODE'],
     ['data-candidate-action', 'CANDIDATE_ACTION'],
+    ['data-workbench-continue-analysis-v0919', 'DESIGN_CONTINUE_ANALYSIS'],
+    ['data-workbench-next-v063', 'DESIGN_NEXT'],
+    ['data-workbench-run-studio-check-v065', 'DESIGN_STUDIO_CHECK'],
+    ['data-workbench-run-native-check-v065', 'DESIGN_NATIVE_CHECK'],
+    ['data-workbench-native-safe-repair-v088c', 'DESIGN_NATIVE_REPAIR'],
     ['data-workflow-action-endpoint', 'WORKFLOW_ENDPOINT'],
   ];
 
@@ -72,6 +77,8 @@
     '[data-open-task-v076]','[data-open-viewer-case]','[data-viewer-scalar]',
     '[data-fix-first-v081a]','[data-svp-run]','[data-native-preview-source]',
     '[data-field-view-mode]','[data-result-mode]','[data-candidate-action]',
+    '[data-workbench-continue-analysis-v0919]','[data-workbench-next-v063]',
+    '[data-workbench-run-studio-check-v065]','[data-workbench-run-native-check-v065]','[data-workbench-native-safe-repair-v088c]',
     '#solverPlaybackToggleV022','#nativeFEAPlayV023',
     '#analysisCommonModeV081A','#analysisAdvancedModeV081A','#analysisBackToMotorV076','#analysisRefreshV076','#analysisCreateV076'
   ];

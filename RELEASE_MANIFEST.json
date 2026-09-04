@@ -1,10 +1,10 @@
 {
   "authority": "MotorCADStudioDistributionManifestV1",
   "product_name": "MotorCAD Studio",
-  "version": "0.91.8",
-  "release_train": "0.91",
-  "build_id": "20260904-0918",
-  "static_asset_version": "0.91.8",
+  "version": "0.92.0",
+  "release_train": "0.92",
+  "build_id": "20260904-0920",
+  "static_asset_version": "0.92.0",
   "api_contract_version": "1",
   "module_catalog_version": "7",
   "module_contracts": {
@@ -65,7 +65,7 @@
   "module_version_convergence": {
     "authority": "StudioModuleVersionConvergenceV1",
     "status": "PASS",
-    "product_version": "0.91.8",
+    "product_version": "0.92.0",
     "implementation_version_policy": "all built-in modules equal product version",
     "contract_version_policy": "independent declared compatibility boundary",
     "product_module_count": 48,

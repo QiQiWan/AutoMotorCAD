@@ -1,4 +1,4 @@
-/* Generated frontend module catalog for MotorCAD Studio 0.91.8. */
+/* Generated frontend module catalog for MotorCAD Studio 0.92.0. */
 (() => {
   const release = () => window.MCS_RELEASE || {};
   const descriptors = Object.freeze([

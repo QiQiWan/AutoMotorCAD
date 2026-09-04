@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="zh-CN" data-studio-version="0.91.8">
+<html lang="zh-CN" data-studio-version="0.92.0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MotorCAD Studio</title>
-  <link rel="stylesheet" href="/static/app.css?v=0.91.8">
+  <link rel="stylesheet" href="/static/app.css?v=0.92.0">
 </head>
-<body class="studio-current studio-shell" data-release-train="0.91">
+<body class="studio-current studio-shell" data-release-train="0.92">
 <header class="app-header operator-header">
   <div class="brand-block">
-    <h1>MotorCAD Studio <span class="version">0.91.8</span></h1>
+    <h1>MotorCAD Studio <span class="version">0.92.0</span></h1>
     <p>永磁电机工程仿真工作台</p>
   </div>
   <div class="header-actions">
@@ -36,7 +36,7 @@
   </div>
   <nav class="project-stage-nav canonical-project-flow engineer-journey-nav-v086r" aria-label="工程师工作流程">
     <button type="button" data-tab="workspace" data-project-tab data-engineer-stage="design"><span>1</span><b>设计</b></button>
-    <button type="button" data-tab="analysisConfig" data-project-tab data-engineer-stage="validate"><span>2</span><b>验证</b></button>
+    <button type="button" data-tab="analysisConfig" data-project-tab data-engineer-stage="validate"><span>2</span><b>计算</b></button>
     <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="results" data-results-destination="viewer"><span>3</span><b>结果</b></button>
     <button type="button" data-tab="resultViewer" data-project-tab data-engineer-stage="decide" data-results-destination="decision"><span>4</span><b>决策</b></button>
   </nav>
@@ -327,10 +327,10 @@
 
 
   <section id="resultViewer" class="tab">
-    <article id="engineeringDecisionCockpitV086R" class="panel engineering-decision-cockpit-v086r"><div class="workspace-empty compact"><b>正在形成工程决策摘要…</b><span>系统会先判断结果是否足以支持当前设计决策。</span></div></article>
-    <article id="engineeringScorecardV087D" class="panel engineering-scorecard-v087d hidden" aria-live="polite"></article>
-    <details id="engineeringEvidenceAdvancedV086R" class="panel engineering-evidence-advanced-v086r"><summary><b>工程证据与高级设置</b><span>制造鲁棒性、概率资格及详细证据按需展开</span></summary><div id="manufacturingRobustnessV086R"></div></details>
     <div id="resultsWorkbenchV069" class="results-workbench-v069"></div>
+    <article id="engineeringDecisionCockpitV086R" class="panel engineering-decision-cockpit-v086r hidden"><div class="workspace-empty compact"><b>正在形成工程判断…</b><span>系统会检查结果证据、工程要求和判定完整性。</span></div></article>
+    <article id="engineeringScorecardV087D" class="panel engineering-scorecard-v087d hidden" aria-live="polite"></article>
+    <details id="engineeringEvidenceAdvancedV086R" class="panel engineering-evidence-advanced-v086r hidden"><summary><b>高级工程证据</b><span>制造鲁棒性、概率资格及详细证据按需展开</span></summary><div id="manufacturingRobustnessV086R"></div></details>
     <div id="resultsWorkbenchBodyV069" class="results-workbench-body-v069"></div>
     <div id="resultsLegacyHeaderV069" class="analytics-toolbar panel result-viewer-header">
       <div><h2>工程结果查看器</h2><p>集中查看单工况结果、批量对比、参数试验和 Motor-CAD 原生结果。</p></div>
@@ -490,6 +490,6 @@
 <!-- Stable design controllers load before historical compatibility layers.
      This guarantees the Design Viewer compatibility boundary exists before any
      older runtime wrapper can observe a workspace render. -->
-  <script type="module" src="/static/core/bootstrap.js?v=0.91.8"></script>
+  <script type="module" src="/static/core/bootstrap.js?v=0.92.0"></script>
 </body>
 </html>

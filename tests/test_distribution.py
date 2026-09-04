@@ -24,6 +24,18 @@ def test_package_integrity_rejects_undeclared_files(tmp_path: Path):
     assert any(row["code"] == "UNEXPECTED_FILE" for row in report["issues"])
 
 
+def test_package_integrity_ignores_vcs_control_files(tmp_path: Path):
+    (tmp_path / "application.txt").write_text("current", encoding="utf-8")
+    write_manifest(tmp_path)
+    # A source checkout may legitimately contain or locally adjust VCS control
+    # files. They are metadata, not executable application payload.
+    (tmp_path / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
+    (tmp_path / ".gitattributes").write_text("* text=auto\n", encoding="utf-8")
+    report = verify_manifest(tmp_path)
+    assert report["compatible"] is True
+    assert report["unexpected_file_count"] == 0
+
+
 def test_package_integrity_ignores_mutable_runtime_state(tmp_path: Path):
     (tmp_path / "application.txt").write_text("current", encoding="utf-8")
     write_manifest(tmp_path)
@@ -100,6 +112,7 @@ def test_frontend_root_hooks_are_semantic_and_single_entry():
 
 def test_clean_distribution_root_layout():
     expected_files = {
+        ".gitignore",
         "MODULE_CATALOG.json",
         "PACKAGE_CONTENT_MANIFEST.json",
         "README.md",

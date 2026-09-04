@@ -46,30 +46,60 @@
     const edges=(native.edges||[]).map(edge=>({...edge,source:resolve(edge.source??edge.from),target:resolve(edge.target??edge.to)}));
     return{native:true,nodes,edges};
   }
-  function thermalTopology(viewer,mode='temperature'){
-    const scalar=viewer.results?.scalars||{},scenario=viewer.inputs?.scenario||{},tables=viewer.results?.tables||{},native=tables.thermal_network||tables.thermal_circuit||null;
-    if(native?.nodes?.length)return normalizeThermalNetwork(native);
-    const ambient=number(scenario.ambient_temperature_c,25),nodes=[
-      {id:'ambient',label:'环境',temperature:ambient,x:78,y:170,tone:'ambient'},
-      {id:'housing',label:'机壳',temperature:scalar.housing_temperature_c,x:240,y:170,tone:'housing'},
-      {id:'stator',label:'定子铁心',temperature:null,x:410,y:94,tone:'stator'},
-      {id:'winding',label:'绕组',temperature:scalar.winding_average_temperature_c??scalar.winding_max_temperature_c,x:620,y:70,tone:'winding',power:scalar.copper_loss_w},
-      {id:'rotor',label:'转子',temperature:null,x:410,y:250,tone:'rotor'},
-      {id:'magnet',label:'永磁体',temperature:scalar.magnet_temperature_c,x:620,y:270,tone:'magnet',power:scalar.magnet_loss_w},
-    ],edges=[['ambient','housing'],['housing','stator'],['stator','winding'],['housing','rotor'],['rotor','magnet'],['winding','ambient'],['magnet','ambient']].map(([source,target])=>({source,target}));
-    return{native:false,nodes,edges,mode};
+  function thermalInventory(viewer){
+    return viewer.result_data_inventory||state.resultBundleAggregate?.result_inventory?.items||[];
   }
+  function thermalNodeTable(viewer){
+    const tables=viewer.results?.tables||{};
+    const native=tables.thermal_network||tables.thermal_circuit||null;
+    if(native?.nodes?.length)return normalizeThermalNetwork(native);
+    const rows=tables.thermal_node_table?.rows||tables.thermal_node_table?.data||tables.thermal_node_table;
+    if(!Array.isArray(rows)||!rows.length)return null;
+    const nodes=rows.filter(row=>row&&typeof row==='object').map((row,index)=>({
+      id:String(row.id??row.node_id??row.name??index),
+      label:row.label||row.name||row.component||row.node||`节点 ${index+1}`,
+      temperature:row.temperature_c??row.temperature??row.value,
+      power:row.heat_flow_w??row.power_w??row.power,
+    }));
+    if(!nodes.length)return null;
+    const columns=Math.max(1,Math.min(4,Math.ceil(Math.sqrt(nodes.length*1.6))));
+    nodes.forEach((node,index)=>{node.x=92+(index%columns)*(520/Math.max(1,columns-1));node.y=74+Math.floor(index/columns)*(220/Math.max(1,Math.ceil(nodes.length/columns)-1));});
+    return{native:true,nodes,edges:[],nodeTableOnly:true};
+  }
+  function thermalTopology(viewer){return thermalNodeTable(viewer)}
   function renderThermalTopology(viewer,mode='temperature'){
-    const model=thermalTopology(viewer,mode),lookup=new Map(model.nodes.map(node=>[node.id,node]));let edges='',nodes='';
-    model.edges.forEach(edge=>{const a=lookup.get(edge.source),b=lookup.get(edge.target);if(!a||!b)return;edges+=`<g class="thermal-edge-v031 ${model.native?'native':'inferred'}"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><circle cx="${(a.x+b.x)/2}" cy="${(a.y+b.y)/2}" r="4"/>${edge.value!==undefined?`<text x="${(a.x+b.x)/2}" y="${(a.y+b.y)/2-10}" text-anchor="middle">${fmt(edge.value)} ${safe(edge.unit||'')}</text>`:''}</g>`});
+    const model=thermalTopology(viewer);
+    if(!model)return'';
+    const lookup=new Map(model.nodes.map(node=>[node.id,node]));let edges='',nodes='';
+    model.edges.forEach(edge=>{const a=lookup.get(edge.source),b=lookup.get(edge.target);if(!a||!b)return;edges+=`<g class="thermal-edge-v031 native"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/><circle cx="${(a.x+b.x)/2}" cy="${(a.y+b.y)/2}" r="4"/>${edge.value!==undefined?`<text x="${(a.x+b.x)/2}" y="${(a.y+b.y)/2-10}" text-anchor="middle">${fmt(edge.value)} ${safe(edge.unit||'')}</text>`:''}</g>`});
     model.nodes.forEach(node=>{const value=mode==='power'?node.power:node.temperature;nodes+=`<g class="thermal-node-v031 ${safe(node.tone||'default')}"><rect x="${node.x-64}" y="${node.y-34}" width="128" height="68" rx="12"/><text x="${node.x}" y="${node.y-6}" text-anchor="middle">${safe(node.label||node.id)}</text><text x="${node.x}" y="${node.y+18}" text-anchor="middle" class="value">${value!==null&&value!==undefined?`${fmt(value)} ${mode==='power'?'W':'°C'}`:'—'}</text></g>`});
-    return`<svg viewBox="0 0 720 340" role="img" aria-label="电机热路径拓扑图"><g>${edges}</g><g>${nodes}</g></svg><div class="thermal-topology-note-v031 ${model.native?'native':'summary'}"><b>${model.native?'Motor-CAD 原生热网络':'工程热路径摘要'}</b><span>${model.native?'节点与连接来自当前 Case 的结构化热网络表。':'连接用于总览主要热路径；当前结果未包含原生节点/热阻表，虚线不代表 Motor-CAD 的完整热网络。'}</span></div>`;
+    const note=model.nodeTableOnly?'已提取热节点表，但当前结果没有热阻/连接关系；因此只显示真实节点，不推断连接。':'节点与连接均来自当前 Case 的结构化 Motor-CAD 热网络数据。';
+    return`<svg viewBox="0 0 720 340" role="img" aria-label="Motor-CAD 热网络拓扑"><g>${edges}</g><g>${nodes}</g></svg><div class="thermal-topology-note-v031 native"><b>${model.nodeTableOnly?'Motor-CAD 热节点':'Motor-CAD 原生热网络'}</b><span>${note}</span></div>`;
+  }
+  function thermalScalarCards(viewer){
+    const scalars=viewer.results?.scalars||{};
+    const labels={winding_max_temperature_c:'绕组最高温度',winding_average_temperature_c:'绕组平均温度',magnet_temperature_c:'磁体温度',housing_temperature_c:'机壳温度',coolant_outlet_temperature_c:'冷却液出口温度',total_loss_w:'总损耗',copper_loss_w:'铜耗',magnet_loss_w:'磁体损耗'};
+    const rows=Object.entries(scalars).filter(([key,value])=>Number.isFinite(Number(value))&&(/temperature|_loss_w$/i.test(key)||key==='total_loss_w')).slice(0,8);
+    if(!rows.length)return'';
+    return`<div class="thermal-kpi-grid-v0919">${rows.map(([key,value])=>`<article><span>${safe(labels[key]||key)}</span><b>${fmt(value,3)} <small>${/temperature/i.test(key)?'°C':'W'}</small></b><code>${safe(key)}</code></article>`).join('')}</div>`;
+  }
+  function thermalExtractionState(viewer){
+    const rows=thermalInventory(viewer),node=rows.find(row=>String(row.result_id||row.id||'').toLowerCase()==='thermal_node_table');
+    const hasThermal=Object.keys(viewer.results?.scalars||{}).some(key=>/temp|thermal|heat/i.test(key))||rows.some(row=>/temp|thermal|heat|coolant/i.test(String(row.result_id||row.id||'')));
+    return{hasThermal,node,status:String(node?.status||node?.availability||'').toUpperCase(),issue:node?.issue||node?.reason||node?.message||''};
   }
   function enhanceThermalViewer(){
-    const viewer=state.viewer,canvas=$q('#viewerCanvas');if(!viewer||!canvas)return;const existing=canvas.innerHTML;
-    canvas.innerHTML=`<section class="thermal-topology-v031"><div class="thermal-topology-head-v031"><div><span class="eyebrow">THERMAL · TOPOLOGY</span><h3>整体热路径</h3><p>先定位温度与损耗在机壳、定子、绕组、转子和磁体之间的关系，再查看详细温升曲线。</p></div><div class="segmented"><button type="button" class="active" data-thermal-mode-v031="temperature">节点温度</button><button type="button" data-thermal-mode-v031="power">损耗源</button></div></div><div id="thermalTopologyStageV031">${renderThermalTopology(viewer,'temperature')}</div></section><section class="thermal-detail-results-v031"><div class="viewer-section-title"><h3>详细热结果</h3></div>${existing}</section>`;
+    const viewer=state.viewer,canvas=$q('#viewerCanvas');if(!viewer||!canvas)return;
+    const existing=canvas.innerHTML,model=thermalTopology(viewer),extraction=thermalExtractionState(viewer),cards=thermalScalarCards(viewer);
+    if(!extraction.hasThermal&&!cards){
+      canvas.innerHTML='<div class="help-empty result-module-empty-v089g3"><b>当前分析没有热结果合同</b><span>该算例未声明热分析输出，因此不生成热网络、温度或热流占位界面。</span></div>';
+      return;
+    }
+    const topology=model?`<section class="thermal-topology-v031 thermal-topology-v0919"><div class="thermal-topology-head-v031"><div><span class="eyebrow">THERMAL · NATIVE DATA</span><h3>热节点与热网络</h3><p>仅展示当前 ResultBundle 中实际提取的 Motor-CAD 节点、连接与热流数据。</p></div><div class="segmented"><button type="button" class="active" data-thermal-mode-v031="temperature">节点温度</button><button type="button" data-thermal-mode-v031="power">热流 / 损耗</button></div></div><div id="thermalTopologyStageV031">${renderThermalTopology(viewer,'temperature')}</div></section>`:`<section class="thermal-extraction-notice-v0919"><div><span class="eyebrow">THERMAL DATA CONTRACT</span><h3>热计算标量已提取，结构化热网络未提取</h3><p>本次计算包含真实热结果，但 ResultBundle 中没有可用于拓扑/热流图的 <code>thermal_node_table</code> 或原生热网络表。页面不会再构造推断节点或虚线热路。</p></div><span class="status WARNING">${safe(extraction.status||'MISSING')}</span>${extraction.issue?`<small>${safe(typeof extraction.issue==='object'?JSON.stringify(extraction.issue):extraction.issue)}</small>`:''}</section>`;
+    canvas.innerHTML=`<section class="thermal-result-overview-v0919"><div class="viewer-section-title"><h3>热结果概览</h3><p>以下数值均来自当前计算记录；缺少结构化拓扑时只显示实际已提取数据。</p></div>${cards||'<div class="help-empty">当前没有可用热标量。</div>'}</section>${topology}<section class="thermal-detail-results-v031"><div class="viewer-section-title"><h3>详细热结果</h3></div>${existing}</section>`;
     $$q('[data-thermal-mode-v031]',canvas).forEach(button=>button.addEventListener('click',()=>{$$q('[data-thermal-mode-v031]',canvas).forEach(row=>row.classList.toggle('active',row===button));const stage=$q('#thermalTopologyStageV031');if(stage)stage.innerHTML=renderThermalTopology(viewer,button.dataset.thermalModeV031)}));
   }
+
 
 
   const previousRenderViewerModule=window.renderViewerModule;

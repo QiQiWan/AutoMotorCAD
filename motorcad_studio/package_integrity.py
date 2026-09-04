@@ -19,6 +19,10 @@ from .release import BUILD_ID, PRODUCT_VERSION, RELEASE_TRAIN
 
 MANIFEST_NAME = "PACKAGE_CONTENT_MANIFEST.json"
 IGNORED_PARTS = {".git", ".venv", "__pycache__", ".pytest_cache"}
+# Repository-control files are intentionally outside the immutable application
+# hash boundary. A normal Git checkout must not fail startup merely because
+# VCS metadata is present or locally adjusted.
+IGNORED_NAMES = {".gitignore", ".gitattributes", ".gitmodules"}
 IGNORED_SUFFIXES = {".pyc", ".pyo"}
 # Runtime-owned state is mutable by design and must never be part of the immutable
 # package hash boundary. Exact top-level matching prevents a directory named
@@ -29,7 +33,11 @@ MUTABLE_RUNTIME_ROOTS = frozenset({"data", "runtime", "results", "logs", "baseli
 def _ignored(relative: Path) -> bool:
     if relative.parts and relative.parts[0] in MUTABLE_RUNTIME_ROOTS:
         return True
-    return any(part in IGNORED_PARTS for part in relative.parts) or relative.suffix.lower() in IGNORED_SUFFIXES
+    return (
+        relative.name in IGNORED_NAMES
+        or any(part in IGNORED_PARTS for part in relative.parts)
+        or relative.suffix.lower() in IGNORED_SUFFIXES
+    )
 
 
 def _included_files(root: Path) -> Iterable[Path]:
@@ -95,7 +103,7 @@ def build_manifest(root: Path) -> dict[str, Any]:
         "build_id": BUILD_ID,
         "algorithm": "SHA-256",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "scope": "immutable distribution files; excludes this manifest, mutable runtime-state roots, virtual environments, VCS metadata and bytecode/test caches",
+        "scope": "immutable distribution files; excludes this manifest, mutable runtime-state roots, virtual environments, VCS metadata/control files and bytecode/test caches",
         "unexpected_file_policy": "reject",
         "mutable_runtime_roots": sorted(MUTABLE_RUNTIME_ROOTS),
         "file_count": len(entries),

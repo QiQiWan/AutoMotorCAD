@@ -1,5 +1,5 @@
 /* V0.70 stable module; migrated from historical v054.js. */
-/* MotorCAD Studio V0.91.8 — engineering table viewer and archive trust UX. */
+/* MotorCAD Studio V0.92.0 — engineering table viewer and archive trust UX. */
 (() => {
   const q=(s,r=document)=>r.querySelector(s);
   const safe=v=>typeof window.esc==='function'?window.esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

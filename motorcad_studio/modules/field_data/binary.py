@@ -269,38 +269,60 @@ class BinaryFieldDataService:
         with self._locks_guard:
             return self._locks.setdefault(key, threading.Lock())
 
-    def _source(self, case_id: str, frame_index: int) -> tuple[dict[str, Any], Path, dict[str, Any], str]:
+    def _source_identity(self, case_id: str, frame_index: int) -> tuple[dict[str, Any], Path, Path, Path | None, str]:
+        """Resolve immutable source identity without decoding the heavy mesh payload.
+
+        The old path decoded every JSON chunk before looking at the binary cache. A single
+        29-frame viewer session therefore repeatedly reparsed the full native mesh even on
+        cache hits. The viewer-manifest digest already commits to its verified chunks, so it
+        is sufficient for a deterministic binary cache key.
+        """
         _, manifest, root = self.backend._manifest_payload(case_id)
         frames = (manifest.get("normalization") or {}).get("frames") or []
         record = next((row for row in frames if int(row.get("index", -1)) == int(frame_index)), None)
         if not record:
             raise HTTPException(status_code=404, detail="FEA frame does not exist")
         frame_path, _, frame_hash = self.backend._verified_fea_frame(root, record)
+        source_hash = frame_hash or hashlib.sha256(frame_path.read_bytes()).hexdigest()
+        viewer_path: Path | None = None
+        if record.get("viewer_manifest_file"):
+            viewer_path, viewer_hash = self.backend._verified_fea_viewer_manifest(root, record)
+            source_hash = hashlib.sha256((source_hash + viewer_hash).encode("ascii")).hexdigest()
+        return record, root, frame_path, viewer_path, source_hash
+
+    def _source_payload(self, frame_path: Path, viewer_path: Path | None) -> dict[str, Any]:
+        """Decode native mesh data only after a binary-cache miss."""
         try:
             frame_payload = json.loads(frame_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise HTTPException(status_code=409, detail=f"FEA frame cannot be decoded: {type(exc).__name__}") from exc
-        source_hash = frame_hash or hashlib.sha256(frame_path.read_bytes()).hexdigest()
-        # Prefer complete viewer chunks when available.
-        if record.get("viewer_manifest_file"):
-            viewer_path, viewer_hash = self.backend._verified_fea_viewer_manifest(root, record)
+        if viewer_path is None:
+            return frame_payload
+        try:
             viewer = json.loads(viewer_path.read_text(encoding="utf-8"))
-            merged_nodes: dict[str, Mapping[str, Any]] = {}
-            merged_elements: list[Mapping[str, Any]] = []
-            for chunk in viewer.get("chunks") or []:
-                chunk_path, _ = self.backend._verified_fea_viewer_chunk(viewer_path, chunk)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=409, detail=f"FEA viewer manifest cannot be decoded: {type(exc).__name__}") from exc
+        merged_nodes: dict[str, Mapping[str, Any]] = {}
+        merged_elements: list[Mapping[str, Any]] = []
+        for chunk in viewer.get("chunks") or []:
+            chunk_path, _ = self.backend._verified_fea_viewer_chunk(viewer_path, chunk)
+            try:
                 chunk_payload = json.loads(chunk_path.read_text(encoding="utf-8"))
-                for offset, node in enumerate(chunk_payload.get("mesh_nodes") or chunk_payload.get("nodes") or []):
-                    if isinstance(node, Mapping):
-                        node_id = str(node.get("id") or node.get("node_id") or f"{chunk.get('index',0)}:{offset}")
-                        merged_nodes[node_id] = node
-                merged_elements.extend(row for row in (chunk_payload.get("elements") or chunk_payload.get("points") or []) if isinstance(row, Mapping))
-            if merged_nodes or merged_elements:
-                frame_payload = dict(frame_payload)
-                frame_payload["mesh_nodes"] = list(merged_nodes.values())
-                frame_payload["elements"] = merged_elements
-                source_hash = hashlib.sha256((source_hash + viewer_hash).encode("ascii")).hexdigest()
-        return record, root, frame_payload, source_hash
+            except (OSError, json.JSONDecodeError) as exc:
+                raise HTTPException(status_code=409, detail=f"FEA viewer chunk cannot be decoded: {type(exc).__name__}") from exc
+            for offset, node in enumerate(chunk_payload.get("mesh_nodes") or chunk_payload.get("nodes") or []):
+                if isinstance(node, Mapping):
+                    node_id = str(node.get("id") or node.get("node_id") or f"{chunk.get('index',0)}:{offset}")
+                    merged_nodes[node_id] = node
+            merged_elements.extend(
+                row for row in (chunk_payload.get("elements") or chunk_payload.get("points") or [])
+                if isinstance(row, Mapping)
+            )
+        if merged_nodes or merged_elements:
+            frame_payload = dict(frame_payload)
+            frame_payload["mesh_nodes"] = list(merged_nodes.values())
+            frame_payload["elements"] = merged_elements
+        return frame_payload
 
     @staticmethod
     def _cache_key(frame_index: int, field: str, region: str | None, source_hash: str) -> str:
@@ -308,7 +330,7 @@ class BinaryFieldDataService:
         return _sha(identity)
 
     def materialize(self, case_id: str, frame_index: int, *, field: str = "b", region: str | None = None) -> tuple[Path, dict[str, Any]]:
-        record, root, payload, source_hash = self._source(case_id, frame_index)
+        record, root, frame_path, viewer_path, source_hash = self._source_identity(case_id, frame_index)
         key = self._cache_key(frame_index, field, region, source_hash)
         target_dir = (root / "binary_frames").resolve()
         if root != target_dir and root not in target_dir.parents:
@@ -319,11 +341,19 @@ class BinaryFieldDataService:
             if target.exists() and manifest_path.exists():
                 try:
                     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-                    digest = hashlib.sha256(target.read_bytes()).hexdigest()
-                    if digest == manifest.get("payload_sha256") and target.stat().st_size == int(manifest.get("size_bytes") or 0):
+                    # Binary filenames are content-addressed by immutable source identity.
+                    # Avoid an O(file-size) SHA pass on every manifest/range request; atomic
+                    # creation plus source hash + exact size is the hot-path integrity gate.
+                    if (
+                        manifest.get("authority") == "MotorCADFieldDataBinaryV1"
+                        and manifest.get("source_sha256") == source_hash
+                        and target.stat().st_size == int(manifest.get("size_bytes") or 0)
+                        and manifest.get("payload_sha256")
+                    ):
                         return target, manifest
                 except (OSError, ValueError, json.JSONDecodeError):
                     pass
+            payload = self._source_payload(frame_path, viewer_path)
             positions, indices, scalars, mesh_meta = _extract_mesh(payload, field=field, region=region)
             binary, header = encode_frame(
                 positions, indices, scalars,

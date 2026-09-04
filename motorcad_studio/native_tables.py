@@ -218,3 +218,86 @@ def read_native_table_page(
         "next_offset": start + len(rows),
         "rows": rows,
     }, None
+
+
+def parse_thermal_node_table(
+    path: str | Path,
+    *,
+    authority: str = "motorcad_export_results_steady_state",
+    max_rows: int = 500,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Extract a thermal-node table only when the native CSV exposes node semantics.
+
+    ``MotorCAD.export_results("SteadyState", ...)`` is version/template dependent.
+    Some versions export a node/component table, while others export only summary
+    results.  This parser deliberately refuses to label an arbitrary summary CSV as
+    a thermal network.  It requires a temperature column plus a node/component-like
+    identity column.  Heat-flow/power is retained when present.
+    """
+    table, error = parse_native_delimited_table(path, authority=authority, max_rows=max_rows)
+    if not table:
+        return None, error
+
+    columns = [str(column) for column in table.get("columns") or []]
+    if not columns:
+        return None, "thermal_table_columns_missing"
+
+    def norm(value: str) -> str:
+        return "".join(character.lower() for character in str(value) if character.isalnum())
+
+    normalized = {column: norm(column) for column in columns}
+
+    def first(predicate):
+        return next((column for column in columns if predicate(normalized[column])), None)
+
+    temperature = first(lambda key: "temperature" in key or key.startswith("temp") or key.endswith("tempc") or key in {"t", "degc"})
+    node = first(lambda key: any(token in key for token in ("node", "component", "part", "location", "name", "region")))
+    power = first(lambda key: any(token in key for token in ("heatflow", "heatflux", "power", "loss")))
+
+    if temperature is None:
+        return None, "thermal_temperature_column_not_found"
+    if node is None:
+        return None, "thermal_node_identity_column_not_found"
+
+    rows: list[dict[str, Any]] = []
+    for index, source in enumerate(table.get("rows") or []):
+        if not isinstance(source, dict):
+            continue
+        raw_temperature = source.get(temperature)
+        raw_power = source.get(power) if power else None
+        if not isinstance(raw_temperature, (int, float)) or isinstance(raw_temperature, bool):
+            continue
+        identity = source.get(node)
+        if identity is None or str(identity).strip() == "":
+            identity = index
+        row = {
+            "node_id": str(identity),
+            "name": str(identity),
+            "temperature_c": raw_temperature,
+        }
+        if isinstance(raw_power, (int, float)) and not isinstance(raw_power, bool):
+            row["heat_flow_w"] = raw_power
+        rows.append(row)
+
+    if not rows:
+        return None, "thermal_node_rows_not_found"
+
+    return {
+        "schema_version": 1,
+        "authority": authority,
+        "source_file": table.get("source_file"),
+        "source_size_bytes": table.get("source_size_bytes"),
+        "source_sha256": table.get("source_sha256"),
+        "columns": ["node_id", "name", "temperature_c"] + (["heat_flow_w"] if power else []),
+        "rows": rows,
+        "row_count": len(rows),
+        "source_row_count": table.get("source_row_count"),
+        "truncated": bool(table.get("truncated")),
+        "semantic_columns": {
+            "node": node,
+            "temperature": temperature,
+            "heat_flow": power,
+        },
+        "topology_edges_available": False,
+        "note": "Native steady-state result table; no thermal resistance edges are inferred.",
+    }, None

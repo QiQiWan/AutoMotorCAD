@@ -1,4 +1,4 @@
-/* MotorCAD Studio V0.91.8 — engineer workflow, result navigation and diagnostics repair. */
+/* MotorCAD Studio V0.92.0 — engineer workflow, result navigation and diagnostics repair. */
 (() => {
   const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
   const safe=v=>typeof window.esc==='function'?window.esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
