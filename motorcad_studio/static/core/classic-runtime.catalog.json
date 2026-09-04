@@ -1,0 +1,545 @@
+{
+  "authority": "MotorCADStudioClassicRuntimeCatalogV1",
+  "format_version": 1,
+  "source_count": 89,
+  "first_source": "/static/release-manifest.js",
+  "last_source": "/static/module-registry.js",
+  "source_size_bytes": 1494782,
+  "source_sha256": "560c540f6dca9ce9e07943a429b9db0a1c458251c3c21db85454a9ba26a1a796",
+  "sources": [
+    {
+      "runtime_path": "/static/release-manifest.js",
+      "source_path": "frontend_legacy/release-manifest.js",
+      "size_bytes": 2406,
+      "sha256": "23b350a8aa3c98b03eeee68b49b747960c6aec97f593e8e2478ac38a66016818"
+    },
+    {
+      "runtime_path": "/static/hmi/action-registry.js",
+      "source_path": "frontend_legacy/hmi/action-registry.js",
+      "size_bytes": 13776,
+      "sha256": "5feaf9789e1a5ee4898dbec7832c9a759f8f2d24ff0aaac1bdf62d32dba5a661"
+    },
+    {
+      "runtime_path": "/static/locale-data.js",
+      "source_path": "frontend_legacy/locale-data.js",
+      "size_bytes": 80507,
+      "sha256": "bcd89df998981d1ce11e8e01698732e6faef652a887744a05d055bebad5381ca"
+    },
+    {
+      "runtime_path": "/static/i18n.js",
+      "source_path": "frontend_legacy/i18n.js",
+      "size_bytes": 13244,
+      "sha256": "ce8396e7bcb10e197a6514f7abaf74ac7f3228eea7f68acf6c31aa3239adb01a"
+    },
+    {
+      "runtime_path": "/static/realtime.js",
+      "source_path": "frontend_legacy/realtime.js",
+      "size_bytes": 2043,
+      "sha256": "866b9f1ddca8e2a186083d4ec2c79357549f4f8a91596bfbb7e10838fd082a7e"
+    },
+    {
+      "runtime_path": "/static/frontend-core.js",
+      "source_path": "frontend_legacy/frontend-core.js",
+      "size_bytes": 6750,
+      "sha256": "ee4f756be2b5e986749ccb70740b3d669301326db490bd3c80d23444c663134c"
+    },
+    {
+      "runtime_path": "/static/app-core.js",
+      "source_path": "frontend_legacy/app-core.js",
+      "size_bytes": 2118,
+      "sha256": "e70d12694107d400a75c93d3c188423e1fa69ae2c542bf6c5019e9b935e10a46"
+    },
+    {
+      "runtime_path": "/static/hmi/operation-progress.js",
+      "source_path": "frontend_legacy/hmi/operation-progress.js",
+      "size_bytes": 12070,
+      "sha256": "9ffae06509898382bad006acc3b43c25d177c77bb26b01695cd4caf1df9020d1"
+    },
+    {
+      "runtime_path": "/static/routing/navigation-transaction.js",
+      "source_path": "frontend_legacy/routing/navigation-transaction.js",
+      "size_bytes": 6562,
+      "sha256": "4b65f06d6dc7017bc7ca99e7111d50d899299ba01858b04dc40ad262c6113a86"
+    },
+    {
+      "runtime_path": "/static/domain/motor-domain.js",
+      "source_path": "frontend_legacy/domain/motor-domain.js",
+      "size_bytes": 2809,
+      "sha256": "5bd0609461096311df8ae3e774c47e6324f235cd88860fae873e94b0fa8bde9b"
+    },
+    {
+      "runtime_path": "/static/domain/motor-object.js",
+      "source_path": "frontend_legacy/domain/motor-object.js",
+      "size_bytes": 1481,
+      "sha256": "fa4c125fc6a75be5b9fc0eec4a7426c77f74216266c743dbf92eec454f419037"
+    },
+    {
+      "runtime_path": "/static/domain/pm-motor-object.js",
+      "source_path": "frontend_legacy/domain/pm-motor-object.js",
+      "size_bytes": 8990,
+      "sha256": "7e98915fa75cde22bb4b19978a6e69d6d71723564c8df2f3d1158d243f933293"
+    },
+    {
+      "runtime_path": "/static/domain/induction-motor-object.js",
+      "source_path": "frontend_legacy/domain/induction-motor-object.js",
+      "size_bytes": 8122,
+      "sha256": "843048ce8edcd3c4237a4c8fdc4d55a0a4deb26ff7c25f826651e4f3bbb0ce4b"
+    },
+    {
+      "runtime_path": "/static/design/store.js",
+      "source_path": "frontend_legacy/design/store.js",
+      "size_bytes": 5093,
+      "sha256": "8dddbd02df67cf80c7a7c2eea7d593d6234f3233a17a8823bd4b3aef7d5d416e"
+    },
+    {
+      "runtime_path": "/static/design/navigation.js",
+      "source_path": "frontend_legacy/design/navigation.js",
+      "size_bytes": 6435,
+      "sha256": "a7ec2a749390366e90bb2f4ee78c76ed3091719dea7ca51b787ddc333f26a592"
+    },
+    {
+      "runtime_path": "/static/design/draft-service.js",
+      "source_path": "frontend_legacy/design/draft-service.js",
+      "size_bytes": 9313,
+      "sha256": "71728187ce470bc548e6c096cc7697eb2c9efb79c732cd8c3a2f7c21298d9fce"
+    },
+    {
+      "runtime_path": "/static/design/precheck.js",
+      "source_path": "frontend_legacy/design/precheck.js",
+      "size_bytes": 6452,
+      "sha256": "49915fe23aeaabb88eccfe4e9cd007b1d4705836b55a1e1d65fc21c63fc8aacd"
+    },
+    {
+      "runtime_path": "/static/design/render-utils.js",
+      "source_path": "frontend_legacy/design/render-utils.js",
+      "size_bytes": 9061,
+      "sha256": "28f64bd7a54fe4963233098b7f346e56ebb1be85f666e36d0ad0db08755effc5"
+    },
+    {
+      "runtime_path": "/static/design/derived-parameters.js",
+      "source_path": "frontend_legacy/design/derived-parameters.js",
+      "size_bytes": 4631,
+      "sha256": "ac26f713d9142b379b6672bff4b69b2cf64e6ffd2497c980de36a674a6e26c0f"
+    },
+    {
+      "runtime_path": "/static/design/geometry.js",
+      "source_path": "frontend_legacy/design/geometry.js",
+      "size_bytes": 33111,
+      "sha256": "4d6fe7c446297a81a3aaadcad78cc826e74c025c3452c5aec23bfd7eef89229d"
+    },
+    {
+      "runtime_path": "/static/design/winding.js",
+      "source_path": "frontend_legacy/design/winding.js",
+      "size_bytes": 16557,
+      "sha256": "efe2c9f3b5b521cbc3caa05344a071ada040d75297714fd24b45f266fb40fe53"
+    },
+    {
+      "runtime_path": "/static/design/materials.js",
+      "source_path": "frontend_legacy/design/materials.js",
+      "size_bytes": 8975,
+      "sha256": "ed951a0f42cea12a898cff3a183099c0c8b3a35036dc967b8c3c5a837af6bcee"
+    },
+    {
+      "runtime_path": "/static/design/validation.js",
+      "source_path": "frontend_legacy/design/validation.js",
+      "size_bytes": 13295,
+      "sha256": "7ebef3c0bc142ca591406d2dfce1ebc181c3b8f7d71504f33743fefb903a77bf"
+    },
+    {
+      "runtime_path": "/static/design/parameter-inspector.js",
+      "source_path": "frontend_legacy/design/parameter-inspector.js",
+      "size_bytes": 8387,
+      "sha256": "add7e1b9fe635d4f239e87057cb3dbd69a3a1f98bb1fd057a40fa813a8e3fd61"
+    },
+    {
+      "runtime_path": "/static/design/renderer.js",
+      "source_path": "frontend_legacy/design/renderer.js",
+      "size_bytes": 13330,
+      "sha256": "aa8b76926a9f94f61dba63711e20ae1a292cb64f289c9bf39f8f8330d5bd379d"
+    },
+    {
+      "runtime_path": "/static/analysis/labels.js",
+      "source_path": "frontend_legacy/analysis/labels.js",
+      "size_bytes": 3035,
+      "sha256": "b536a9f0ace1715f660b39ac60e692796fc0506d2f6af479eff590592cd16c0b"
+    },
+    {
+      "runtime_path": "/static/analysis/workspace-client.js",
+      "source_path": "frontend_legacy/analysis/workspace-client.js",
+      "size_bytes": 1203,
+      "sha256": "40731663e515d274c05f82b571b49569398ecb431bed93c0b68e1978bb76d112"
+    },
+    {
+      "runtime_path": "/static/runtime/workstation-acceptance.js",
+      "source_path": "frontend_legacy/runtime/workstation-acceptance.js",
+      "size_bytes": 11420,
+      "sha256": "2f4f367ada15874c7555c4dd8609803bd17716f1de30ee41dac95bd327874687"
+    },
+    {
+      "runtime_path": "/static/runtime/production-soak.js",
+      "source_path": "frontend_legacy/runtime/production-soak.js",
+      "size_bytes": 4660,
+      "sha256": "df5433e670f4ee16da71ce7a13a4f86cb5eb60c6ce5e93fc8d8101e6109e135a"
+    },
+    {
+      "runtime_path": "/static/runtime/ui-soak-qualification.js",
+      "source_path": "frontend_legacy/runtime/ui-soak-qualification.js",
+      "size_bytes": 4804,
+      "sha256": "f1ae09e112b8e748684c978c9d3ac40bb80d198fa502494745b43932db294bc0"
+    },
+    {
+      "runtime_path": "/static/runtime/release-candidate-gate.js",
+      "source_path": "frontend_legacy/runtime/release-candidate-gate.js",
+      "size_bytes": 3488,
+      "sha256": "76472235a9dc50dbd91101082c922e28df96f8737e3c97cac885daca742bbb07"
+    },
+    {
+      "runtime_path": "/static/design/design-starters.js",
+      "source_path": "frontend_legacy/design/design-starters.js",
+      "size_bytes": 9934,
+      "sha256": "365992d1ceaeb81bdca976b458cf8189901df09fb57b0765aff62c83ee1f7431"
+    },
+    {
+      "runtime_path": "/static/app.js",
+      "source_path": "frontend_legacy/app.js",
+      "size_bytes": 205058,
+      "sha256": "6df25d5abda741c41e15f58775fd2594a263d1a350d6558e395d4f688f8853cf"
+    },
+    {
+      "runtime_path": "/static/routing/engineering-context-store.js",
+      "source_path": "frontend_legacy/routing/engineering-context-store.js",
+      "size_bytes": 17498,
+      "sha256": "d36fe71430b1381e5c3ddbcca43180b22ed79ed64bf07b497f56624021934102"
+    },
+    {
+      "runtime_path": "/static/workflow/global-workflow-truth.js",
+      "source_path": "frontend_legacy/workflow/global-workflow-truth.js",
+      "size_bytes": 5443,
+      "sha256": "3cf4d4baac3db9f889e3843a077eed32c389bd75858c65b0c8e39aab1f5f7300"
+    },
+    {
+      "runtime_path": "/static/workflow/engineer-ux-convergence.js",
+      "source_path": "frontend_legacy/workflow/engineer-ux-convergence.js",
+      "size_bytes": 8057,
+      "sha256": "cffe97ab9f8ae476619a13a45f8af366cf2ab6bd7051f4acbec3b64d1546c732"
+    },
+    {
+      "runtime_path": "/static/workflow/global-shell-convergence.js",
+      "source_path": "frontend_legacy/workflow/global-shell-convergence.js",
+      "size_bytes": 4249,
+      "sha256": "355525d6036f3ce59e3b6a7fbcb7375101201a135049771c50f27c460b99d9f6"
+    },
+    {
+      "runtime_path": "/static/workflow/compact-flow-header.js",
+      "source_path": "frontend_legacy/workflow/compact-flow-header.js",
+      "size_bytes": 1821,
+      "sha256": "8dcffa93a9b28228266cb288afe70962516a9cfd001e55d4979bcca546fcf4ad"
+    },
+    {
+      "runtime_path": "/static/workflow/action-readiness.js",
+      "source_path": "frontend_legacy/workflow/action-readiness.js",
+      "size_bytes": 39340,
+      "sha256": "011e73721c547b92545f58bfd2c99549d69845b4345c7b5ad73c843d5f152173"
+    },
+    {
+      "runtime_path": "/static/routing/result-context.js",
+      "source_path": "frontend_legacy/routing/result-context.js",
+      "size_bytes": 4156,
+      "sha256": "8abdb29311e20fd3e1243b8555f2d9510f7f0f9eff72af8edfe1208bd02e6f52"
+    },
+    {
+      "runtime_path": "/static/results/aggregate-client.js",
+      "source_path": "frontend_legacy/results/aggregate-client.js",
+      "size_bytes": 2249,
+      "sha256": "fc135759f1050744858b653a0313155248c52ba3789c50d876d45c0c70322187"
+    },
+    {
+      "runtime_path": "/static/results/result-set-client.js",
+      "source_path": "frontend_legacy/results/result-set-client.js",
+      "size_bytes": 1792,
+      "sha256": "939d1d0e2f4521d72b1db95e1c93ec3d3102484c77989c1cf70095f8caeba068"
+    },
+    {
+      "runtime_path": "/static/results/result-data-client.js",
+      "source_path": "frontend_legacy/results/result-data-client.js",
+      "size_bytes": 3215,
+      "sha256": "13cde52e9eb106abbb3a1a23db26d97c26a4a76b676094378257d3d1ae51b1dc"
+    },
+    {
+      "runtime_path": "/static/results/case-viewer.js",
+      "source_path": "frontend_legacy/results/case-viewer.js",
+      "size_bytes": 41770,
+      "sha256": "38c05dfa6e363324622a922c45f4ecf6e9775ae38fd7edf48b5e4e8d0eb2d3f8"
+    },
+    {
+      "runtime_path": "/static/materials/library.js",
+      "source_path": "frontend_legacy/materials/library.js",
+      "size_bytes": 34804,
+      "sha256": "b2e74037bb8cb5f5aed949d9a9bc63de18fd9b83434e8cb2739307981ee2e652"
+    },
+    {
+      "runtime_path": "/static/design/editor.js",
+      "source_path": "frontend_legacy/design/editor.js",
+      "size_bytes": 71837,
+      "sha256": "2c159c1484d17e03c46c27d4aaef4dc9c29f75322cdfcb34f7100826da8427de"
+    },
+    {
+      "runtime_path": "/static/design/parameter-catalog.js",
+      "source_path": "frontend_legacy/design/parameter-catalog.js",
+      "size_bytes": 5115,
+      "sha256": "a34457c36cc9fb4e007965580ed143d887ff578ab114932d25cdae585152df06"
+    },
+    {
+      "runtime_path": "/static/design/viewer.js",
+      "source_path": "frontend_legacy/design/viewer.js",
+      "size_bytes": 15509,
+      "sha256": "a2b255eae173fdc262c5747df049b5b6261c5dabda31bd7828c9740755878534"
+    },
+    {
+      "runtime_path": "/static/design/workbench.js",
+      "source_path": "frontend_legacy/design/workbench.js",
+      "size_bytes": 6084,
+      "sha256": "7d9777d2cb133999750a8a75310eb31ab56d82d435e69679af1408f43b1a8473"
+    },
+    {
+      "runtime_path": "/static/geometry.js",
+      "source_path": "frontend_legacy/geometry.js",
+      "size_bytes": 6238,
+      "sha256": "9be74cea7f3e5cfadc7d1c7c5d50367701cec35fb4d0c6219dc36a5713ea8858"
+    },
+    {
+      "runtime_path": "/static/production.js",
+      "source_path": "frontend_legacy/production.js",
+      "size_bytes": 29268,
+      "sha256": "aaaba52c0b228f6f0b1a9baa23f7baf69dfb5bd97ace3216227879d7821d2851"
+    },
+    {
+      "runtime_path": "/static/operator-flow.js",
+      "source_path": "frontend_legacy/operator-flow.js",
+      "size_bytes": 21799,
+      "sha256": "160154145299794dc623100d199eecae64c26553d6cb2e7c7d995890e89812d6"
+    },
+    {
+      "runtime_path": "/static/dialogs.js",
+      "source_path": "frontend_legacy/dialogs.js",
+      "size_bytes": 5037,
+      "sha256": "8c0aacb7756b29ccf9417fd7ed7d1dcaa2096205237e09155435735fa931e90d"
+    },
+    {
+      "runtime_path": "/static/native-parity.js",
+      "source_path": "frontend_legacy/native-parity.js",
+      "size_bytes": 13372,
+      "sha256": "55ca3e36f3bf286096bc14b5abca7450a8a436c2d2e3f989ee42f040b53998ea"
+    },
+    {
+      "runtime_path": "/static/workflow/native-context.js",
+      "source_path": "frontend_legacy/workflow/native-context.js",
+      "size_bytes": 19930,
+      "sha256": "610d73900e8fc2ca6db01d77aacb7e177050d20551ff83c48c4dd2ee8fe86967"
+    },
+    {
+      "runtime_path": "/static/runtime/native-fea-session.js",
+      "source_path": "frontend_legacy/runtime/native-fea-session.js",
+      "size_bytes": 14521,
+      "sha256": "c64477fdb4e0e45818aed2e7f3f48f8fedb036d1a9328869db1df20448da8930"
+    },
+    {
+      "runtime_path": "/static/routing/page-controllers.js",
+      "source_path": "frontend_legacy/routing/page-controllers.js",
+      "size_bytes": 9153,
+      "sha256": "94cc756fc7f77a9641b4e807c72d01cf0353feb15c6f99686558cd98bdaba4a3"
+    },
+    {
+      "runtime_path": "/static/workflow/engineering-workflow.js",
+      "source_path": "frontend_legacy/workflow/engineering-workflow.js",
+      "size_bytes": 9999,
+      "sha256": "6d26f95b4d11e3c3e98f1630d5ebe8bfa387534c8b909ca681366ef6014c360f"
+    },
+    {
+      "runtime_path": "/static/runtime/execution-lease.js",
+      "source_path": "frontend_legacy/runtime/execution-lease.js",
+      "size_bytes": 8854,
+      "sha256": "3f54d0c7ed957d6f368494897e531733db178e2125a319a08a3013bcc26f64e8"
+    },
+    {
+      "runtime_path": "/static/runtime/resource-scheduler.js",
+      "source_path": "frontend_legacy/runtime/resource-scheduler.js",
+      "size_bytes": 12400,
+      "sha256": "6a66a796cc68097d29b24f816fb2f970f246658ffb4259841143d2253c3dc6af"
+    },
+    {
+      "runtime_path": "/static/runtime/lifecycle-qualification.js",
+      "source_path": "frontend_legacy/runtime/lifecycle-qualification.js",
+      "size_bytes": 3400,
+      "sha256": "32253ecf46c31495d7292346c5e224a6a2365e4dd189d91be37f6b09e76e7e1d"
+    },
+    {
+      "runtime_path": "/static/results/fea-thermal.js",
+      "source_path": "frontend_legacy/results/fea-thermal.js",
+      "size_bytes": 14061,
+      "sha256": "30bb124bd9fb7ad3c3764c1b702027f1b9e1ddd70c8277e58a57fc112aa6c6a6"
+    },
+    {
+      "runtime_path": "/static/results/native-evidence.js",
+      "source_path": "frontend_legacy/results/native-evidence.js",
+      "size_bytes": 20844,
+      "sha256": "c3bea8d2fdf98372a39c30cf5bb289f335ad888eda3f67389e7fbb05afd426d2"
+    },
+    {
+      "runtime_path": "/static/results/field-viewer.js",
+      "source_path": "frontend_legacy/results/field-viewer.js",
+      "size_bytes": 79001,
+      "sha256": "b1a4294a792f0fcdef2c6287408863d2291383336d385fe4c408040164612e66"
+    },
+    {
+      "runtime_path": "/static/results/native-tables.js",
+      "source_path": "frontend_legacy/results/native-tables.js",
+      "size_bytes": 4679,
+      "sha256": "766cc3f52bac250b052bc59e371f69482a43d304d7f01348790159ea8b6c6aec"
+    },
+    {
+      "runtime_path": "/static/runtime/solver-evidence.js",
+      "source_path": "frontend_legacy/runtime/solver-evidence.js",
+      "size_bytes": 14027,
+      "sha256": "664d0989890438d4e2ab82fed3e174dad2f84a9d15a1d563b5cbc38b8f0f8a2f"
+    },
+    {
+      "runtime_path": "/static/workflow/usability-closure.js",
+      "source_path": "frontend_legacy/workflow/usability-closure.js",
+      "size_bytes": 1241,
+      "sha256": "f694c6cffcaca75a50e1545cae51b6e4ebce86c375c1a228d4f8893980484bdc"
+    },
+    {
+      "runtime_path": "/static/analysis/monitor.js",
+      "source_path": "frontend_legacy/analysis/monitor.js",
+      "size_bytes": 4944,
+      "sha256": "e69ca9c54fe2f071c05ee149e78a9392726446912f66e1570e4124b9195d6d22"
+    },
+    {
+      "runtime_path": "/static/results/trust-ui.js",
+      "source_path": "frontend_legacy/results/trust-ui.js",
+      "size_bytes": 3620,
+      "sha256": "8205ae68783f48360fe8e48ebbb18dac44ff6100e9bf60ea10a45c013c26ae91"
+    },
+    {
+      "runtime_path": "/static/results/revision-compare.js",
+      "source_path": "frontend_legacy/results/revision-compare.js",
+      "size_bytes": 10628,
+      "sha256": "0125b9530bd8154a46fb5fb0929ff88f26dea6da906288429400ee5c0f8e8e65"
+    },
+    {
+      "runtime_path": "/static/results/case-compare.js",
+      "source_path": "frontend_legacy/results/case-compare.js",
+      "size_bytes": 15299,
+      "sha256": "27f246947888247998b51ebccb9d073276d106f219876285a085e9eda4dcf34a"
+    },
+    {
+      "runtime_path": "/static/results/optimization.js",
+      "source_path": "frontend_legacy/results/optimization.js",
+      "size_bytes": 75125,
+      "sha256": "a14838151a66e78ed628af36f9db329df1b0e12c4ddac728b0b19bd914e7a00d"
+    },
+    {
+      "runtime_path": "/static/results/optimization-decision.js",
+      "source_path": "frontend_legacy/results/optimization-decision.js",
+      "size_bytes": 29521,
+      "sha256": "cad0878ca6e0f2e1c1a7f36183bb8103f2dc32f929fd17e7df2e3208e44e1fb9"
+    },
+    {
+      "runtime_path": "/static/results/requirements.js",
+      "source_path": "frontend_legacy/results/requirements.js",
+      "size_bytes": 12728,
+      "sha256": "5a5e21d74fe6d930ed65a71977d97c97f9f011852a7d77ed3f1135f9a1486a1c"
+    },
+    {
+      "runtime_path": "/static/results/qualification-campaign.js",
+      "source_path": "frontend_legacy/results/qualification-campaign.js",
+      "size_bytes": 11523,
+      "sha256": "bfc96e6e82b403adbe3f94bfc7018be0b7b9086ebfb6be36d489c891c921f56c"
+    },
+    {
+      "runtime_path": "/static/results/interpretation.js",
+      "source_path": "frontend_legacy/results/interpretation.js",
+      "size_bytes": 9099,
+      "sha256": "317a57e60891dc9732a0bf5baf253ce398ca558c7819f90998bcca311bec9a09"
+    },
+    {
+      "runtime_path": "/static/results/workbench.js",
+      "source_path": "frontend_legacy/results/workbench.js",
+      "size_bytes": 18048,
+      "sha256": "061a052d818577e26597d4def8c5fb813cf1cc8900bef2682d49b9227da58587"
+    },
+    {
+      "runtime_path": "/static/runtime/experiment-lifecycle.js",
+      "source_path": "frontend_legacy/runtime/experiment-lifecycle.js",
+      "size_bytes": 3783,
+      "sha256": "1dc26d34b5b23f1e9f771b8d0756ec61c64f839d29306337bfcfed21ea2e9cc7"
+    },
+    {
+      "runtime_path": "/static/runtime/runtime-ownership.js",
+      "source_path": "frontend_legacy/runtime/runtime-ownership.js",
+      "size_bytes": 2155,
+      "sha256": "26705d7e6470155047d064de6e91c08beafd40bdc2e58f14656836e8f5e0f53a"
+    },
+    {
+      "runtime_path": "/static/analysis/guidance.js",
+      "source_path": "frontend_legacy/analysis/guidance.js",
+      "size_bytes": 5882,
+      "sha256": "39928452b33fe7eec815a88ff85f1e37430d9f4cb0af166b486cc0383415f707"
+    },
+    {
+      "runtime_path": "/static/analysis/standard-validation.js",
+      "source_path": "frontend_legacy/analysis/standard-validation.js",
+      "size_bytes": 19187,
+      "sha256": "188fc7d9a753b1d5014616ca9fa1e1bc6f9c12e3fc10ac7509398432765b2220"
+    },
+    {
+      "runtime_path": "/static/analysis/unified-configuration.js",
+      "source_path": "frontend_legacy/analysis/unified-configuration.js",
+      "size_bytes": 107220,
+      "sha256": "da57e6ab22ad604ff6e3d6710667db855b83d31dcf464e700cf6400f21e8978f"
+    },
+    {
+      "runtime_path": "/static/workflow/engineer-journey.js",
+      "source_path": "frontend_legacy/workflow/engineer-journey.js",
+      "size_bytes": 5343,
+      "sha256": "a18f0352497256cc8e1fa2b9732b741baaa14392631161e80460d70fca3b5f13"
+    },
+    {
+      "runtime_path": "/static/results/decision-cockpit.js",
+      "source_path": "frontend_legacy/results/decision-cockpit.js",
+      "size_bytes": 8502,
+      "sha256": "55969c46279e948ff5106526e79ee96bab8922d4ae5b662397ca227f3972c000"
+    },
+    {
+      "runtime_path": "/static/results/engineering-scorecard.js",
+      "source_path": "frontend_legacy/results/engineering-scorecard.js",
+      "size_bytes": 4469,
+      "sha256": "fa000db1b692c23990fa6b6e7dd9b02550d8f89c0eef5d6ffeabd53bae83daa6"
+    },
+    {
+      "runtime_path": "/static/results/manufacturing-robustness.js",
+      "source_path": "frontend_legacy/results/manufacturing-robustness.js",
+      "size_bytes": 2238,
+      "sha256": "fdd957acbbc9db2f720154ffeb80cbf40dc74f671868d0006de132f980bf1044"
+    },
+    {
+      "runtime_path": "/static/router.js",
+      "source_path": "frontend_legacy/router.js",
+      "size_bytes": 22823,
+      "sha256": "dbc428031ca6da08c8b84f99a900808e4cd097ee93de6de237431a850dea293c"
+    },
+    {
+      "runtime_path": "/static/canonical-project-flow.js",
+      "source_path": "frontend_legacy/canonical-project-flow.js",
+      "size_bytes": 10806,
+      "sha256": "57c54151e17d230854c26a783d965d119958774dda06bf8b783c482a34ee97bd"
+    },
+    {
+      "runtime_path": "/static/module-registry.js",
+      "source_path": "frontend_legacy/module-registry.js",
+      "size_bytes": 6444,
+      "sha256": "52cfd08fcae4d81da3f48e2dcf7dadb401a577f18592880c45bed5cba97868bd"
+    }
+  ]
+}

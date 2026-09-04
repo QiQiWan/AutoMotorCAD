@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 from typing import Any, Literal
 import json
@@ -9,9 +10,11 @@ from pydantic import BaseModel, Field
 
 from .analysis_domain.contracts import stable_hash
 from .version import __version__
+from .release import BUILTIN_MODULE_CONTRACTS, STATIC_ASSET_VERSION
+from .module_system import validate_distribution
 
 RELEASE_CANDIDATE_GATE_AUTHORITY = "ReleaseCandidateGateV1"
-RELEASE_CANDIDATE_GATE_CONTRACT_VERSION = "0.89-G1"
+RELEASE_CANDIDATE_GATE_CONTRACT_VERSION = BUILTIN_MODULE_CONTRACTS["qualification"]
 
 HUMAN_ACCEPTANCE_ITEMS: tuple[dict[str, str], ...] = (
     {"id": "PROJECT_ENTRY_CLARITY", "label": "项目入口清晰", "description": "工程师能在不查文档的情况下新建/进入项目，并理解项目与方案的关系。"},
@@ -76,75 +79,165 @@ class ReleaseCandidateGateService:
         index = self.static_dir / "index.html"
         if not index.is_file():
             return {"passed": False, "issues": ["INDEX_HTML_MISSING"], "script_count": 0, "style_count": 0}
+
         html = index.read_text(encoding="utf-8")
         scripts = re.findall(r'<script[^>]+src="/static/([^"?]+\.js)\?v=([^"]+)"', html)
         styles = re.findall(r'<link[^>]+href="/static/([^"?]+\.css)\?v=([^"]+)"', html)
         issues: list[str] = []
-        script_paths = [p for p, _ in scripts]
-        style_paths = [p for p, _ in styles]
-        dup_scripts = sorted({p for p in script_paths if script_paths.count(p) > 1})
-        dup_styles = sorted({p for p in style_paths if style_paths.count(p) > 1})
-        if dup_scripts: issues.append("DUPLICATE_SCRIPT_LOADS")
-        if dup_styles: issues.append("DUPLICATE_STYLE_LOADS")
-        if any(v != __version__ for _, v in scripts + styles): issues.append("STATIC_VERSION_MISMATCH")
-        missing = [p for p in script_paths + style_paths if not (self.static_dir / p).is_file()]
-        if missing: issues.append("STATIC_ASSET_MISSING")
-        if html.count('id="engineerFocusBarV089F"') != 1: issues.append("ENGINEER_FOCUS_BAR_MISSING")
-        if "/static/workflow/engineer-ux-convergence.js" not in html: issues.append("ENGINEER_UX_ASSET_MISSING")
-        if html.count("/static/global-shell-convergence.css") != 1: issues.append("GLOBAL_SHELL_STYLE_MISSING_OR_DUPLICATE")
-        if html.count("/static/workflow/global-shell-convergence.js") != 1: issues.append("GLOBAL_SHELL_SCRIPT_MISSING_OR_DUPLICATE")
-        if 'class="studio-v089g1"' not in html: issues.append("GLOBAL_SHELL_BODY_HOOK_MISSING")
-        if html.count("/static/workflow/action-readiness.js") != 1: issues.append("ACTION_READINESS_SCRIPT_MISSING_OR_DUPLICATE")
-        if html.count("/static/action-readiness.css") != 1: issues.append("ACTION_READINESS_STYLE_MISSING_OR_DUPLICATE")
+        expected_scripts = [("core/bootstrap.js", STATIC_ASSET_VERSION)]
+        expected_styles = [("app.css", STATIC_ASSET_VERSION)]
+        if scripts != expected_scripts:
+            issues.append("FRONTEND_SINGLE_ENTRY_MISMATCH")
+        if styles != expected_styles:
+            issues.append("FRONTEND_SINGLE_STYLESHEET_MISMATCH")
+        asset_paths = [path for path, _ in scripts + styles]
+        duplicate_assets = sorted(path for path, count in Counter(asset_paths).items() if count > 1)
+        if duplicate_assets:
+            issues.append("DUPLICATE_STATIC_ASSETS")
+        if any(version != STATIC_ASSET_VERSION for _, version in scripts + styles):
+            issues.append("STATIC_VERSION_MISMATCH")
+        missing_assets = [path for path in asset_paths if not (self.static_dir / path).is_file()]
+        if missing_assets:
+            issues.append("STATIC_ASSET_MISSING")
+
+        runtime_catalog = self.static_dir / "core" / "classic-runtime.catalog.json"
+        runtime_source = self.static_dir / "core" / "classic-runtime-source.js"
+        runtime_paths: list[str] = []
+        try:
+            runtime_payload = json.loads(runtime_catalog.read_text(encoding="utf-8"))
+            runtime_rows = runtime_payload.get("sources") if isinstance(runtime_payload, dict) else []
+            runtime_paths = [str(row.get("runtime_path") or "") for row in runtime_rows if isinstance(row, dict)]
+        except Exception:
+            runtime_payload = {}
+        if not runtime_source.is_file() or not runtime_paths:
+            issues.append("FRONTEND_RUNTIME_CAPSULE_MISSING")
+        if int(runtime_payload.get("source_count") or 0) != len(runtime_paths):
+            issues.append("FRONTEND_RUNTIME_CAPSULE_COUNT_INVALID")
+        if len(runtime_paths) != len(set(runtime_paths)):
+            issues.append("FRONTEND_RUNTIME_SOURCE_DUPLICATE")
+        if runtime_paths and runtime_paths[0] != "/static/release-manifest.js":
+            issues.append("RELEASE_MANIFEST_RUNTIME_ORDER_INVALID")
+        if runtime_paths and runtime_paths[-1] != "/static/module-registry.js":
+            issues.append("MODULE_REGISTRY_RUNTIME_ORDER_INVALID")
+        legacy_source_dir = self.static_dir.parent / "frontend_legacy"
+        runtime_missing = [
+            path for path in runtime_paths
+            if not (legacy_source_dir / path.removeprefix("/static/")).is_file()
+        ]
+        if runtime_missing:
+            issues.append("FRONTEND_RUNTIME_SOURCE_MISSING")
+
+        document_match = re.search(r'<html\b[^>]*\bdata-studio-version="([^"]+)"', html, re.IGNORECASE)
+        document_version = document_match.group(1) if document_match else ""
+        if document_version != __version__:
+            issues.append("DOCUMENT_VERSION_MISMATCH")
+        body_match = re.search(r'<body\b[^>]*\bclass="([^"]*)"', html, re.IGNORECASE)
+        body_classes = set((body_match.group(1) if body_match else "").split())
+        if "studio-shell" not in body_classes:
+            issues.append("STUDIO_SHELL_BODY_HOOK_MISSING")
+
+        distribution = validate_distribution(self.static_dir, self.manifest_path)
+        if not distribution.get("compatible"):
+            issues.append("DISTRIBUTION_VERSION_INCOMPATIBLE")
         return {
             "passed": not issues,
             "issues": issues,
+            "product_version": __version__,
+            "asset_version": STATIC_ASSET_VERSION,
+            "document_version": document_version,
             "script_count": len(scripts),
             "style_count": len(styles),
-            "duplicate_scripts": dup_scripts,
-            "duplicate_styles": dup_styles,
-            "missing_assets": missing,
+            "runtime_asset_count": 1,
+            # Retain the historical response field for external clients while the
+            # browser now downloads a single sealed capsule asset.
+            "runtime_script_count": len(runtime_paths),
+            "classic_runtime_source_count": len(runtime_paths),
+            "classic_runtime_source_sha256": runtime_payload.get("source_sha256"),
+            "duplicate_assets": duplicate_assets,
+            "missing_assets": missing_assets,
+            "runtime_missing_assets": runtime_missing,
+            "distribution_compatibility": distribution,
         }
+
+    def _release_validation(self) -> dict[str, Any]:
+        path = self.manifest_path.parent / "validation" / "evidence.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            return payload if isinstance(payload, dict) else {}
+        except Exception:
+            return {}
 
     @staticmethod
     def _pass_text(value: Any) -> bool:
         return isinstance(value, str) and "PASS" in value.upper()
 
     def _automated_gate(self, manifest: dict[str, Any]) -> dict[str, Any]:
-        tests = dict(manifest.get("current_test_summary") or {})
-        hmi = dict(manifest.get("hmi_action_qualification_authority") or {})
-        click = dict(hmi.get("actual_click_sweep") or {})
-        readiness = dict(manifest.get("workflow_action_readiness") or {})
+        module_convergence = dict(manifest.get("module_version_convergence") or {})
+        release_gate = dict(manifest.get("release_candidate_gate") or {})
+        validation = self._release_validation()
+        validation_checks = {
+            str(row.get("name") or ""): bool(row.get("passed"))
+            for row in (validation.get("checks") or [])
+            if isinstance(row, dict)
+        }
+        required_validation_checks = {
+            "release_sync",
+            "module_audit",
+            "package_integrity",
+            "frontend_single_entry",
+            "frontend_navigation_actions",
+            "filename_convergence",
+            "root_layout",
+            "python_compile",
+            "javascript_syntax",
+            "css_syntax",
+            "main_entrypoint",
+            "legacy_backend_retired",
+            "frontend_runtime_capsule",
+            "frontend_browser_bootstrap_guard",
+            "frontend_control_plane",
+            "frontend_lifecycle_soak",
+            "control_plane_contracts",
+            "native_execution_fencing",
+            "binary_field_data",
+            "native_field_data_bridge",
+            "field_data_performance",
+            "openapi_compatibility",
+            "one_click_launcher",
+            "runtime_preflight_diagnostics",
+            "application_graph",
+        }
         static = self._static_integrity()
         checks = {
             "manifest_version": str(manifest.get("version") or "") == __version__,
-            "engineer_ux_contract": str((manifest.get("engineer_ux_convergence") or {}).get("authority") or "") == "EngineerUXConvergenceV1",
-            "release_candidate_manifest": str((manifest.get("release_candidate_gate") or {}).get("authority") or "") == RELEASE_CANDIDATE_GATE_AUTHORITY,
-            "release_manifest_finalized": str((manifest.get("release_candidate_gate") or {}).get("release_state") or "") == "FINALIZED",
-            "v089f_release_gate_tests": self._pass_text(tests.get("v089f_release_candidate_gate")),
-            "v089g1_global_shell_tests": self._pass_text(tests.get("v089g1_global_shell_typography_copy_cleanup")),
-            "v089g1r_usability_repair_tests": self._pass_text(tests.get("v089g1r_usability_repair")),
-            "v089g2_action_readiness_dead_end_elimination_tests": self._pass_text(tests.get("v089g2_action_readiness_dead_end_elimination")),
-            "workflow_action_readiness_authority": str(readiness.get("authority") or "") == "WorkflowActionReadinessAuthorityV1",
-            "workflow_action_readiness_contract": str(readiness.get("contract_version") or "") == "0.89-G2",
-            "workflow_action_dead_end_zero": int(readiness.get("dead_end_count") or 0) == 0,
-            "workflow_action_unmanaged_primary_zero": int(readiness.get("unmanaged_primary_count") or 0) == 0,
-            "workflow_action_release_gate": str(readiness.get("release_gate") or "").upper() == "PASS",
-            "global_shell_copy_contract": str((manifest.get("global_shell_typography_copy_convergence") or {}).get("authority") or "") == "GlobalShellTypographyCopyConvergenceV1",
-            "full_test_inventory": self._pass_text(tests.get("full_inventory")),
-            "python_compileall": self._pass_text(tests.get("python_compileall")),
-            "javascript_syntax": self._pass_text(tests.get("javascript_syntax")),
-            "browser_hmi": self._pass_text(tests.get("browser_hmi")),
-            "fixed_hmi_registration": int(hmi.get("fixed_registration_qualification_percent") or 0) == 100,
-            "fixed_hmi_missing_zero": int(click.get("missing") or 0) == 0,
-            "browser_page_errors_zero": int(click.get("page_errors") or 0) == 0,
-            "browser_console_errors_zero": int(click.get("console_errors") or 0) == 0,
+            "module_version_convergence": (
+                str(module_convergence.get("status") or "").upper() == "PASS"
+                and str(module_convergence.get("product_version") or "") == __version__
+                and int(module_convergence.get("product_module_count") or 0) == len(BUILTIN_MODULE_CONTRACTS)
+                and int(module_convergence.get("unrepresented_contract_count") or 0) == 0
+            ),
+            "release_candidate_manifest": str(release_gate.get("authority") or "") == RELEASE_CANDIDATE_GATE_AUTHORITY,
+            "release_state_validated": str(release_gate.get("release_state") or "").upper() in {"INTEGRATION_VALIDATED", "FINALIZED"},
+            "release_validation_authority": str(validation.get("authority") or "") == "MotorCADStudioReleaseValidationV1",
+            "release_validation_version": str(validation.get("product_version") or "") == __version__,
+            "release_validation_passed": validation.get("compatible") is True,
+            "release_validation_complete": all(validation_checks.get(name) is True for name in required_validation_checks),
             "static_assets_unique": static["passed"],
-            "global_workflow_truth": str((manifest.get("product_release_gates") or {}).get("global_workflow_truth") or "").upper() == "PASS",
-            "navigation_transaction": str((manifest.get("product_release_gates") or {}).get("navigation_transaction_authority") or "").upper() == "PASS",
         }
         blockers = [key for key, passed in checks.items() if not passed]
-        return {"passed": not blockers, "checks": checks, "blockers": blockers, "static_integrity": static}
+        return {
+            "passed": not blockers,
+            "checks": checks,
+            "blockers": blockers,
+            "static_integrity": static,
+            "release_validation": {
+                "authority": validation.get("authority"),
+                "product_version": validation.get("product_version"),
+                "compatible": validation.get("compatible"),
+                "check_count": validation.get("check_count"),
+                "passed_count": validation.get("passed_count"),
+            },
+        }
 
     def _load_human(self) -> dict[str, Any] | None:
         try:

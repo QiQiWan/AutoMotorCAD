@@ -1,7 +1,7 @@
 version: 2
 binding_version: motorcad-2026R1-v2
 target_motorcad_version: 2026R1
-required_pymotorcad_version: 0.8.8
+required_pymotorcad_version: null
 source_policy: >-
   Versioned Motor-CAD native binding metadata. Parameter names remain owned by
   solver_versions/2026R1/parameter_mapping.yaml. Configured aliases are discovery

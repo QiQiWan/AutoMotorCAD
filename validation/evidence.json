@@ -1,0 +1,479 @@
+{
+  "authority": "MotorCADStudioReleaseValidationV1",
+  "product_version": "0.91.8",
+  "compatible": true,
+  "check_count": 25,
+  "passed_count": 25,
+  "blocking_failure_count": 0,
+  "checks": [
+    {
+      "name": "release_sync",
+      "passed": true,
+      "blocking": true,
+      "detail": []
+    },
+    {
+      "name": "module_audit",
+      "passed": true,
+      "blocking": true,
+      "detail": []
+    },
+    {
+      "name": "package_integrity",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "authority": "MotorCADStudioPackageIntegrityV1",
+        "product_version": "0.91.8",
+        "compatible": true,
+        "declared_file_count": 511,
+        "actual_file_count": 511,
+        "declared_total_bytes": 24757381,
+        "actual_total_bytes": 24757381,
+        "checked": 511,
+        "unexpected_file_count": 0,
+        "missing_file_count": 0,
+        "issues": []
+      }
+    },
+    {
+      "name": "frontend_single_entry",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "direct_scripts": [
+          [
+            "core/bootstrap.js",
+            "0.91.8"
+          ]
+        ],
+        "direct_styles": [
+          [
+            "app.css",
+            "0.91.8"
+          ]
+        ],
+        "body_classes": [
+          "studio-current",
+          "studio-shell"
+        ],
+        "versioned_shell_hooks": [],
+        "runtime_asset_count": 1,
+        "classic_source_count": 89,
+        "classic_source_unique_count": 89,
+        "classic_source_first": "/static/release-manifest.js",
+        "classic_source_last": "/static/module-registry.js",
+        "classic_source_missing": [],
+        "capsule_source_present": true,
+        "capsule_catalog_present": true,
+        "capsule_source_sha256": "560c540f6dca9ce9e07943a429b9db0a1c458251c3c21db85454a9ba26a1a796",
+        "capsule_build": {
+          "authority": "MotorCADStudioClassicRuntimeBuildV1",
+          "compatible": true,
+          "mode": "check",
+          "source_count": 89,
+          "source_size_bytes": 1494782,
+          "source_sha256": "560c540f6dca9ce9e07943a429b9db0a1c458251c3c21db85454a9ba26a1a796",
+          "changed": [],
+          "issues": []
+        },
+        "stale_runtime_manifest_present": false,
+        "served_javascript_files": [
+          "core/api-client.js",
+          "core/bootstrap.js",
+          "core/classic-runtime-source.js",
+          "core/diagnostics.js",
+          "core/disposable-scope.js",
+          "core/event-bus.js",
+          "core/feature-registry.js",
+          "core/interaction-monitor.js",
+          "core/legacy-runtime.js",
+          "core/navigation-bridge.js",
+          "core/store.js",
+          "features/control-plane/client.js",
+          "features/control-plane/feature.js",
+          "features/results/binary-field-viewer.js",
+          "results/field-worker.js"
+        ],
+        "served_javascript_count": 15,
+        "old_stylesheets": [],
+        "compatible": true
+      }
+    },
+    {
+      "name": "frontend_navigation_actions",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "fixed_button_count": 91,
+        "missing_fixed_button_binding_evidence": [],
+        "route_tab_count": 13,
+        "html_tab_count": 13,
+        "static_checks": {
+          "all_tabs_have_router_identity": true,
+          "deep_link_project_hydration": true,
+          "solution_creator_route_owned": true,
+          "route_start_precedes_background_preflight": true,
+          "compat_helpers_exported": true,
+          "navigation_bridge_installed": true,
+          "silent_noop_monitor_installed": true
+        }
+      }
+    },
+    {
+      "name": "filename_convergence",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "violations": []
+      }
+    },
+    {
+      "name": "root_layout",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "expected_files": [
+          "MODULE_CATALOG.json",
+          "PACKAGE_CONTENT_MANIFEST.json",
+          "README.md",
+          "RELEASE_MANIFEST.json",
+          "requirements.txt",
+          "start.bat"
+        ],
+        "expected_directories": [
+          "docs",
+          "motorcad_studio",
+          "tests",
+          "validation"
+        ],
+        "missing_files": [],
+        "unexpected_files": [],
+        "missing_directories": [],
+        "unexpected_directories": []
+      }
+    },
+    {
+      "name": "python_compile",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "checked": 308,
+        "issues": []
+      }
+    },
+    {
+      "name": "javascript_syntax",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "available": true,
+        "compatible": true,
+        "checked": 104,
+        "issues": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "css_syntax",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "available": true,
+        "compatible": true,
+        "checked": 1,
+        "issues": [],
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "main_entrypoint",
+      "passed": true,
+      "blocking": true,
+      "detail": null
+    },
+    {
+      "name": "legacy_backend_retired",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "retired_paths_present": []
+      }
+    },
+    {
+      "name": "frontend_runtime_capsule",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "missing": [],
+        "capsule_build": {
+          "authority": "MotorCADStudioClassicRuntimeBuildV1",
+          "compatible": true,
+          "mode": "check",
+          "source_count": 89,
+          "source_size_bytes": 1494782,
+          "source_sha256": "560c540f6dca9ce9e07943a429b9db0a1c458251c3c21db85454a9ba26a1a796",
+          "changed": [],
+          "issues": []
+        }
+      }
+    },
+    {
+      "name": "frontend_browser_bootstrap_guard",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "idle_callback_host_binding": true,
+        "legacy_failure_owner_diagnostics": true,
+        "cross_surface_contract_validation": true,
+        "compatible": true
+      }
+    },
+    {
+      "name": "frontend_control_plane",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "client": "motorcad_studio/static/features/control-plane/client.js",
+        "feature": "motorcad_studio/static/features/control-plane/feature.js",
+        "missing_endpoints": [],
+        "uses_canonical_api_client": true,
+        "direct_fetch": false,
+        "scoped_cancellation": true
+      }
+    },
+    {
+      "name": "frontend_lifecycle_soak",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "iterations": 500,
+        "mounts": 500,
+        "unmounts": 500,
+        "events_delivered_while_mounted": 500,
+        "active_after_soak": [],
+        "exit_code": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "name": "binary_field_data",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "payload_size_bytes": 824,
+        "topology_hash": "73a0fb45e640b59b22f452d2395c2bfe5594af7c8437e5f767d35d0a00403ddf",
+        "scalar_hash": "958be38e5b5bdd8fa2cb4efd7df7fcbbed8ff20f30fd6821eacc966137e6ccde",
+        "frame_hash": "2fe5ede089926748c2a376978f9e070f1673a6d70661fe1231da582d6750aa7d",
+        "vertex_count": 4,
+        "triangle_count": 2,
+        "range_requests": true,
+        "topology_reuse": true,
+        "scalar_only_frame_update": true
+      }
+    },
+    {
+      "name": "native_field_data_bridge",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "source_authority": "MotorCADNativeFEAEvidenceV1",
+        "format_authority": "MotorCADFieldDataBinaryV1",
+        "vertex_count": 3,
+        "triangle_count": 1,
+        "payload_sha256": "81b835cd2992540fa45f55b3f538caaa34e51e878182dd5f4bf22c54782e5392",
+        "qualification_scope": "synthetic_native_export_contract_bridge",
+        "licensed_motorcad_execution": "PENDING_TARGET_WORKSTATION"
+      }
+    },
+    {
+      "name": "field_data_performance",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "authority": "MotorCADStudioFieldDataBenchmarkV1",
+        "product_version": "0.91.8",
+        "compatible": true,
+        "qualification_scope": "synthetic_cpu_encoder_and_wire_model",
+        "browser_gpu_qualification": "PENDING_TARGET_WORKSTATION",
+        "licensed_motorcad_export_qualification": "PENDING_TARGET_WORKSTATION",
+        "requested_triangle_count": 10000,
+        "triangle_count": 10000,
+        "vertex_count": 5184,
+        "frame_count": 5,
+        "mesh_build_seconds": 0.028853,
+        "first_frame_encode_seconds": 0.000795,
+        "median_frame_encode_seconds": 0.000701,
+        "p95_frame_encode_seconds": 0.000795,
+        "max_frame_encode_seconds": 0.000795,
+        "first_frame_payload_bytes": 203744,
+        "topology_bytes": 182208,
+        "scalar_frame_bytes": 20736,
+        "full_transfer_bytes": 1018720,
+        "topology_reuse_transfer_bytes": 286688,
+        "topology_reuse_savings_ratio": 0.71858,
+        "topology_hash_unique_count": 1,
+        "scalar_hash_unique_count": 5,
+        "peak_traced_memory_bytes": 807143
+      }
+    },
+    {
+      "name": "one_click_launcher",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "static_checks": {
+          "start_bat_present": true,
+          "bootstrap_present": true,
+          "launcher_present": true,
+          "uses_delayed_expansion": true,
+          "captures_live_errorlevel": true,
+          "invokes_bootstrap_cli": true,
+          "stable_window_title": true
+        },
+        "check_only_exit_code": 0,
+        "check_only_output_tail": "act_version\": \"1\",\n          \"entrypoint\": \"frontend_legacy/workflow/global-shell-convergence.js\",\n          \"owner\": \"frontend\",\n          \"dependencies\": [\n            {\n              \"module_id\": \"frontend.design\",\n              \"required\": true\n            },\n            {\n              \"module_id\": \"frontend.analysis\",\n              \"required\": true\n            },\n            {\n              \"module_id\": \"frontend.results\",\n              \"required\": true\n            }\n          ],\n          \"optional\": false,\n          \"compatibility_boundary\": false\n        }\n      ]\n    },\n    \"distribution_compatibility\": {\n      \"authority\": \"StudioDistributionCompatibilityV1\",\n      \"compatible\": true,\n      \"product_version\": \"0.91.8\",\n      \"asset_version\": \"0.91.8\",\n      \"release_train\": \"0.91\",\n      \"build_id\": \"20260904-0918\",\n      \"module_catalog_version\": \"7\",\n      \"document_version\": \"0.91.8\",\n      \"document_release_train\": \"0.91\",\n      \"script_count\": 1,\n      \"style_count\": 1,\n      \"runtime_asset_count\": 1,\n      \"classic_runtime_source_count\": 89,\n      \"classic_runtime_source_sha256\": \"560c540f6dca9ce9e07943a429b9db0a1c458251c3c21db85454a9ba26a1a796\",\n      \"release_manifest_values\": {\n        \"productVersion\": \"0.91.8\",\n        \"assetVersion\": \"0.91.8\",\n        \"releaseTrain\": \"0.91\",\n        \"buildId\": \"20260904-0918\",\n        \"apiContractVersion\": \"1\",\n        \"moduleCatalogVersion\": \"7\"\n      },\n      \"frontend_module_descriptor_count\": 15,\n      \"frontend_module_descriptor_ids\": [\n        \"frontend.release\",\n        \"frontend.i18n\",\n        \"frontend.core\",\n        \"frontend.runtime-capsule\",\n        \"frontend.binary-field-viewer\",\n        \"frontend.control-plane\",\n        \"frontend.context\",\n        \"frontend.design\",\n        \"frontend.analysis\",\n        \"frontend.standard-validation\",\n        \"frontend.results\",\n        \"frontend.fea-viewer\",\n        \"frontend.action-readiness\",\n        \"frontend.shell\",\n        \"frontend.router\"\n      ],\n      \"static_implementation_header_count\": 10,\n      \"static_implementation_headers\": [\n        {\n          \"path\": \"static/core/classic-runtime-source.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"static/results/field-worker.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/geometry.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/i18n.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/locale-data.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/module-registry.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/results/field-viewer.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/results/native-tables.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/runtime/solver-evidence.js\",\n          \"implementation_version\": \"0.91.8\"\n        },\n        {\n          \"path\": \"frontend_legacy/workflow/usability-closure.js\",\n          \"implementation_version\": \"0.91.8\"\n        }\n      ],\n      \"product_module_catalog_file\": {\n        \"authority\": \"StudioProductModuleCatalogV1\",\n        \"catalog_version\": \"7\",\n        \"product_version\": \"0.91.8\",\n        \"compatible\": true,\n        \"module_count\": 48\n      },\n      \"blocking_issue_count\": 0,\n      \"issues\": []\n    }\n  },\n  \"package_integrity\": {\n    \"authority\": \"MotorCADStudioPackageIntegrityV1\",\n    \"product_version\": \"0.91.8\",\n    \"compatible\": true,\n    \"declared_file_count\": 511,\n    \"actual_file_count\": 511,\n    \"declared_total_bytes\": 24757381,\n    \"actual_total_bytes\": 24757381,\n    \"checked\": 511,\n    \"unexpected_file_count\": 0,\n    \"missing_file_count\": 0,\n    \"issues\": []\n  },\n  \"compatible\": true\n}"
+      }
+    },
+    {
+      "name": "runtime_preflight_diagnostics",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "static_checks": {
+          "frontend_single_flight": true,
+          "explicit_preflight_progress": true,
+          "background_get_suppression": true,
+          "system_poll_silent": true,
+          "backend_preflight_coalescing": true,
+          "process_exit_race_guard": true,
+          "root_log_default": true
+        },
+        "log_layout": {
+          "README.txt": true,
+          "current_session.json": true,
+          "studio.log": true,
+          "studio.jsonl": true,
+          "preflight.jsonl": true,
+          "http.jsonl": true,
+          "errors.log": true,
+          "errors.jsonl": true,
+          "frontend.jsonl": true,
+          "tasks/TASK-V.log": true,
+          "tasks/TASK-V.jsonl": true,
+          "cases/CASE-V.log": true,
+          "cases/CASE-V.jsonl": true
+        }
+      }
+    },
+    {
+      "name": "control_plane_contracts",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "database_schema_version": 56,
+        "active_schema_version": 56,
+        "required_table_count": 22,
+        "missing_tables": [],
+        "immutable_table_count": 11,
+        "missing_immutability_triggers": [],
+        "missing_services": [],
+        "runtime": {
+          "authority": "ControlPlaneRuntimeV1",
+          "schema_version": 3,
+          "counts": {
+            "commands": 0,
+            "outbox_pending": 0,
+            "optimization_campaigns": 0,
+            "optimization_candidates": 0,
+            "datasets": 0,
+            "qualification_campaigns": 0,
+            "native_leases": 0,
+            "requirement_sets": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "native_execution_fencing",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "task_manager_injection": true,
+        "fencing_token": 1,
+        "lease_status_after_context": "RELEASED",
+        "release_recorded": true,
+        "worker_slot_identity_unique": true,
+        "events": [
+          "NATIVE_RUNTIME_FENCING_ACQUIRED",
+          "NATIVE_RUNTIME_FENCING_RELEASED"
+        ],
+        "error": null,
+        "licensed_motorcad_execution": "PENDING_TARGET_WORKSTATION"
+      }
+    },
+    {
+      "name": "openapi_compatibility",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "compatible": true,
+        "baseline_path_count": 397,
+        "baseline_operation_count": 425,
+        "current_path_count": 397,
+        "current_operation_count": 425,
+        "added_path_count": 0,
+        "added_operation_count": 0,
+        "removed": [],
+        "changed": []
+      }
+    },
+    {
+      "name": "application_graph",
+      "passed": true,
+      "blocking": true,
+      "detail": {
+        "operation_count": 425,
+        "duplicate_count": 0,
+        "modular_operation_count": 428,
+        "compatibility_operation_count": 0,
+        "modularization_ratio": 1.0,
+        "missing_openapi_owner": [],
+        "service_count": 96,
+        "required_service_count": 96,
+        "http_operation_catalog": {
+          "authority": "HttpOperationCatalogV1",
+          "module_count": 13,
+          "operation_count": 251,
+          "modules": {
+            "analysis.application": 36,
+            "data-factory.application": 7,
+            "engineering.experience": 2,
+            "execution.application": 42,
+            "native.closure": 20,
+            "optimization.application": 36,
+            "platform.semantics": 4,
+            "qualification.application": 21,
+            "requirements.application": 12,
+            "workspace.materials": 14,
+            "workspace.motor-design": 33,
+            "workspace.projects": 8,
+            "workspace.solutions": 16
+          },
+          "compatibility_operation_count": 0
+        }
+      }
+    }
+  ]
+}

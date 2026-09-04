@@ -45,7 +45,7 @@ class MonitoringService:
 
     TERMINAL_TASKS = {"COMPLETED", "FAILED", "PARTIALLY_COMPLETED", "CANCELLED"}
 
-    def __init__(self, db: Database, settings: Settings, resource_provider=None, log_store: StructuredLogStore | None = None, session_provider=None, worker_pool_provider=None, scheduler_provider=None):
+    def __init__(self, db: Database, settings: Settings, resource_provider=None, log_store: StructuredLogStore | None = None, session_provider=None, worker_pool_provider=None, scheduler_provider=None, template_provider=None):
         self.db = db
         self.settings = settings
         self.resource_provider = resource_provider
@@ -53,6 +53,7 @@ class MonitoringService:
         self.session_provider = session_provider
         self.worker_pool_provider = worker_pool_provider
         self.scheduler_provider = scheduler_provider
+        self.template_provider = template_provider
         self.result_bundles = ResultBundleService(db)
         self._active_alerts: dict[str, dict[str, Any]] = {}
         # Warm up psutil's percentage sampler so the second call is useful.
@@ -356,6 +357,18 @@ class MonitoringService:
             params = self.db.loads(visual_case.get("parameters_json"), {}) or {}
             result = self._case_result_projection(str(visual_case.get("id") or ""), visual_case.get("result_json"))
             scenario = request.get("scenario") or {}
+            template: dict[str, Any] = {}
+            if self.template_provider is not None and task.get("template_id"):
+                try:
+                    template = dict(self.template_provider.get_template(str(task.get("template_id"))) or {})
+                except Exception:
+                    template = {}
+            defaults = dict(template.get("defaults") or {})
+
+            def parameter(name: str) -> Any:
+                value = params.get(name)
+                return defaults.get(name) if value is None else value
+
             visualization = {
                 "case_id": visual_case.get("id"),
                 "case_index": visual_case.get("case_index"),
@@ -364,12 +377,27 @@ class MonitoringService:
                 "case_progress": _round(float(visual_case.get("progress") or 0.0), 4),
                 "template_id": task.get("template_id"),
                 "analysis": task.get("analysis"),
-                "pole_count": params.get("pole_count"),
-                "slot_count": params.get("slot_count"),
-                "air_gap_mm": params.get("air_gap"),
-                "stator_outer_diameter_mm": params.get("stator_outer_diameter"),
-                "stator_inner_diameter_mm": params.get("stator_inner_diameter"),
-                "magnet_thickness_mm": params.get("magnet_thickness"),
+                "topology": template.get("topology"),
+                "topology_id": template.get("family_id"),
+                "motor_type": template.get("motor_type"),
+                "is_axial": bool(template.get("is_axial")),
+                "rotor_position": (template.get("family") or {}).get("rotor_position"),
+                "pole_count": parameter("pole_count"),
+                "slot_count": parameter("slot_count"),
+                "air_gap_mm": parameter("air_gap"),
+                "stator_outer_diameter_mm": parameter("stator_outer_diameter"),
+                "stator_inner_diameter_mm": parameter("stator_inner_diameter"),
+                "shaft_diameter_mm": parameter("shaft_diameter"),
+                "rotor_diameter_mm": parameter("rotor_diameter"),
+                "axial_rotor_diameter_mm": parameter("axial_rotor_diameter"),
+                "magnet_thickness_mm": parameter("magnet_thickness"),
+                "magnet_length_mm": parameter("magnet_length"),
+                "magnet_arc_deg": parameter("magnet_arc_deg"),
+                "stator_lamination_length_mm": parameter("stator_lamination_length"),
+                "rotor_lamination_length_mm": parameter("rotor_lamination_length"),
+                "tooth_width_mm": parameter("tooth_width"),
+                "slot_depth_mm": parameter("slot_depth"),
+                "slot_width_mm": parameter("slot_width"),
                 "shaft_speed_rpm": scenario.get("shaft_speed_rpm", params.get("shaft_speed_rpm")),
                 "current_stage": task.get("current_stage"),
                 "series_available": sorted((result.get("series") or {}).keys()),

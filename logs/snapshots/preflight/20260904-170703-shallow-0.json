@@ -1,0 +1,174 @@
+{
+  "studio_version": "0.91.8",
+  "deep": false,
+  "generation": 0,
+  "result": {
+    "ok": true,
+    "deep": false,
+    "checks": [
+      {
+        "id": "operating_system",
+        "status": "PASS",
+        "message": "当前系统: Windows"
+      },
+      {
+        "id": "python",
+        "status": "PASS",
+        "message": "Python 3.12.12"
+      },
+      {
+        "id": "pymotorcad",
+        "status": "PASS",
+        "message": "PyMotorCAD可用",
+        "version": "0.8.6",
+        "required_version": null
+      },
+      {
+        "id": "target_version",
+        "status": "PASS",
+        "message": "目标Motor-CAD映射版本: 2026R1"
+      },
+      {
+        "id": "model_policy",
+        "status": "PASS",
+        "message": "模型运行策略: development"
+      },
+      {
+        "id": "installation_selection",
+        "status": "PASS",
+        "message": "已选择Motor-CAD: - · I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe"
+      }
+    ],
+    "installation": {
+      "selected": {
+        "installation_id": "3e511636cd3c7fc3",
+        "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+        "version": null,
+        "source": "runtime_selection",
+        "exists": true,
+        "selected": true
+      },
+      "detected_count": 1
+    },
+    "executable_identity": {
+      "available": true,
+      "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+      "exists": true,
+      "path_inferred_version": null,
+      "file_version": null,
+      "product_version": null,
+      "normalized_version": null,
+      "product_name": null,
+      "company_name": null,
+      "original_filename": null,
+      "metadata_probe": {
+        "available": false,
+        "reason": "deep_probe_not_requested"
+      }
+    },
+    "capabilities": {
+      "available": true,
+      "mode": "motorcad",
+      "analyses": [
+        "emag",
+        "thermal_steady",
+        "thermal_transient",
+        "emag_thermal",
+        "emag_thermal_coupled",
+        "mechanical",
+        "lab_magnetic",
+        "lab_operating_point",
+        "emag_saturation_map",
+        "emag_torque_envelope",
+        "emag_multi_force",
+        "emag_force_harmonics",
+        "weight",
+        "lab_thermal",
+        "lab_duty_cycle",
+        "lab_generator",
+        "lab_test_performance"
+      ],
+      "description": "PyMotorCAD可用",
+      "pymotorcad_version": "0.8.6",
+      "motorcad_target_version": "2026R1",
+      "model_policy": "development",
+      "reuse_instances": true,
+      "selected_installation": {
+        "installation_id": "3e511636cd3c7fc3",
+        "exe_path": "I:\\ANSYS Inc\\v261\\motorcad\\MotorCAD.exe",
+        "version": null,
+        "source": "runtime_selection",
+        "exists": true,
+        "selected": true
+      },
+      "use_blackbox_licence": null,
+      "native_semantic_binding_authority": {
+        "authority": "NativeSemanticBindingAuthorityV1",
+        "binding_version": "motorcad-2026R1-v2",
+        "target_motorcad_version": "2026R1",
+        "golden_template_count": 3,
+        "qualified_count": 0,
+        "all_golden_qualified": false,
+        "profiles": [
+          {
+            "template_id": "i5_Industrial_SPM_Servo_Tooth_Wound",
+            "status": "MISSING",
+            "stale_reason": null,
+            "profile_path": "C:\\Users\\EatRice\\AppData\\Local\\MotorCADStudio\\data\\runtime\\native_semantic_bindings\\2026R1\\i5_Industrial_SPM_Servo_Tooth_Wound.json",
+            "binding_version": "motorcad-2026R1-v2",
+            "target_motorcad_version": "2026R1",
+            "expected_model_source_fingerprint": null
+          },
+          {
+            "template_id": "e9_eMobility_IPM",
+            "status": "MISSING",
+            "stale_reason": null,
+            "profile_path": "C:\\Users\\EatRice\\AppData\\Local\\MotorCADStudio\\data\\runtime\\native_semantic_bindings\\2026R1\\e9_eMobility_IPM.json",
+            "binding_version": "motorcad-2026R1-v2",
+            "target_motorcad_version": "2026R1",
+            "expected_model_source_fingerprint": null
+          },
+          {
+            "template_id": "e14_eMobility_AFM",
+            "status": "MISSING",
+            "stale_reason": null,
+            "profile_path": "C:\\Users\\EatRice\\AppData\\Local\\MotorCADStudio\\data\\runtime\\native_semantic_bindings\\2026R1\\e14_eMobility_AFM.json",
+            "binding_version": "motorcad-2026R1-v2",
+            "target_motorcad_version": "2026R1",
+            "expected_model_source_fingerprint": null
+          }
+        ]
+      },
+      "features": [
+        "local_mot_load",
+        "registered_template_fallback",
+        "context_aware_parameter_write",
+        "unit_conversion",
+        "parameter_write_readback",
+        "runtime_default_snapshot",
+        "geometry_validation",
+        "license_precheck",
+        "optional_instance_reuse",
+        "emag",
+        "thermal_steady",
+        "thermal_transient",
+        "native_emag_thermal_coupling",
+        "mechanical",
+        "lab",
+        "materials",
+        "automation_parameter_overrides",
+        "scalar_extract",
+        "series_extract",
+        "message_log",
+        "parameter_audit",
+        "output_audit",
+        "native_table_extract",
+        "multi_force_table_export",
+        "artifact_integrity",
+        "motor_domain_snapshot",
+        "native_binding_plan",
+        "native_binding_readback"
+      ]
+    }
+  }
+}

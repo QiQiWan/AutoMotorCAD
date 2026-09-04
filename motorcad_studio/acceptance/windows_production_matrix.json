@@ -4,9 +4,10 @@
   "target_motorcad_version": "2026R1",
   "environment_gates": {
     "platform": "Windows",
-    "studio_version": "0.89.9",
+    "studio_version": "0.91.8",
     "motorcad_binary_version": "2026R1",
-    "pymotorcad_version": "0.8.8",
+    "pymotorcad_version": null,
+    "pymotorcad_policy": "capability-qualified",
     "licensed_motorcad": true,
     "mock_disabled": true,
     "deep_preflight": true,
@@ -163,8 +164,8 @@
       "required": true,
       "observed_evidence_required": true,
       "automation": "operator_safe",
-      "trigger": "Use an isolated Python environment whose PyMotorCAD version differs from the frozen 0.8.8 contract.",
-      "expected_signal": "Production qualification blocks with PYMOTORCAD_VERSION_MISMATCH before evidence can be promoted."
+      "trigger": "Use an isolated Python environment where PyMotorCAD cannot be imported or required Motor-CAD Automation capabilities are unavailable.",
+      "expected_signal": "Production qualification blocks on missing PyMotorCAD/Motor-CAD capabilities before evidence can be promoted."
     },
     {
       "id": "RPC_SESSION_DISCONNECT",

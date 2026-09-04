@@ -7,6 +7,8 @@ import platform
 import re
 import shutil
 import subprocess
+import threading
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -42,6 +44,20 @@ class MotorCADInstallationManager:
         self.runtime_dir.mkdir(parents=True, exist_ok=True)
         self.selection_path = self.runtime_dir / "motorcad_installation.json"
         self.configured_exe = configured_exe or os.getenv("MOTORCAD_STUDIO_MOTORCAD_EXE") or os.getenv("MOTORCAD_EXE")
+        self._scan_lock = threading.Lock()
+        self._scan_cache: list[dict[str, Any]] = []
+        self._scan_cache_at = 0.0
+        # Installation discovery is intentionally *not* part of the hot request
+        # path.  Windows registry/filesystem probing can take several seconds on
+        # engineering workstations (especially when Program Files is protected by
+        # AV/indexing or an ANSYS root sits on slow storage).  A selected executable
+        # is already the runtime authority, so normal UI/preflight reads should use
+        # that authority directly and reserve exhaustive discovery for an explicit
+        # operator rescan / first automatic selection.
+        self._scan_cache_ttl_s = max(
+            300.0,
+            float(os.getenv("MOTORCAD_STUDIO_INSTALL_SCAN_CACHE_S", "86400")),
+        )
 
     @staticmethod
     def _version_from_path(path: Path) -> str | None:
@@ -155,6 +171,40 @@ class MotorCADInstallationManager:
             "metadata_probe": {key: value for key, value in metadata.items() if key not in {"file_version", "product_version", "product_name", "company_name", "original_filename"}},
         }
 
+    def executable_identity_quick(self, exe_path: str | None = None) -> dict[str, Any]:
+        """Return path-level executable identity without spawning PowerShell.
+
+        The file/product-version probe is qualification evidence and belongs to a
+        deep preflight.  Shallow readiness checks run on ordinary engineering pages;
+        launching PowerShell from those requests creates avoidable 0.5-8 s stalls.
+        """
+        selected = self.selected()
+        raw_path = str(exe_path or (selected.exe_path if selected else "") or "").strip()
+        if not raw_path:
+            return {
+                "available": False,
+                "reason": "no_selected_executable",
+                "exe_path": None,
+                "normalized_version": None,
+                "metadata_probe": {"available": False, "reason": "deep_probe_not_requested"},
+            }
+        path = Path(raw_path).expanduser()
+        exists = path.is_file()
+        inferred = self._version_from_path(path)
+        return {
+            "available": exists,
+            "exe_path": str(path.resolve()) if path.exists() else str(path),
+            "exists": exists,
+            "path_inferred_version": inferred,
+            "file_version": None,
+            "product_version": None,
+            "normalized_version": inferred,
+            "product_name": None,
+            "company_name": None,
+            "original_filename": None,
+            "metadata_probe": {"available": False, "reason": "deep_probe_not_requested"},
+        }
+
     @staticmethod
     def _id_for(path: Path) -> str:
         return hashlib.sha256(str(path.resolve()).lower().encode("utf-8")).hexdigest()[:16]
@@ -225,19 +275,27 @@ class MotorCADInstallationManager:
         if platform.system() != "Windows":
             return []
         results: list[MotorCADInstallation] = []
-        exe_patterns = ("Motor-CAD*.exe", "MotorCAD*.exe")
+        # Avoid an unbounded rglob over ``C:\Program Files\ANSYS Inc``. Uploaded
+        # runtime telemetry showed discovery calls taking 3.3-7.8 s and stalling
+        # unrelated HTTP work. Motor-CAD installations live in a small set of
+        # predictable layouts; registry discovery remains the primary authority.
+        patterns = (
+            "Motor-CAD.exe", "MotorCAD.exe", "Motor-CAD_64.exe",
+            "motorcad/MotorCAD.exe", "motorcad/Motor-CAD.exe",
+            "Motor-CAD*/Motor-CAD*.exe", "MotorCAD*/MotorCAD*.exe",
+            "v*/motorcad/MotorCAD.exe", "v*/motorcad/Motor-CAD.exe",
+            "v*/Motor-CAD*/Motor-CAD*.exe", "v*/MotorCAD*/MotorCAD*.exe",
+            "20*/motorcad/MotorCAD.exe", "20*/motorcad/Motor-CAD.exe",
+            "20*/Motor-CAD*/Motor-CAD*.exe", "20*/MotorCAD*/MotorCAD*.exe",
+        )
         for root in self._standard_roots():
             if not root.exists() or not root.is_dir():
                 continue
-            # Motor-CAD's default root is small enough for a recursive search. For
-            # Program Files, constrain traversal to paths containing Motor/Motor-CAD.
             try:
-                for pattern in exe_patterns:
-                    for path in root.rglob(pattern):
-                        text = str(path).lower()
-                        if "motor" not in text:
-                            continue
-                        results.append(self._candidate(path, "filesystem"))
+                for pattern in patterns:
+                    for path in root.glob(pattern):
+                        if path.is_file():
+                            results.append(self._candidate(path, "filesystem"))
             except (OSError, PermissionError):
                 continue
         return results
@@ -273,27 +331,56 @@ class MotorCADInstallationManager:
                 return str(candidate.resolve())
         return None
 
-    def scan(self) -> list[dict[str, Any]]:
-        candidates: list[MotorCADInstallation] = []
-        if self.configured_exe:
-            candidates.append(self._candidate(Path(self.configured_exe), "environment"))
-        candidates.extend(self._registry_candidates())
-        candidates.extend(self._filesystem_candidates())
-        selected = self.selected()
-        if selected and all(Path(item.exe_path) != Path(selected.exe_path) for item in candidates):
-            candidates.append(selected)
+    def scan(self, *, force: bool = False) -> list[dict[str, Any]]:
+        now = time.monotonic()
+        if not force and self._scan_cache and now - self._scan_cache_at < self._scan_cache_ttl_s:
+            return [dict(row) for row in self._scan_cache]
+        if not force:
+            # Fast path: once an executable has been selected, it is sufficient for
+            # all normal route rendering and shallow-preflight decisions. Do not
+            # rediscover the host every time a TTL expires.
+            selected = self.selected()
+            if selected is not None:
+                row = {**asdict(selected), "selected": True}
+                with self._scan_lock:
+                    self._scan_cache = [dict(row)]
+                    self._scan_cache_at = time.monotonic()
+                return [dict(row)]
+            # With no selection, normal reads stay side-effect free and cheap. The
+            # UI's explicit Rescan endpoint and auto_select() perform discovery.
+            return []
+        # Coalesce concurrent startup/preflight/UI discovery into one host scan.
+        with self._scan_lock:
+            now = time.monotonic()
+            if not force and self._scan_cache and now - self._scan_cache_at < self._scan_cache_ttl_s:
+                return [dict(row) for row in self._scan_cache]
+            candidates: list[MotorCADInstallation] = []
+            if self.configured_exe:
+                candidates.append(self._candidate(Path(self.configured_exe), "environment"))
+            candidates.extend(self._registry_candidates())
+            candidates.extend(self._filesystem_candidates())
+            selected = self.selected()
+            if selected and all(Path(item.exe_path) != Path(selected.exe_path) for item in candidates):
+                candidates.append(selected)
 
-        unique: dict[str, MotorCADInstallation] = {}
-        for item in candidates:
-            unique[str(Path(item.exe_path)).lower()] = item
-        selected_path = str(Path(selected.exe_path)).lower() if selected else None
-        rows = []
-        for item in unique.values():
-            row = asdict(item)
-            row["selected"] = selected_path == str(Path(item.exe_path)).lower()
-            rows.append(row)
-        rows.sort(key=lambda row: (not row["selected"], row.get("version") or "", row["exe_path"]), reverse=False)
-        return rows
+            unique: dict[str, MotorCADInstallation] = {}
+            for item in candidates:
+                unique[str(Path(item.exe_path)).lower()] = item
+            selected_path = str(Path(selected.exe_path)).lower() if selected else None
+            rows: list[dict[str, Any]] = []
+            for item in unique.values():
+                row = asdict(item)
+                row["selected"] = selected_path == str(Path(item.exe_path)).lower()
+                rows.append(row)
+            rows.sort(key=lambda row: (not row["selected"], row.get("version") or "", row["exe_path"]), reverse=False)
+            self._scan_cache = [dict(row) for row in rows]
+            self._scan_cache_at = time.monotonic()
+            return [dict(row) for row in rows]
+
+    def invalidate_scan_cache(self) -> None:
+        with self._scan_lock:
+            self._scan_cache = []
+            self._scan_cache_at = 0.0
 
     def select(self, exe_path: str) -> dict[str, Any]:
         normalized = str(exe_path or "").strip().strip('"')
@@ -307,6 +394,9 @@ class MotorCADInstallationManager:
         payload = asdict(item)
         payload["selected"] = True
         self.selection_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        with self._scan_lock:
+            self._scan_cache = [dict(payload)]
+            self._scan_cache_at = time.monotonic()
         return payload
 
     def browse_native(self, timeout_s: float = 180.0) -> dict[str, Any]:
@@ -391,12 +481,15 @@ class MotorCADInstallationManager:
     def clear_selection(self) -> None:
         if self.selection_path.exists():
             self.selection_path.unlink()
+        self.invalidate_scan_cache()
 
     def auto_select(self, target_version: str | None = None) -> MotorCADInstallation | None:
         selected = self.selected()
         if selected and selected.exists:
             return selected
-        rows = [row for row in self.scan() if row.get("exists")]
+        # Automatic selection is an explicit runtime action, so it is allowed to
+        # perform exhaustive discovery when no configured/selected executable exists.
+        rows = [row for row in self.scan(force=True) if row.get("exists")]
         if not rows:
             return None
         if target_version:

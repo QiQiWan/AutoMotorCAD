@@ -335,6 +335,7 @@ class MaterialLibraryService:
         self.motorcad_exe = motorcad_exe
         self.managed_dir = self.runtime_dir / "material_library"
         self.managed_dir.mkdir(parents=True, exist_ok=True)
+        self._last_discovery_diagnostics: dict[str, Any] = {}
 
     @staticmethod
     def _record_id(source_path: str, name: str) -> str:
@@ -342,92 +343,161 @@ class MaterialLibraryService:
         return f"MAT-{token}"
 
     def discover_databases(self) -> list[dict[str, Any]]:
+        """Discover Motor-CAD material databases without walking an entire drive.
+
+        Motor-CAD stores the selected Solids/Fluids databases in Defaults.INI and
+        may place those files under Roaming/Local AppData, ProgramData, Public
+        Documents, or the installation tree.  Older Studio builds searched only
+        Roaming AppData plus two paths adjacent to MotorCAD.exe, which misses common
+        2026R1 workstation layouts.  The discovery below keeps the search bounded to
+        known Motor-CAD roots while recording enough diagnostics for the UI/logs.
+        """
         candidates: dict[str, dict[str, Any]] = {}
+        diagnostics: dict[str, Any] = {"searched_roots": [], "defaults_files": [], "direct_candidates": []}
+
+        def resolved_path(value: str | Path) -> Path:
+            expanded = os.path.expandvars(os.path.expanduser(str(value).strip().strip('"')))
+            path = Path(expanded)
+            try:
+                return path.resolve()
+            except OSError:
+                return path
+
+        def remember_root(path: Path | None, source: str) -> Path | None:
+            if path is None:
+                return None
+            root = resolved_path(path)
+            key = str(root).casefold()
+            if not any(str(row.get("path", "")).casefold() == key for row in diagnostics["searched_roots"]):
+                diagnostics["searched_roots"].append({"path": str(root), "source": source, "exists": root.exists()})
+            return root
 
         def add(path_value: str | Path | None, source: str) -> None:
             if not path_value:
                 return
-            path = Path(str(path_value)).expanduser()
-            try:
-                resolved = path.resolve()
-            except OSError:
-                resolved = path
-            if resolved.suffix.lower() != ".mdb" or not resolved.exists() or not resolved.is_file():
+            path = resolved_path(path_value)
+            if path.suffix.lower() != ".mdb" or not path.exists() or not path.is_file():
                 return
-            key = str(resolved).lower()
+            key = str(path).casefold()
             if key in candidates:
                 return
             try:
-                parsed = parse_mdb(resolved)
+                parsed = parse_mdb(path)
                 if not parsed:
                     raise ValueError("未解析到标准 Motor-CAD INI 材料段；文件可能为空或格式不兼容。Granta 材料库为加密 .gdb，需先通过 Motor-CAD 导入到普通工作数据库")
                 count = len(parsed)
-                digest = _file_hash(resolved)
+                digest = _file_hash(path)
             except Exception as exc:
-                candidates[key] = {"path": str(resolved), "source": source, "exists": True, "readable": False, "error": str(exc)}
+                candidates[key] = {"path": str(path), "source": source, "exists": True, "readable": False, "error": str(exc)}
                 return
-            name = resolved.name.lower()
+            name = path.name.lower()
             kind = "fluid" if "fluid" in name else "solid" if "solid" in name else "mixed"
-            candidates[key] = {"path": str(resolved), "source": source, "exists": True, "readable": True, "kind": kind, "material_count": count, "file_hash": digest}
+            candidates[key] = {"path": str(path), "source": source, "exists": True, "readable": True, "kind": kind, "material_count": count, "file_hash": digest}
 
-        add(os.getenv("MOTORCAD_STUDIO_SOLIDS_DB"), "env:MOTORCAD_STUDIO_SOLIDS_DB")
-        add(os.getenv("MOTORCAD_STUDIO_FLUIDS_DB"), "env:MOTORCAD_STUDIO_FLUIDS_DB")
-
-        defaults_roots: list[Path] = []
-        defaults_env = os.getenv("MOTORCAD_DEFAULTS_FILE")
-        if defaults_env:
-            path = Path(defaults_env).expanduser()
-            defaults_roots.append(path if path.suffix.lower() == ".ini" else path / "Defaults.INI")
-        appdata = os.getenv("APPDATA")
-        if appdata:
-            ansys = Path(appdata) / "Ansys"
-            if ansys.exists():
-                try:
-                    defaults_roots.extend(list(islice(ansys.glob("*/MotorCAD/**/Defaults.INI"), 20)))
-                    defaults_roots.extend(list(islice(ansys.glob("*/Motor-CAD/**/Defaults.INI"), 20)))
-                except OSError:
-                    pass
-        if self.motorcad_exe:
-            exe = Path(self.motorcad_exe)
-            for root in [exe.parent, exe.parent.parent]:
-                defaults_roots.extend([root / "Defaults.INI", root / "Motor-CAD Data" / "Defaults.INI"])
-        seen_defaults: set[str] = set()
-        for defaults in defaults_roots:
-            try:
-                defaults = defaults.resolve()
-            except OSError:
-                pass
-            key = str(defaults).lower()
-            if key in seen_defaults or not defaults.exists() or not defaults.is_file():
-                continue
-            seen_defaults.add(key)
+        def add_defaults(defaults_value: str | Path | None, source: str) -> None:
+            if not defaults_value:
+                return
+            defaults = resolved_path(defaults_value)
+            key = str(defaults).casefold()
+            if any(str(row.get("path", "")).casefold() == key for row in diagnostics["defaults_files"]):
+                return
+            row = {"path": str(defaults), "source": source, "exists": defaults.exists() and defaults.is_file()}
+            diagnostics["defaults_files"].append(row)
+            if not row["exists"]:
+                return
             try:
                 raw = defaults.read_text(encoding="utf-8-sig", errors="ignore")
-            except OSError:
-                continue
+            except OSError as exc:
+                row["error"] = str(exc)
+                return
+            referenced = 0
             for line in raw.splitlines():
                 if "=" not in line:
                     continue
                 _, value = line.split("=", 1)
-                value = value.strip().strip('"')
+                value = os.path.expandvars(value.strip().strip('"'))
                 if ".mdb" not in value.lower():
                     continue
-                path = Path(value)
-                if not path.is_absolute():
-                    path = defaults.parent / path
-                add(path, f"Defaults.INI:{defaults}")
+                db_path = Path(value)
+                if not db_path.is_absolute():
+                    db_path = defaults.parent / db_path
+                add(db_path, f"Defaults.INI:{defaults}")
+                referenced += 1
+            row["mdb_references"] = referenced
 
-        # Last-resort local discovery under the user Ansys roaming directory. This is
-        # deliberately bounded and never walks an entire drive.
-        if appdata:
-            ansys = Path(appdata) / "Ansys"
-            if ansys.exists():
-                try:
-                    for pattern in ("*/MotorCAD/**/Solids.mdb", "*/MotorCAD/**/Fluids.mdb", "*/Motor-CAD/**/Solids.mdb", "*/Motor-CAD/**/Fluids.mdb"):
-                        for path in islice(ansys.glob(pattern), 20):
-                            add(path, "appdata-scan")
-                except OSError:
-                    pass
+        def bounded_named_scan(root: Path | None, source: str, *, limit: int = 120) -> None:
+            root = remember_root(root, source) if root else None
+            if root is None or not root.exists() or not root.is_dir():
+                return
+            found = 0
+            try:
+                for name in ("Defaults.INI", "defaults.ini"):
+                    for candidate in islice(root.rglob(name), limit):
+                        add_defaults(candidate, source)
+                        found += 1
+                        if found >= limit:
+                            return
+                for name in ("Solids.mdb", "solids.mdb", "Fluids.mdb", "fluids.mdb"):
+                    for candidate in islice(root.rglob(name), max(1, limit - found)):
+                        add(candidate, source)
+                        diagnostics["direct_candidates"].append({"path": str(candidate), "source": source})
+                        found += 1
+                        if found >= limit:
+                            return
+            except (OSError, PermissionError):
+                return
+
+        add(os.getenv("MOTORCAD_STUDIO_SOLIDS_DB"), "env:MOTORCAD_STUDIO_SOLIDS_DB")
+        add(os.getenv("MOTORCAD_STUDIO_FLUIDS_DB"), "env:MOTORCAD_STUDIO_FLUIDS_DB")
+
+        defaults_env = os.getenv("MOTORCAD_DEFAULTS_FILE")
+        if defaults_env:
+            p = resolved_path(defaults_env)
+            add_defaults(p if p.suffix.lower() == ".ini" else p / "Defaults.INI", "env:MOTORCAD_DEFAULTS_FILE")
+
+        # Known Motor-CAD user/application roots.  These are intentionally specific;
+        # no search starts at a drive root or the full user profile.
+        roots: list[tuple[Path, str]] = []
+        for env_name in ("APPDATA", "LOCALAPPDATA", "PROGRAMDATA"):
+            raw = os.getenv(env_name)
+            if raw:
+                base = Path(raw)
+                roots.extend([
+                    (base / "Ansys", f"{env_name.lower()}-ansys"),
+                    (base / "Motor-CAD", f"{env_name.lower()}-motor-cad"),
+                    (base / "MotorCAD", f"{env_name.lower()}-motorcad"),
+                ])
+        user = os.getenv("USERPROFILE")
+        if user:
+            docs = Path(user) / "Documents"
+            roots.extend([(docs / "Ansys", "user-documents-ansys"), (docs / "Motor-CAD", "user-documents-motor-cad"), (docs / "MotorCAD", "user-documents-motorcad")])
+        public = os.getenv("PUBLIC")
+        if public:
+            docs = Path(public) / "Documents"
+            roots.extend([(docs / "Ansys", "public-documents-ansys"), (docs / "Motor-CAD", "public-documents-motor-cad"), (docs / "MotorCAD", "public-documents-motorcad")])
+
+        if self.motorcad_exe:
+            exe = resolved_path(self.motorcad_exe)
+            install = exe.parent
+            # Fast path for standard install layouts.
+            for root in (install, install / "Motor-CAD Data", install / "Data", install / "Resources", install.parent / "Motor-CAD Data"):
+                add_defaults(root / "Defaults.INI", "motorcad-install")
+                add(root / "Solids.mdb", "motorcad-install")
+                add(root / "Fluids.mdb", "motorcad-install")
+            # Search only the Motor-CAD installation subtree, never all of ANSYS Inc.
+            roots.insert(0, (install, "motorcad-install-scan"))
+
+        seen_roots: set[str] = set()
+        for root, source in roots:
+            key = str(root).casefold()
+            if key in seen_roots:
+                continue
+            seen_roots.add(key)
+            bounded_named_scan(root, source)
+
+        diagnostics["candidate_count"] = len(candidates)
+        diagnostics["readable_count"] = sum(1 for row in candidates.values() if row.get("readable"))
+        self._last_discovery_diagnostics = diagnostics
         return sorted(candidates.values(), key=lambda row: (0 if "Defaults.INI" in row.get("source", "") else 1, row.get("path", "")))
 
     def import_database(self, path_value: str, *, replace: bool = True, source: str = "manual") -> dict[str, Any]:
@@ -487,13 +557,14 @@ class MaterialLibraryService:
                 imported.append(self.import_database(row["path"], source=row.get("source") or "discovery"))
             except Exception as exc:
                 errors.append({"path": row.get("path"), "error": str(exc)})
-        return {"candidates": candidates, "imported": imported, "errors": errors, "ok": bool(imported) and not errors}
+        return {"candidates": candidates, "imported": imported, "errors": errors, "ok": bool(imported) and not errors, "diagnostics": dict(self._last_discovery_diagnostics or {})}
 
     def status(self) -> dict[str, Any]:
         databases = self.db.query_all("SELECT * FROM material_databases ORDER BY last_scanned_at DESC")
         total = self.db.query_one("SELECT COUNT(*) AS n FROM material_library_records") or {"n": 0}
         custom = self.db.query_one("SELECT COUNT(*) AS n FROM material_library_records WHERE source_kind='studio_custom'") or {"n": 0}
-        return {"motorcad_version": self.motorcad_version, "records": int(total["n"]), "custom_records": int(custom["n"]), "databases": [self._decode_database(row) for row in databases], "discovered": self.discover_databases()}
+        discovered = self.discover_databases()
+        return {"motorcad_version": self.motorcad_version, "records": int(total["n"]), "custom_records": int(custom["n"]), "databases": [self._decode_database(row) for row in databases], "discovered": discovered, "discovery": dict(self._last_discovery_diagnostics or {})}
 
     def list_records(self, query: str = "", kind: str = "", material_type: str = "", limit: int = 500) -> list[dict[str, Any]]:
         clauses = ["1=1"]

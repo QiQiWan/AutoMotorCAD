@@ -265,11 +265,64 @@ class AnalysisGuidanceService:
         return {"available": True, "reason": None, "recipe": recipe, "motor_type_id": motor_type}
 
     def list_templates(self, design_revision_id: str | None = None) -> dict[str, Any]:
+        # The Analysis page requests the whole template catalog at once. Resolve the
+        # immutable design context and capability catalog once per request; the old
+        # implementation repeated both lookups for every template and multiplied DB /
+        # native-qualification reads as the catalog grew.
+        motor_type_id = ""
+        recipe_by_id: dict[str, dict[str, Any]] = {}
+        if design_revision_id:
+            _revision, design = self._design_context(design_revision_id)
+            motor_context = self._motor_context(design)
+            motor_type_id = str(motor_context["motor_type_id"])
+            catalog = self.platform.analysis_catalog(
+                motor_type_id, str(motor_context.get("template_id") or "") or None
+            )
+            recipe_by_id = {str(row.get("id")): row for row in (catalog.get("recipes") or [])}
+
         rows = []
         for template_id, raw in self.templates.items():
             spec = deepcopy(raw)
-            availability = self._template_availability(template_id, spec, design_revision_id=design_revision_id)
-            motor_type_id = str(availability.get("motor_type_id") or "")
+            if design_revision_id:
+                applicable_types = [str(value) for value in (spec.get("motor_types") or [])]
+                recipe = recipe_by_id.get(str(spec.get("recipe_id")))
+                if applicable_types and motor_type_id not in applicable_types:
+                    availability = {
+                        "available": False,
+                        "reason": f"该工程模板不适用于当前机型 {motor_type_id}。",
+                        "recipe": None,
+                        "motor_type_id": motor_type_id,
+                    }
+                elif not recipe:
+                    availability = {
+                        "available": False,
+                        "reason": "当前机型未注册该分析配方。",
+                        "recipe": None,
+                        "motor_type_id": motor_type_id,
+                    }
+                elif str(recipe.get("module")) != str(spec.get("module")):
+                    availability = {
+                        "available": False,
+                        "reason": "分析模板与当前配方模块契约不一致。",
+                        "recipe": recipe,
+                        "motor_type_id": motor_type_id,
+                    }
+                elif not recipe.get("available"):
+                    availability = {
+                        "available": False,
+                        "reason": recipe.get("unavailable_reason") or "当前机型不支持该分析。",
+                        "recipe": recipe,
+                        "motor_type_id": motor_type_id,
+                    }
+                else:
+                    availability = {
+                        "available": True,
+                        "reason": None,
+                        "recipe": recipe,
+                        "motor_type_id": motor_type_id,
+                    }
+            else:
+                availability = {"available": True, "reason": None, "recipe": None, "motor_type_id": ""}
             effective = self._effective_template_spec(spec, motor_type_id) if motor_type_id else spec
             rows.append({
                 "id": template_id,

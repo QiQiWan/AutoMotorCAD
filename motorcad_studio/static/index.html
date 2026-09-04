@@ -1,27 +1,15 @@
 <!doctype html>
-<html lang="zh-CN" data-studio-version="0.89.9">
+<html lang="zh-CN" data-studio-version="0.91.8">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MotorCAD Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/design-workbench.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/analysis-workbench.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/operation-progress.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/field-viewer-g33.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/native-closure.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/results-workbench.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/canonical-project-flow.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/engineering-workflow.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/engineer-ux-convergence.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/global-shell-convergence.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/action-readiness.css?v=0.89.9">
-  <link rel="stylesheet" href="/static/ui-convergence-g4.css?v=0.89.9">
+  <link rel="stylesheet" href="/static/app.css?v=0.91.8">
 </head>
-<body class="studio-v089g1" data-release-train="V0.89-G4.5">
+<body class="studio-current studio-shell" data-release-train="0.91">
 <header class="app-header operator-header">
   <div class="brand-block">
-    <h1>MotorCAD Studio <span class="version">0.89.9</span></h1>
+    <h1>MotorCAD Studio <span class="version">0.91.8</span></h1>
     <p>永磁电机工程仿真工作台</p>
   </div>
   <div class="header-actions">
@@ -99,7 +87,7 @@
       <div id="runtimeLifecycleSummaryV087FA"><div class="workspace-empty compact"><b>正在读取生命周期证据</b><span>正常运行时允许存在活动任务；关闭态要求线程、租约、Worker和数据库连接全部归零。</span></div></div>
     </article>
     <article class="panel workstation-acceptance-panel expert-only" id="workstationAcceptancePanel">
-      <div class="section-head"><div><span class="step">6</span><h2>Windows Motor-CAD 生产资格矩阵</h2><p>V0.89-D 采用双层生产资格：V0.88-F 先检查 SPM / IPM / AFPM / IM 四类 Native 主流程、17 类故障恢复、Runtime 生命周期与重启恢复；随后再要求 SPM / IPM / AFPM 三条真实完整界面 Golden Journey。源码或模拟 E2E 通过不会自动提升正式工作站资格。</p></div><div class="actions"><span id="workstationAcceptanceBadge" class="badge">未验收</span><button id="refreshWorkstationAcceptance" type="button">刷新资格</button></div></div>
+      <div class="section-head"><div><span class="step">6</span><h2>Windows Motor-CAD 生产资格矩阵</h2><p>生产资格采用双层门禁：先检查 SPM / IPM / AFPM / IM 四类 Native 主流程、17 类故障恢复、Runtime 生命周期与重启恢复；随后要求 SPM / IPM / AFPM 三条真实完整界面 Golden Journey。源码或模拟 E2E 通过不会自动提升正式工作站资格。</p></div><div class="actions"><span id="workstationAcceptanceBadge" class="badge">未验收</span><button id="refreshWorkstationAcceptance" type="button">刷新资格</button></div></div>
       <div id="workstationAcceptanceSummary" class="workstation-acceptance-summary"><div class="workspace-empty compact"><b>正在读取正式工作站证据</b><span>正式 PASS 必须来自 licensed Windows 工作站的完整 evidence package。</span></div></div>
     </article>
     <article class="panel workstation-acceptance-panel expert-only" id="productionSoakPanelV087FC">
@@ -108,7 +96,7 @@
     </article>
     <article class="panel workstation-acceptance-panel expert-only" id="uiSoakPanelV089E">
       <div class="section-head"><div><span class="step">8</span><h2>UI Soak / 恢复 / 故障注入资格</h2><p>连续执行100/500轮工程师界面操作，检查工程上下文漂移、重复写入、未保存数据丢失、弹窗残留、页面异常和内存/DOM增长，并主动注入导航失败、响应丢失、409/500、断网、刷新和Worker回收故障。</p></div><div class="actions"><span id="uiSoakBadgeV089E" class="badge">待UI Soak</span><button id="refreshUISoakV089E" type="button">刷新UI韧性资格</button></div></div>
-      <div id="uiSoakSummaryV089E" class="workstation-acceptance-summary"><div class="workspace-empty compact"><b>正在读取UI稳定性证据</b><span>本地浏览器Soak只证明控制面；正式资格必须绑定V0.89-D实机Golden Journey和Native 100/500 Case Soak。</span></div></div>
+      <div id="uiSoakSummaryV089E" class="workstation-acceptance-summary"><div class="workspace-empty compact"><b>正在读取UI稳定性证据</b><span>本地浏览器 Soak 只证明控制面；正式资格必须绑定实机 Golden Journey 和 Native 100/500 Case Soak。</span></div></div>
     </article>
     <article class="panel startup-next-panel"><div><b>运行环境配置完成后进入项目管理</b><p>项目切换统一在“项目管理”完成。进入项目后，后续页面自动使用当前项目。</p></div><button id="setupContinueProjects" class="primary" type="button">进入项目管理</button></article>
   </section>
@@ -211,7 +199,7 @@
     </article>
 
     <div id="analysisContextV076" class="panel analysis-context-v076" aria-live="polite"></div>
-    <article id="standardValidationPackageV087D" class="panel standard-validation-v087d hidden" aria-live="polite"></article>
+    <article id="standardValidationPackageV087D" class="hidden" hidden aria-hidden="true"></article>
 
     <div class="analysis-unified-layout-v076">
       <aside class="panel analysis-config-list-v076">
@@ -469,7 +457,7 @@
     </article>
 
     <article class="panel developer-panel developer-only" id="hmiQualificationPanelV089B">
-      <div class="section-head"><div><span class="eyebrow">V0.89-B HMI QUALIFICATION</span><h2>界面操作资格矩阵</h2><p>自动登记固定按钮与动态按钮族，检查稳定操作身份、点击处理绑定、可见/禁用状态与危险操作标记。该扫描用于前端 Release Gate，不会替代真实 Motor-CAD 工作站全流程验收。</p></div><div class="actions"><button id="runHmiQualificationV089B" type="button" class="primary">运行界面资格扫描</button><button id="exportHmiQualificationV089B" type="button">导出矩阵</button></div></div>
+      <div class="section-head"><div><span class="eyebrow">HMI QUALIFICATION</span><h2>界面操作资格矩阵</h2><p>自动登记固定按钮与动态按钮族，检查稳定操作身份、点击处理绑定、可见/禁用状态与危险操作标记。该扫描用于前端 Release Gate，不会替代真实 Motor-CAD 工作站全流程验收。</p></div><div class="actions"><button id="runHmiQualificationV089B" type="button" class="primary">运行界面资格扫描</button><button id="exportHmiQualificationV089B" type="button">导出矩阵</button></div></div>
       <div id="hmiQualificationSummaryV089B"><div class="workspace-empty compact"><b>等待扫描</b><span>打开或操作动态页面后再次扫描，可把本次会话中出现的动态操作一并纳入矩阵。</span></div></div>
     </article>
 
@@ -499,95 +487,9 @@
 </main>
 <div id="toastStack" class="toast-stack" aria-live="polite"></div>
 <div id="commandPalette" class="command-palette hidden" role="dialog" aria-modal="true" aria-label="快捷操作"><div class="command-box"><input id="commandSearch" placeholder="输入操作，例如：新建任务、监控、系统诊断"><div id="commandResults"></div><p class="hint">Ctrl/⌘ + K 打开 · Esc 关闭</p></div></div>
-<script src="/static/hmi/action-registry.js?v=0.89.9"></script>
-<script src="/static/locale-data.js?v=0.89.9"></script>
-<script src="/static/i18n.js?v=0.89.9"></script>
-<script src="/static/realtime.js?v=0.89.9"></script>
-<script src="/static/frontend-core.js?v=0.89.9"></script>
-<script src="/static/app-core.js?v=0.89.9"></script>
-<script src="/static/hmi/operation-progress.js?v=0.89.9"></script>
-<script src="/static/routing/navigation-transaction.js?v=0.89.9"></script>
-<script src="/static/domain/motor-domain.js?v=0.89.9"></script>
-<script src="/static/domain/motor-object.js?v=0.89.9"></script>
-<script src="/static/domain/pm-motor-object.js?v=0.89.9"></script>
-<script src="/static/domain/induction-motor-object.js?v=0.89.9"></script>
-<script src="/static/design/store.js?v=0.89.9"></script>
-<script src="/static/design/navigation.js?v=0.89.9"></script>
-<script src="/static/design/draft-service.js?v=0.89.9"></script>
-<script src="/static/design/precheck.js?v=0.89.9"></script>
-<script src="/static/design/render-utils.js?v=0.89.9"></script>
-<script src="/static/design/derived-parameters.js?v=0.89.9"></script>
-<script src="/static/design/geometry.js?v=0.89.9"></script>
-<script src="/static/design/winding.js?v=0.89.9"></script>
-<script src="/static/design/materials.js?v=0.89.9"></script>
-<script src="/static/design/validation.js?v=0.89.9"></script>
-<script src="/static/design/parameter-inspector.js?v=0.89.9"></script>
-<script src="/static/design/renderer.js?v=0.89.9"></script>
-<script src="/static/analysis/labels.js?v=0.89.9"></script>
-<script src="/static/analysis/workspace-client.js?v=0.89.9"></script>
-<script src="/static/runtime/workstation-acceptance.js?v=0.89.9"></script>
-<script src="/static/runtime/production-soak.js?v=0.89.9"></script>
-<script src="/static/runtime/ui-soak-qualification.js?v=0.89.9"></script>
-<script src="/static/runtime/release-candidate-gate.js?v=0.89.9"></script>
-<script src="/static/design/design-starters.js?v=0.89.9"></script>
-<script src="/static/app.js?v=0.89.9"></script>
-<script src="/static/routing/engineering-context-store.js?v=0.89.9"></script>
-<script src="/static/workflow/global-workflow-truth.js?v=0.89.9"></script>
-<script src="/static/workflow/engineer-ux-convergence.js?v=0.89.9"></script>
-<script src="/static/workflow/global-shell-convergence.js?v=0.89.9"></script>
-<script src="/static/workflow/compact-flow-header.js?v=0.89.9"></script>
-<script src="/static/workflow/action-readiness.js?v=0.89.9"></script>
-<script src="/static/routing/result-context.js?v=0.89.9"></script>
-<script src="/static/results/aggregate-client.js?v=0.89.9"></script>
-<script src="/static/results/result-set-client.js?v=0.89.9"></script>
-<script src="/static/results/result-data-client.js?v=0.89.9"></script>
-<script src="/static/results/case-viewer.js?v=0.89.9"></script>
-<script src="/static/materials/library.js?v=0.89.9"></script>
 <!-- Stable design controllers load before historical compatibility layers.
      This guarantees the Design Viewer compatibility boundary exists before any
      older runtime wrapper can observe a workspace render. -->
-<script src="/static/design/editor.js?v=0.89.9"></script>
-<script src="/static/design/parameter-catalog.js?v=0.89.9"></script>
-<script src="/static/design/viewer.js?v=0.89.9"></script>
-<script src="/static/design/workbench.js?v=0.89.9"></script>
-<script src="/static/geometry.js?v=0.89.9"></script>
-<script src="/static/production.js?v=0.89.9"></script>
-<script src="/static/operator-flow.js?v=0.89.9"></script>
-<script src="/static/dialogs.js?v=0.89.9"></script>
-<script src="/static/native-parity.js?v=0.89.9"></script>
-<script src="/static/workflow/native-context.js?v=0.89.9"></script>
-<script src="/static/runtime/native-fea-session.js?v=0.89.9"></script>
-<script src="/static/routing/page-controllers.js?v=0.89.9"></script>
-<script src="/static/workflow/engineering-workflow.js?v=0.89.9"></script>
-<script src="/static/runtime/execution-lease.js?v=0.89.9"></script>
-<script src="/static/runtime/resource-scheduler.js?v=0.89.9"></script>
-<script src="/static/runtime/lifecycle-qualification.js?v=0.89.9"></script>
-<script src="/static/results/fea-thermal.js?v=0.89.9"></script>
-<script src="/static/results/native-evidence.js?v=0.89.9"></script>
-<script src="/static/results/field-viewer.js?v=0.89.9"></script>
-<script src="/static/results/native-tables.js?v=0.89.9"></script>
-<script src="/static/runtime/solver-evidence.js?v=0.89.9"></script>
-<script src="/static/workflow/usability-closure.js?v=0.89.9"></script>
-<script src="/static/analysis/monitor.js?v=0.89.9"></script>
-<script src="/static/results/trust-ui.js?v=0.89.9"></script>
-<script src="/static/results/revision-compare.js?v=0.89.9"></script>
-<script src="/static/results/case-compare.js?v=0.89.9"></script>
-<script src="/static/results/optimization.js?v=0.89.9"></script>
-<script src="/static/results/optimization-decision.js?v=0.89.9"></script>
-<script src="/static/results/requirements.js?v=0.89.9"></script>
-<script src="/static/results/qualification-campaign.js?v=0.89.9"></script>
-<script src="/static/results/interpretation.js?v=0.89.9"></script>
-<script src="/static/results/workbench.js?v=0.89.9"></script>
-<script src="/static/runtime/experiment-lifecycle.js?v=0.89.9"></script>
-<script src="/static/runtime/runtime-ownership.js?v=0.89.9"></script>
-<script src="/static/analysis/guidance.js?v=0.89.9"></script>
-<script src="/static/analysis/standard-validation.js?v=0.89.9"></script>
-<script src="/static/analysis/unified-configuration.js?v=0.89.9"></script>
-<script src="/static/workflow/engineer-journey.js?v=0.89.9"></script>
-<script src="/static/results/decision-cockpit.js?v=0.89.9"></script>
-<script src="/static/results/engineering-scorecard.js?v=0.89.9"></script>
-<script src="/static/results/manufacturing-robustness.js?v=0.89.9"></script>
-<script src="/static/router.js?v=0.89.9"></script>
-<script src="/static/canonical-project-flow.js?v=0.89.9"></script>
+  <script type="module" src="/static/core/bootstrap.js?v=0.91.8"></script>
 </body>
 </html>

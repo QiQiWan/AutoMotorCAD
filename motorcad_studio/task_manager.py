@@ -9,13 +9,14 @@ import threading
 import time
 import traceback
 import uuid
+from contextlib import contextmanager, nullcontext
 
 import psutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from .baseline import build_comparison_report, capture_baseline
-from .automation_registry import AutomationRegistryKey, AutomationRegistryStore
+from .automation_registry import AutomationRegistryKey, AutomationRegistryStore, canonical_automation_name, valid_automation_name
 from .db import Database
 from .fingerprint import build_simulation_fingerprint
 from .fea_pipeline import build_fea_plan
@@ -143,6 +144,11 @@ class TaskManager:
         self.native_qualification_resolver = None
         self.session_supervisor = None
         self.runtime_contract = None
+        # Injected by the composition root after the transactional M5-C control
+        # plane is constructed. The scheduler remains the local admission
+        # authority; this service adds persistent lease/fencing evidence.
+        self.native_runtime_control = None
+        self._native_runtime_bridge_lock = threading.RLock()
         motorcad_capacity = min(settings.motorcad_pool_size, settings.max_workers) if settings.motorcad_worker_mode == "persistent" else settings.max_workers
         self.runtime_scheduler = RuntimeResourceScheduler(
             worker_capacity=motorcad_capacity,
@@ -543,6 +549,182 @@ class TaskManager:
             ),
         )
 
+    @contextmanager
+    def _native_runtime_guard(
+        self,
+        *,
+        scheduler_lease: Any,
+        task_id: str,
+        case_id: str,
+        timeout_s: float,
+        analysis: str,
+    ) -> Iterator[dict[str, Any] | None]:
+        """Bridge an admitted case into the persistent native fencing ledger.
+
+        RuntimeResourceScheduler owns in-process admission. NativeRuntimeControl
+        records a durable slot lease so a recovered or stale worker cannot keep
+        writing after the slot has been reassigned.
+        """
+        service = self.native_runtime_control
+        if service is None or scheduler_lease is None:
+            yield None
+            return
+        worker_token = str(getattr(scheduler_lease, "worker_token", "") or "").strip()
+        if not worker_token:
+            raise RuntimeError("Native runtime fencing requires a stable worker token")
+        resource_key = f"motorcad-worker-slot:{worker_token}"
+        owner_id = f"{task_id}:{case_id}"
+        ttl_s = max(120.0, min(float(timeout_s) + float(self.settings.solver_cancel_grace_s) + 180.0, 86400.0))
+        command_seed = f"task-manager:{case_id}:{getattr(scheduler_lease, 'lease_id', worker_token)}"
+        lease = service.acquire(
+            resource_key,
+            f"{command_seed}:acquire",
+            {
+                "owner_id": owner_id,
+                "ttl_s": ttl_s,
+                "metadata": {
+                    "task_id": task_id,
+                    "case_id": case_id,
+                    "analysis": analysis,
+                    "runtime_resource_lease_id": getattr(scheduler_lease, "lease_id", None),
+                    "worker_token": worker_token,
+                },
+            },
+        )
+        state: dict[str, Any] = {
+            "service": service,
+            "resource_key": resource_key,
+            "owner_id": owner_id,
+            "lease_id": lease.get("lease_id"),
+            "fencing_token": int(lease.get("fencing_token") or 0),
+            "expires_at": lease.get("expires_at"),
+            "ttl_s": ttl_s,
+            "command_seed": command_seed,
+            "heartbeat_counter": 0,
+            "last_heartbeat_monotonic": time.monotonic(),
+            "heartbeat_interval_s": max(15.0, min(ttl_s / 3.0, 60.0)),
+        }
+        self._event(
+            task_id,
+            "NATIVE_RUNTIME_FENCING_ACQUIRED",
+            f"Motor-CAD Worker槽位已取得持久租约，fencing token={state['fencing_token']}",
+            case_id=case_id,
+            stage="STARTING_SOLVER",
+            payload={
+                "resource_key": resource_key,
+                "lease_id": state["lease_id"],
+                "fencing_token": state["fencing_token"],
+                "expires_at": state["expires_at"],
+            },
+        )
+        try:
+            yield state
+        finally:
+            try:
+                released = service.release(
+                    resource_key,
+                    f"{command_seed}:release",
+                    {
+                        "lease_id": state["lease_id"],
+                        "owner_id": owner_id,
+                        "fencing_token": state["fencing_token"],
+                    },
+                )
+                self._event(
+                    task_id,
+                    "NATIVE_RUNTIME_FENCING_RELEASED",
+                    "Motor-CAD Worker槽位持久租约已释放",
+                    case_id=case_id,
+                    stage="ARCHIVING",
+                    payload={
+                        "resource_key": resource_key,
+                        "lease_id": state["lease_id"],
+                        "fencing_token": state["fencing_token"],
+                        "released_at": released.get("released_at"),
+                    },
+                )
+            except Exception as exc:
+                # Do not hide the solver outcome during cleanup. The lease has a
+                # bounded TTL and startup reconciliation can classify the process.
+                self._event(
+                    task_id,
+                    "NATIVE_RUNTIME_FENCING_RELEASE_WARNING",
+                    f"持久租约释放失败，将依赖TTL与启动协调恢复: {type(exc).__name__}: {exc}",
+                    case_id=case_id,
+                    stage="ARCHIVING",
+                    severity="WARNING",
+                    payload={"resource_key": resource_key, "lease_id": state["lease_id"]},
+                )
+
+    def _heartbeat_native_runtime_guard(self, state: dict[str, Any] | None) -> None:
+        if not state:
+            return
+        now = time.monotonic()
+        with self._native_runtime_bridge_lock:
+            if now - float(state.get("last_heartbeat_monotonic") or 0.0) < float(state.get("heartbeat_interval_s") or 30.0):
+                return
+            counter = int(state.get("heartbeat_counter") or 0) + 1
+            state["heartbeat_counter"] = counter
+            refreshed = state["service"].heartbeat(
+                state["resource_key"],
+                f"{state['command_seed']}:heartbeat:{counter}",
+                {
+                    "lease_id": state["lease_id"],
+                    "owner_id": state["owner_id"],
+                    "fencing_token": state["fencing_token"],
+                    "ttl_s": state["ttl_s"],
+                },
+            )
+            state["expires_at"] = refreshed.get("expires_at")
+            state["last_heartbeat_monotonic"] = now
+
+    def _record_native_process(
+        self,
+        state: dict[str, Any] | None,
+        *,
+        task_id: str,
+        case_id: str,
+        pid: int,
+        create_time: float | None,
+    ) -> None:
+        if not state:
+            return
+        executable = ""
+        parent_pid: int | None = None
+        try:
+            process = psutil.Process(int(pid))
+            executable = process.exe()
+            parent_pid = process.ppid()
+        except (psutil.Error, OSError, ValueError):
+            pass
+        try:
+            state["service"].record_process(
+                f"{state['command_seed']}:process:{int(pid)}",
+                {
+                    "pid": int(pid),
+                    "parent_pid": parent_pid,
+                    "executable_path": executable,
+                    "resource_key": state["resource_key"],
+                    "lease_id": state["lease_id"],
+                    "owner_id": state["owner_id"],
+                    "metadata": {
+                        "task_id": task_id,
+                        "case_id": case_id,
+                        "create_time": create_time,
+                    },
+                },
+            )
+        except Exception as exc:
+            self._event(
+                task_id,
+                "NATIVE_PROCESS_OBSERVATION_WARNING",
+                f"原生进程证据登记失败: {type(exc).__name__}: {exc}",
+                case_id=case_id,
+                stage="STARTING_SOLVER",
+                severity="WARNING",
+                payload={"pid": int(pid), "lease_id": state.get("lease_id")},
+            )
+
     def _fingerprint(
         self,
         request: TaskCreate,
@@ -839,7 +1021,9 @@ class TaskManager:
                 continue
             for context, variables in source.items():
                 if isinstance(variables, dict):
-                    combined_raw.setdefault(context, {}).update(variables)
+                    target = combined_raw.setdefault(context, {})
+                    for raw_name, value in variables.items():
+                        target[canonical_automation_name(raw_name)] = value
                 elif variables not in ({}, None):
                     issues.append({"code": "AUTOMATION_OVERRIDE_INVALID", "severity": "BLOCKING", "message": f"{context}原生参数必须是键值对象"})
         for context, variables in combined_raw.items():
@@ -848,6 +1032,14 @@ class TaskManager:
                 continue
             if not isinstance(variables, dict):
                 issues.append({"code": "AUTOMATION_OVERRIDE_INVALID", "severity": "BLOCKING", "message": f"{context}专家参数必须是键值对象"})
+                continue
+            invalid_names = sorted(name for name in variables if not valid_automation_name(name))
+            if invalid_names:
+                issues.append({
+                    "code": "AUTOMATION_PARAMETER_NAME_INVALID",
+                    "severity": "BLOCKING",
+                    "message": f"{context}存在无效Motor-CAD Automation参数名: {', '.join(invalid_names[:12])}。参数名必须保留Motor-CAD导出的原始标识符。",
+                })
                 continue
             if request.solver_mode == SolverMode.MOTORCAD and context != "Global" and variables and self.automation_registry is not None:
                 key = AutomationRegistryKey(self.settings.motorcad_version, str(template.get("motor_type", "unknown")), context)
@@ -894,6 +1086,31 @@ class TaskManager:
         request.scenario = ScenarioDefinition.model_validate(physical["scenario"])
         request.materials = MaterialConfiguration.model_validate(physical["materials"])
         request.solver_settings = physical["solver_settings"]
+
+        def normalize_automation_contexts(source: Any) -> dict[str, dict[str, Any]]:
+            normalized: dict[str, dict[str, Any]] = {}
+            if not isinstance(source, dict):
+                return normalized
+            for context, variables in source.items():
+                if not isinstance(variables, dict):
+                    continue
+                target = normalized.setdefault(str(context), {})
+                for raw_name, value in variables.items():
+                    target[canonical_automation_name(raw_name)] = value
+            return normalized
+
+        # Repair the one legacy localized identifier observed in persisted revisions
+        # and keep all future raw names canonical before validation/fingerprinting.
+        request.automation_overrides = normalize_automation_contexts(request.automation_overrides)
+        automation = request.solver_settings.get("automation")
+        if isinstance(automation, dict):
+            request.solver_settings["automation"] = normalize_automation_contexts(automation)
+        for context in ("Global", "EMag", "Therm", "Lab", "Mechanical"):
+            if isinstance(request.solver_settings.get(context), dict):
+                request.solver_settings[context] = {
+                    canonical_automation_name(name): value
+                    for name, value in request.solver_settings[context].items()
+                }
         domains = dict(request.solver_settings.get("input_domains") or {})
         if domains and request.scenario_matrix:
             request.scenario_matrix = [
@@ -912,7 +1129,9 @@ class TaskManager:
             for source in (baseline, request.automation_overrides):
                 for context, variables in (source or {}).items():
                     if isinstance(variables, dict):
-                        merged.setdefault(str(context), {}).update(variables)
+                        target = merged.setdefault(str(context), {})
+                        for raw_name, value in variables.items():
+                            target[canonical_automation_name(raw_name)] = value
             request.automation_overrides = merged
         if not request.requested_outputs:
             request.requested_outputs = self.registry.default_output_ids_for_analysis(request.analysis.value, request.template_id)
@@ -1870,7 +2089,10 @@ class TaskManager:
             self._mark_failed(case_id, task_id, json.dumps(blocking, ensure_ascii=False, indent=2), stage=stage)
             return
 
+        native_runtime_lease_state: dict[str, Any] | None = None
+
         def progress(stage: str, value: float, message: str) -> None:
+            self._heartbeat_native_runtime_guard(native_runtime_lease_state)
             self._update_case_progress(task_id, case_id, int(case["case_index"]), case_count, stage, value, message)
 
         def cancel_check() -> bool:
@@ -1882,8 +2104,16 @@ class TaskManager:
                 (pid, create_time, self.db.now(), self.db.now(), case_id),
             )
             self._event(task_id, "WORKER_STARTED", f"求解Worker PID={pid}", case_id=case_id, stage="STARTING_SOLVER")
+            self._record_native_process(
+                native_runtime_lease_state,
+                task_id=task_id,
+                case_id=case_id,
+                pid=pid,
+                create_time=create_time,
+            )
 
         def heartbeat() -> None:
+            self._heartbeat_native_runtime_guard(native_runtime_lease_state)
             self.db.execute("UPDATE cases SET last_heartbeat=?,updated_at=? WHERE id=?", (self.db.now(), self.db.now(), case_id))
 
         timeout_s = runtime_timeout_s or self.settings.solver_timeout_s
@@ -1954,7 +2184,6 @@ class TaskManager:
                     timeout_s=self.settings.runtime_scheduler_wait_timeout_s, cancel_check=cancel_check,
                 )
             else:
-                from contextlib import nullcontext
                 resource_context = nullcontext(None)
             with resource_context as runtime_resource_lease:
                 if runtime_resource_lease is not None:
@@ -1970,115 +2199,131 @@ class TaskManager:
                         case_id=case_id, stage="STARTING_SOLVER",
                         payload=resource_payload,
                     )
-                # Motor-CAD concurrency is already bounded by the atomic runtime scheduler.
-                # Mock keeps the legacy generic solver semaphore for development-only runs.
-                if task["solver_mode"] == SolverMode.MOCK.value:
-                    solver_slot_context = self._solver_slots
-                else:
-                    from contextlib import nullcontext
-                    solver_slot_context = nullcontext()
-                with solver_slot_context:
-                    self.db.execute("UPDATE cases SET status=?,updated_at=? WHERE id=?", (CaseStatus.STARTING_SOLVER.value, self.db.now(), case_id))
-                    runner = SolverProcessRunner(timeout_s=timeout_s, cancel_grace_s=self.settings.solver_cancel_grace_s)
-                    def solver_log(record: dict[str, Any]) -> None:
-                        if self.log_store is None:
-                            return
-                        self.log_store.log(
-                            level=str(record.get("level") or "INFO"),
-                            component=str(record.get("component") or "solver_worker"),
-                            event_type=str(record.get("event_type") or "SOLVER_EVENT"),
-                            message=str(record.get("message") or ""),
-                            task_id=task_id, case_id=case_id, stage=record.get("stage"),
-                            trace_id=record.get("trace_id") or task.get("execution_plan_hash") or task_id,
-                            run_id=record.get("run_id") or task.get("execution_plan_id") or case_id,
-                            topology_id=record.get("topology_id"),
-                            binding_version=record.get("binding_version"),
-                            payload=record.get("payload") if isinstance(record.get("payload"), dict) else {},
-                            timestamp=str(record.get("timestamp") or self.db.now()),
-                            pid=int(record.get("pid") or 0) or None,
-                        )
-
+                native_guard_context = (
+                    self._native_runtime_guard(
+                        scheduler_lease=runtime_resource_lease,
+                        task_id=task_id,
+                        case_id=case_id,
+                        timeout_s=timeout_s,
+                        analysis=runtime_analysis,
+                    )
+                    if task["solver_mode"] == SolverMode.MOTORCAD.value
+                    else nullcontext(None)
+                )
+                with native_guard_context as native_runtime_lease_state:
+                    if native_runtime_lease_state is not None:
+                        payload["native_runtime_lease"] = {
+                            key: native_runtime_lease_state.get(key)
+                            for key in ("resource_key", "lease_id", "owner_id", "fencing_token", "expires_at")
+                        }
+                    # Motor-CAD concurrency is already bounded by the atomic runtime scheduler.
+                    # Mock keeps the generic solver semaphore for development-only runs.
                     if task["solver_mode"] == SolverMode.MOCK.value:
-                        # Mock is a Studio self-test backend, not an external CAE process.  Running
-                        # it in the existing case worker thread avoids spawning dozens/hundreds of
-                        # short-lived Python processes during DOE/NSGA-II development while real
-                        # Motor-CAD cases retain strict per-case process isolation.
-                        runtime_log_path = work_dir / "solver_runtime.jsonl"
-                        started_mock = time.monotonic()
-
-                        def mock_runtime_log(level: str, event_type: str, message: str, stage: str | None = None) -> None:
-                            record = {
-                                "timestamp": self.db.now(), "level": level, "component": "solver_worker",
-                                "event_type": event_type, "message": message, "task_id": task_id,
-                                "case_id": case_id, "stage": stage, "pid": os.getpid(),
-                                "payload": {"execution": "in_process_mock"},
-                            }
-                            try:
-                                with runtime_log_path.open("a", encoding="utf-8", newline="\n") as handle:
-                                    handle.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
-                            except OSError:
-                                pass
-                            solver_log(record)
-
-                        def mock_progress(stage: str, value: float, message: str) -> None:
-                            if cancel_check():
-                                raise SolverProcessCancelled("Mock求解收到取消请求")
-                            if time.monotonic() - started_mock > timeout_s:
-                                raise SolverProcessTimeout(f"Mock求解超过超时限制 {timeout_s}s")
-                            heartbeat()
-                            progress(stage, value, message)
-
-                        mock_runtime_log("INFO", "SOLVER_CHILD_START", "in-process Mock solver started", "STARTING_SOLVER")
-                        mock_runtime_log("INFO", "SOLVER_ADAPTER_READY", "MockSolverAdapter initialized", "STARTING_SOLVER")
-                        try:
-                            result = MockSolverAdapter(self.settings.mock_stage_delay_s).run(
-                                template=payload["template"], parameters=payload["parameters"],
-                                explicit_parameter_ids=payload.get("explicit_parameter_ids", []),
-                                automation_overrides=payload.get("automation_overrides", {}),
-                                materials=payload.get("materials", {}), solver_settings=payload.get("solver_settings", {}),
-                                scenario=payload["scenario"], analysis=AnalysisType(payload["analysis"]),
-                                requested_outputs=payload["requested_outputs"], work_dir=work_dir, progress=mock_progress,
-                            )
-                            if str(runtime_log_path) not in result.artifacts:
-                                result.artifacts.append(str(runtime_log_path))
-                            mock_runtime_log("INFO", "SOLVER_RUN_SUCCESS", "Mock solver completed", "COMPLETED")
-                        except Exception as exc:
-                            mock_runtime_log("ERROR", "SOLVER_CHILD_EXCEPTION", str(exc), "FAILED")
-                            raise
+                        solver_slot_context = self._solver_slots
                     else:
-                        if self.motorcad_worker_pool is not None:
-                            self._event(
-                                task_id, "MOTORCAD_WORKER_LEASE_REQUESTED",
-                                "请求Motor-CAD持久Worker执行租约", case_id=case_id, stage="STARTING_SOLVER",
-                                payload={"worker_mode": "persistent", "run_configuration_id": run_configuration_id},
+                        solver_slot_context = nullcontext()
+                    with solver_slot_context:
+                        self.db.execute("UPDATE cases SET status=?,updated_at=? WHERE id=?", (CaseStatus.STARTING_SOLVER.value, self.db.now(), case_id))
+                        runner = SolverProcessRunner(timeout_s=timeout_s, cancel_grace_s=self.settings.solver_cancel_grace_s)
+                        def solver_log(record: dict[str, Any]) -> None:
+                            if self.log_store is None:
+                                return
+                            self.log_store.log(
+                                level=str(record.get("level") or "INFO"),
+                                component=str(record.get("component") or "solver_worker"),
+                                event_type=str(record.get("event_type") or "SOLVER_EVENT"),
+                                message=str(record.get("message") or ""),
+                                task_id=task_id, case_id=case_id, stage=record.get("stage"),
+                                trace_id=record.get("trace_id") or task.get("execution_plan_hash") or task_id,
+                                run_id=record.get("run_id") or task.get("execution_plan_id") or case_id,
+                                topology_id=record.get("topology_id"),
+                                binding_version=record.get("binding_version"),
+                                payload=record.get("payload") if isinstance(record.get("payload"), dict) else {},
+                                timestamp=str(record.get("timestamp") or self.db.now()),
+                                pid=int(record.get("pid") or 0) or None,
                             )
+
+                        if task["solver_mode"] == SolverMode.MOCK.value:
+                            # Mock is a Studio self-test backend, not an external CAE process.  Running
+                            # it in the existing case worker thread avoids spawning dozens/hundreds of
+                            # short-lived Python processes during DOE/NSGA-II development while real
+                            # Motor-CAD cases retain strict per-case process isolation.
+                            runtime_log_path = work_dir / "solver_runtime.jsonl"
+                            started_mock = time.monotonic()
+
+                            def mock_runtime_log(level: str, event_type: str, message: str, stage: str | None = None) -> None:
+                                record = {
+                                    "timestamp": self.db.now(), "level": level, "component": "solver_worker",
+                                    "event_type": event_type, "message": message, "task_id": task_id,
+                                    "case_id": case_id, "stage": stage, "pid": os.getpid(),
+                                    "payload": {"execution": "in_process_mock"},
+                                }
+                                try:
+                                    with runtime_log_path.open("a", encoding="utf-8", newline="\n") as handle:
+                                        handle.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+                                except OSError:
+                                    pass
+                                solver_log(record)
+
+                            def mock_progress(stage: str, value: float, message: str) -> None:
+                                if cancel_check():
+                                    raise SolverProcessCancelled("Mock求解收到取消请求")
+                                if time.monotonic() - started_mock > timeout_s:
+                                    raise SolverProcessTimeout(f"Mock求解超过超时限制 {timeout_s}s")
+                                heartbeat()
+                                progress(stage, value, message)
+
+                            mock_runtime_log("INFO", "SOLVER_CHILD_START", "in-process Mock solver started", "STARTING_SOLVER")
+                            mock_runtime_log("INFO", "SOLVER_ADAPTER_READY", "MockSolverAdapter initialized", "STARTING_SOLVER")
                             try:
-                                result = self.motorcad_worker_pool.run(
-                                    payload, timeout_s=timeout_s, progress=progress, cancel_check=cancel_check,
-                                    worker_started=worker_started, heartbeat=heartbeat, log=solver_log,
+                                result = MockSolverAdapter(self.settings.mock_stage_delay_s).run(
+                                    template=payload["template"], parameters=payload["parameters"],
+                                    explicit_parameter_ids=payload.get("explicit_parameter_ids", []),
+                                    automation_overrides=payload.get("automation_overrides", {}),
+                                    materials=payload.get("materials", {}), solver_settings=payload.get("solver_settings", {}),
+                                    scenario=payload["scenario"], analysis=AnalysisType(payload["analysis"]),
+                                    requested_outputs=payload["requested_outputs"], work_dir=work_dir, progress=mock_progress,
                                 )
-                            except SolverProcessError as exc:
-                                if not (self.settings.motorcad_worker_fallback_isolated and is_persistent_worker_transport_failure(exc)):
-                                    raise
-                                # The atomic RuntimeResourceLease remains held.  Retry only the
-                                # persistent-owner/IPC boundary once with the legacy isolated child;
-                                # that child still performs native validation and full solve inside
-                                # one process, so Validate-and-Run semantics remain intact.
+                                if str(runtime_log_path) not in result.artifacts:
+                                    result.artifacts.append(str(runtime_log_path))
+                                mock_runtime_log("INFO", "SOLVER_RUN_SUCCESS", "Mock solver completed", "COMPLETED")
+                            except Exception as exc:
+                                mock_runtime_log("ERROR", "SOLVER_CHILD_EXCEPTION", str(exc), "FAILED")
+                                raise
+                        else:
+                            if self.motorcad_worker_pool is not None:
                                 self._event(
-                                    task_id, "PERSISTENT_WORKER_FALLBACK_ISOLATED",
-                                    "持久Worker基础设施异常，当前Case自动切换到隔离求解进程重试一次",
-                                    case_id=case_id, stage="STARTING_SOLVER", severity="WARNING",
-                                    payload={"reason": str(exc)[:1200], "runtime_resource_lease_id": getattr(runtime_resource_lease, "lease_id", None)},
+                                    task_id, "MOTORCAD_WORKER_LEASE_REQUESTED",
+                                    "请求Motor-CAD持久Worker执行租约", case_id=case_id, stage="STARTING_SOLVER",
+                                    payload={"worker_mode": "persistent", "run_configuration_id": run_configuration_id},
                                 )
+                                try:
+                                    result = self.motorcad_worker_pool.run(
+                                        payload, timeout_s=timeout_s, progress=progress, cancel_check=cancel_check,
+                                        worker_started=worker_started, heartbeat=heartbeat, log=solver_log,
+                                    )
+                                except SolverProcessError as exc:
+                                    if not (self.settings.motorcad_worker_fallback_isolated and is_persistent_worker_transport_failure(exc)):
+                                        raise
+                                    # The atomic RuntimeResourceLease remains held.  Retry only the
+                                    # persistent-owner/IPC boundary once with the legacy isolated child;
+                                    # that child still performs native validation and full solve inside
+                                    # one process, so Validate-and-Run semantics remain intact.
+                                    self._event(
+                                        task_id, "PERSISTENT_WORKER_FALLBACK_ISOLATED",
+                                        "持久Worker基础设施异常，当前Case自动切换到隔离求解进程重试一次",
+                                        case_id=case_id, stage="STARTING_SOLVER", severity="WARNING",
+                                        payload={"reason": str(exc)[:1200], "runtime_resource_lease_id": getattr(runtime_resource_lease, "lease_id", None)},
+                                    )
+                                    result = runner.run(
+                                        payload, progress=progress, cancel_check=cancel_check, worker_started=worker_started,
+                                        heartbeat=heartbeat, log=solver_log,
+                                    )
+                            else:
                                 result = runner.run(
                                     payload, progress=progress, cancel_check=cancel_check, worker_started=worker_started,
                                     heartbeat=heartbeat, log=solver_log,
                                 )
-                        else:
-                            result = runner.run(
-                                payload, progress=progress, cancel_check=cancel_check, worker_started=worker_started,
-                                heartbeat=heartbeat, log=solver_log,
-                            )
 
             progress("QUALITY_CHECK", 0.96, "执行结果质量检查")
             profile = self.registry.quality_schema().get(runtime_quality_profile, self.registry.quality_schema().get("standard", {}))

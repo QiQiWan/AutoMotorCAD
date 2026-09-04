@@ -330,6 +330,8 @@ class SolutionService:
         explicit_parameter_ids: list[str] | None = None,
         automation_parameters: dict[str, dict[str, Any]] | None = None,
         capability_snapshot: dict[str, Any] | None = None,
+        editor_transaction: dict[str, Any] | None = None,
+        native_reconciliation: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         solution = self.get_solution_summary(solution_id)
         if solution is None:
@@ -343,6 +345,8 @@ class SolutionService:
             explicit_parameter_ids=explicit,
             automation_parameters=automation_parameters,
             capability_snapshot=capability_snapshot,
+            editor_transaction=editor_transaction,
+            native_reconciliation=native_reconciliation,
         )
         created = self._persist_revision_snapshot(solution, str(created["id"]))
         created = self._canonical_payload(created) or created

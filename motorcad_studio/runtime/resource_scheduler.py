@@ -109,6 +109,11 @@ class RuntimeResourceScheduler:
         self.wait_poll_s = max(0.05, float(wait_poll_s))
         self._condition = threading.Condition(threading.RLock())
         self._worker_in_use = 0
+        # Stable slot identities prevent two concurrently active leases from ever
+        # receiving the same worker token when earlier slots are released out of order.
+        self._available_worker_tokens = [
+            f"WORKER-SLOT-{index:02d}" for index in range(1, self.worker_capacity + 1)
+        ]
         self._license_in_use = {name: 0 for name in self.license_capacities}
         self._queue: list[_QueuedRequest] = []
         self._active: dict[str, RuntimeResourceLease] = {}
@@ -197,7 +202,8 @@ class RuntimeResourceScheduler:
 
     def _can_grant(self, request: _QueuedRequest) -> bool:
         return (
-            self._worker_in_use < self.worker_capacity
+            bool(self._available_worker_tokens)
+            and self._worker_in_use < self.worker_capacity
             and self._licenses_available(request.licenses)
             and self._memory_admissible(request.memory_reservation_mb)
         )
@@ -261,6 +267,7 @@ class RuntimeResourceScheduler:
                     is_head = bool(self._queue) and self._queue[0].request_id == request.request_id
                     if is_head and self._can_grant(request):
                         self._queue.pop(0)
+                        worker_token = self._available_worker_tokens.pop(0)
                         self._worker_in_use += 1
                         for name in licenses:
                             self._license_in_use[name] = self._license_in_use.get(name, 0) + 1
@@ -273,7 +280,7 @@ class RuntimeResourceScheduler:
                             case_id=case_id,
                             analysis=str(analysis),
                             licenses=licenses,
-                            worker_token=f"WORKER-TOKEN-{self._worker_in_use:02d}",
+                            worker_token=worker_token,
                             memory_reservation_mb=reservation,
                             enqueued_at=request.enqueued_at,
                             acquired_at=_utc_now(),
@@ -305,6 +312,9 @@ class RuntimeResourceScheduler:
                 if active is not None:
                     active.released_at = _utc_now()
                     self._worker_in_use = max(0, self._worker_in_use - 1)
+                    if active.worker_token not in self._available_worker_tokens:
+                        self._available_worker_tokens.append(active.worker_token)
+                        self._available_worker_tokens.sort()
                     for name in active.licenses:
                         self._license_in_use[name] = max(0, self._license_in_use.get(name, 0) - 1)
                 self._condition.notify_all()
@@ -363,6 +373,8 @@ class RuntimeResourceScheduler:
             "issues": issues,
             "effective_concurrency": effective,
             "worker_capacity": self.worker_capacity,
+            "worker_slots_available": len(self._available_worker_tokens),
+            "worker_tokens_available": list(self._available_worker_tokens),
             "license_capacities": dict(self.license_capacities),
             "min_free_memory_mb": self.min_free_memory_mb,
             "case_memory_reservation_mb": self.case_memory_reservation_mb,

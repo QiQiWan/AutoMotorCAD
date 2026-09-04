@@ -414,6 +414,10 @@ def parse_motorcad_winding_messages(messages: Any) -> dict[str, Any]:
         except ValueError:
             pass
 
+    if "coil index too high" in lower:
+        codes.append("MOTORCAD_WINDING_COIL_INDEX_OUT_OF_RANGE")
+        causes.append("Motor-CAD报告线圈索引超出当前支路的线圈数量；需检查每支路线圈数或原生绕组定义")
+
     if "winding is not feasible" in lower:
         codes.append("MOTORCAD_WINDING_NOT_FEASIBLE")
         causes.append("Motor-CAD判定当前绕组不可行")

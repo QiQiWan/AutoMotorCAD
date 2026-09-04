@@ -17,7 +17,6 @@ from typing import Any
 from . import windows_fullflow as legacy
 from ..version import __version__
 from ..windows_production_qualification import (
-    EXPECTED_PYMOTORCAD_VERSION,
     REQUIRED_SCENARIOS,
     WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION,
     qualification_matrix_spec,
@@ -288,10 +287,12 @@ def freeze_v2_artifacts(state: dict[str, Any], artifact_dir: Path) -> dict[str, 
 def preflight_phase(args: argparse.Namespace) -> dict[str, Any]:
     payload = legacy.preflight_phase(args)
     host = host_fingerprint({"environment": payload})
+    pymotorcad_version = str(host.get("pymotorcad_version") or "").strip().lower()
+    pymotorcad_recorded = pymotorcad_version not in {"", "unresolved", "unknown", "n/a", "none"}
     binary_ready = (
         host.get("motorcad_normalized_version") == TARGET_MOTORCAD
         and host.get("motorcad_binary_probe_status") == "PASS"
-        and host.get("pymotorcad_version") == EXPECTED_PYMOTORCAD_VERSION
+        and pymotorcad_recorded
     )
     formal_ready = bool(
         payload.get("formal_ready")

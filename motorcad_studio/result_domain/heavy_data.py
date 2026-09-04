@@ -15,6 +15,7 @@ from .contracts import ResultDataRef
 
 RESULT_DATA_GATEWAY_CONTRACT_VERSION = "0.80-A"
 RESULT_DATA_SCHEMA_VERSION = 2
+RESULT_DATA_APPLICATION_CONTRACT_VERSION = "1"
 CHUNKPACK_FORMAT = "mcs-chunkpack-v1"
 HEAVY_RESULT_TYPES = frozenset({"series", "spectrum", "map", "field", "vector_field", "table", "artifact"})
 CHUNK_NATIVE_TYPES = frozenset({"series", "spectrum", "map", "field", "vector_field", "table"})
@@ -472,10 +473,26 @@ class ResultDataGateway:
         return descriptor
 
     def available_chunk(self, content_hash: str, chunk_index: int) -> bool:
+        """Return whether one immutable chunk is present and integrity-valid.
+
+        Conditional HTTP requests use this method before returning 304. Merely
+        checking file existence would allow a corrupted local chunk to be treated
+        as a valid cached representation, so the compressed payload is decoded and
+        checked against its content address here.
+        """
         try:
             descriptor = self.chunk_descriptor(content_hash, chunk_index)
-            return self._chunk_path(str(descriptor["chunk_hash"]), str(descriptor.get("storage_key") or "")).is_file()
-        except (RuntimeError, ValueError, KeyError, IndexError, json.JSONDecodeError):
+            self._read_chunk(descriptor)
+            return True
+        except (
+            FileNotFoundError,
+            OSError,
+            RuntimeError,
+            ValueError,
+            KeyError,
+            IndexError,
+            json.JSONDecodeError,
+        ):
             return False
 
     def read_chunk_index(self, content_hash: str, chunk_index: int) -> tuple[Any, dict[str, Any]]:
@@ -491,6 +508,12 @@ class ResultDataGateway:
         }
 
     def available_window(self, content_hash: str, *, offset: int = 0, limit: int | None = None) -> bool:
+        """Return whether the requested immutable window can be verified.
+
+        This is deliberately stronger than a path-existence probe. It is used to
+        authorize a 304 response, which must never conceal local storage damage.
+        Only chunks intersecting the requested window are decoded and hashed.
+        """
         row = self.metadata(content_hash)
         if not row:
             return False
@@ -499,11 +522,21 @@ class ResultDataGateway:
             if not object_path.is_file():
                 return False
             if str(row.get("encoding") or "json-gzip") != CHUNKPACK_FORMAT:
+                self._read_legacy(content_hash, row, verify=True)
                 return True
             manifest = self._load_manifest(content_hash, row)
             chunks, _, _, _ = self._window_chunks(manifest, offset, limit)
-            return all(self._chunk_path(str(chunk["chunk_hash"]), str(chunk.get("storage_key") or "")).is_file() for chunk in chunks)
-        except (RuntimeError, ValueError, KeyError, json.JSONDecodeError):
+            for chunk in chunks:
+                self._read_chunk(chunk)
+            return True
+        except (
+            FileNotFoundError,
+            OSError,
+            RuntimeError,
+            ValueError,
+            KeyError,
+            json.JSONDecodeError,
+        ):
             return False
 
     def available(self, content_hash: str) -> bool:
@@ -718,7 +751,9 @@ class ResultDataGateway:
                             pass
         logical = int(row.get("logical_bytes") or 0)
         return {
+            "authority": "ResultDataGatewayStatusV3",
             "contract_version": RESULT_DATA_GATEWAY_CONTRACT_VERSION,
+            "application_contract_version": RESULT_DATA_APPLICATION_CONTRACT_VERSION,
             "schema_version": RESULT_DATA_SCHEMA_VERSION,
             "backend": "content_addressed_chunk_filesystem",
             "chunk_format": CHUNKPACK_FORMAT,
@@ -739,6 +774,11 @@ class ResultDataGateway:
             "physical_file_count": physical_files,
             "physical_stored_bytes": physical_bytes,
             "compression_ratio": (round(physical_bytes / logical, 6) if logical else None),
+            "content_addressed": True,
+            "immutable_objects": True,
+            "conditional_requests": True,
+            "etag_identity": "content_hash",
+            "transfer_modes": ["inline", "window", "chunk"],
             "random_access_native": True,
             "legacy_monolithic_read_compatible": True,
         }

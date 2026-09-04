@@ -1,137 +1,250 @@
-# MotorCAD Studio Architecture
+# 架构说明
 
-Current release: **0.89.9 / Schema 45**.
+## 1. 应用装配
 
-## V0.89-G4.1 bounded editor and derived-design modules
+MotorCAD Studio 0.91.6 使用单一 Composition Root、密封 ServiceContainer、FastAPI Application Factory 和协调式生命周期。
 
-`MCSDesignDerivedParameters` is the single browser authority for non-native, immediate relationships such as relative slot area, fixed-conductor slot-fill coupling, conductor marker sampling and IPM preview leg separation. These values are explicitly preview evidence; native Motor-CAD geometry and winding readback remain authoritative.
+```text
+main.py
+  -> bootstrap/composition_root.py
+  -> ServiceContainer
+  -> bootstrap/app_factory.py
+  -> platform routers + bounded-context operation catalog
+```
 
-`AnalysisWorkspaceService` is the application-service seam between HTTP routes, `EngineeringPlatform` and `SolutionService`. Its bootstrap read model returns the latest Motor Revision per Solution plus any older revision referenced by the active Analysis or route. Its editor bundle and write responses carry only the latest Analysis Revision and current input-domain catalog. Immutable history remains available from the existing detail endpoints.
+数据库、日志、TaskManager、Motor-CAD Worker Pool、运行时调度器、结果网关、控制平面和所有 Router 都由 Composition Root 构造。Router 不自行创建进程级资源。
 
-The browser consumes this contract through `MCSAnalysisWorkspaceClient`. Design and Analysis controllers update from write responses instead of reloading the entire Project graph. This is the first extraction step; `main.py`, `EngineeringPlatform`, `design/editor.js` and `analysis/unified-configuration.js` remain migration targets rather than completed micro-modules.
+当前应用图：
 
-## Product workflow
+- OpenAPI 路径：397；
+- OpenAPI 操作：425；
+- FastAPI 方法签名：428；
+- 重复方法与路径：0；
+- ServiceContainer 必需服务：96/96；
+- 每个 OpenAPI 操作均具有 `x-module-owner`；
+- 后端兼容操作：0；
+- 后端模块化率：100%。
 
-The engineer-facing workflow remains **Design -> Validate -> Decide**. Internal objects preserve deterministic engineering lineage, native readback, validation diagnosis, bounded repair audit, replay and production qualification.
+## 2. 后端有界上下文
 
-## V0.89 workflow and HMI authority
+公共处理器位于 `motorcad_studio/api/operations`，按业务职责拆分：
 
-`GlobalWorkflowTruthV1` maps the visible **Design -> Validate -> Decide** journey onto one authoritative object lineage: **Project -> Solution -> Motor Revision -> Analysis -> Analysis Revision -> Execution Plan -> Task -> Case -> ResultBundle**. `MCSEngineeringContextV3` owns browser identity. Persisted descendants reload as resume hints only, and the backend resumes by selecting the deepest persisted leaf then deriving its ancestors.
+```text
+analysis.application
+execution.application
+data-factory.application
+optimization.application
+qualification.application
+requirements.application
+native.closure
+workspace.projects
+workspace.solutions
+workspace.motor-design
+workspace.materials
+engineering.experience
+platform.semantics
+```
 
-`HMIActionQualificationAuthorityV1` owns browser control qualification. Fixed and dynamic buttons receive semantic action/control/family IDs plus handler-ownership evidence. The 0.89.8 fixed shell contains 90 buttons and the current full-shell qualification is 90/90 registration PASS with an 86-triggered/4-gated actual-click sweep.
+`HttpOperationCatalog` 在应用装配阶段校验：
+
+- 操作 ID 唯一；
+- `(HTTP method, path)` 唯一；
+- 模块所有权完整；
+- 不存在 catch-all 兼容 Router；
+- 模块依赖无缺失和循环。
+
+旧的 `api.legacy`、`api.domain_handlers`、`api.route_pool.py` 和 `modules/route_manifest.py` 已移除。
+
+## 3. M5-B/M5-C 事务控制平面
+
+控制平面位于 `motorcad_studio/modules/control_plane`，共享应用数据库和同一个事务边界。
+
+### 3.1 Command Ledger
+
+关键写操作必须提供 `Idempotency-Key`。系统记录：
+
+- Scope；
+- Request Hash；
+- Command 状态；
+- Response；
+- Error；
+- 创建、更新和完成时间。
+
+同一 Key 与相同负载会重放第一次结果；同一 Key 与不同负载返回冲突；仍在执行的命令返回可轮询状态。
+
+### 3.2 Transactional Outbox
+
+业务聚合更新和 Outbox Event 在同一 SQLite 事务中提交。事件具有 Payload Hash、聚合版本和投递状态，避免业务状态提交后事件丢失。
+
+### 3.3 Optimization 与 Data Factory
+
+Optimization 支持 Campaign、Candidate、Result Evidence、Promotion Gate 和 Replay Plan。Candidate 参数按规范化 JSON 哈希去重，更新使用 Compare-and-Set，Promotion 要求有效结果证据和可选资格决策。
+
+Data Factory 支持 Dataset、DatasetVersion、BuildJob、QualityReport 和 Publication。DatasetVersion、QualityReport 和 Publication 为不可变证据；发布前必须通过构建完成和质量门禁。
+
+### 3.4 Qualification、Requirements 与 Native Runtime
+
+Qualification Evidence 使用前序哈希形成不可变证据链，Decision 只能引用完整证据头。
+
+Requirements 使用不可变 RequirementRevision、ToleranceRevision 和 ProbabilisticQualification。概率要求评价采用 Wilson 95% 置信区间下界作为通过门槛。
+
+Native Runtime Safety 提供：
+
+- Runtime Lease；
+- TTL 与 Heartbeat；
+- 单调 Fencing Token；
+- `.mot` Artifact Lock；
+- Native Process Observation；
+- Orphan Reconciliation；
+- Native Snapshot。
+
+TaskManager 的真实 Motor-CAD 执行路径已接入该服务。每个本地 Runtime Scheduler Worker Slot 具有稳定身份，获得持久租约后才进入求解；进度和 Worker Heartbeat 会续租；进程启动会登记 Observation；退出求解区域会释放持久租约。旧 Worker 持有的过期 Fencing Token 不能继续写入受控资源。
+
+## 4. 工程执行链
+
+```text
+Project
+  -> Solution
+  -> Motor Revision
+  -> Analysis Definition Revision
+  -> Execution Plan
+  -> Task
+  -> Case
+  -> ResultBundle
+  -> FieldData
+```
+
+工程上下文解析器在单个数据库快照中验证祖先关系和跨上下文冲突。设计编辑使用不可变 Revision 和乐观并发。计算前检查保持显式工程师操作，不自动跳转参数页、任务页或结果页。
+
+运行时资源调度器以原子方式同时分配 Worker Slot、许可证容量和内存余量。Worker Slot 标识由固定槽位池管理，乱序释放时也不会向两个活动 Case 分配同一 Token。
+
+## 5. 前端装配
+
+HTML 只直接加载：
+
+```text
+/static/app.css
+/static/core/bootstrap.js
+```
+
+`bootstrap.js` 建立唯一的 `window.MotorCADStudio` 根对象，并装配：
+
+- ApiClient；
+- EventBus；
+- FeatureRegistry；
+- DisposableScope；
+- Engineering Context Store；
+- Workflow Store；
+- Result Store；
+- I18n Store；
+- Control Plane Client；
+- Binary Field Viewer。
+
+Control Plane Client 使用规范 API：
+
+```text
+/api/control-plane
+/api/optimization/v2
+/api/data-factory/v2
+/api/qualification/v2
+/api/native-runtime/v2
+/api/requirements/v2
+```
+
+ApiClient 为写命令生成稳定 Idempotency-Key 和 Correlation ID。具备稳定幂等键且请求体可重用的写命令允许安全重试。
+
+### 5.1 Runtime Capsule
+
+89 个历史源码保存在 `frontend_legacy`。构建工具按确定顺序生成：
+
+```text
+static/core/classic-runtime.catalog.json
+static/core/classic-runtime-source.js
+```
+
+Runtime Capsule 在单一词法作用域中执行这些源码，并将历史全局导出重定向到 `MotorCADStudio.compat`。它统一追踪并清理：
+
+- Event Listener；
+- Timeout 和 Interval；
+- AnimationFrame；
+- Fetch 和 AbortController；
+- Worker；
+- ResizeObserver；
+- MutationObserver；
+- IntersectionObserver。
+
+该方案已经消除多脚本加载顺序和直接全局污染。源码层仍保留历史函数结构，后续可按功能逐步重写，不影响当前运行时边界。
+
+## 6. FieldData 与 WebGL2
+
+后端二进制格式为 `MotorCADFieldDataBinaryV1`：
+
+```text
+Magic + Version + JSON Header + aligned TypedArray payload
+```
+
+数据包含：
+
+- Float32 Position；
+- Uint32 Index；
+- Float32 Scalar；
+- Topology Hash；
+- Scalar Hash；
+- Frame Hash；
+- Payload SHA-256；
+- 坐标与来源权威信息。
+
+HTTP 支持 ETag、304、Range、206 和 416。查看器先读取二进制清单和所需字节范围，失败时回退到 JSON/LOD。
+
+WebGL2 使用独立 Position、Index 和 Scalar Buffer。相邻帧 Topology Hash 相同时保留 Position、Index 和 VAO，只更新 Scalar Buffer。查看器支持旋转、平移、缩放、标准视角、透视/正交投影、播放、上下文丢失恢复和确定性资源释放。
+
+`field-worker.js` 负责几何构建、体单元外表面提取、内部面剔除、标量归一化和 Transferable TypedArray 返回。
+
+## 7. 发布门禁
+
+发布包由以下稳定文件描述：
+
+```text
+RELEASE_MANIFEST.json
+MODULE_CATALOG.json
+PACKAGE_CONTENT_MANIFEST.json
+validation/evidence.json
+validation/field_data_benchmark.json
+validation/openapi_baseline.json
+```
+
+启动前拒绝缺失文件、额外文件、哈希不一致、符号链接、旧版本静态资源和模块版本混装。
 
 
-`EngineerUXConvergenceV1` is the Guided presentation authority. It derives the four persistent engineer questions — 当前位置 / 当前状态 / 需要处理 / 下一步 — from the existing context/workflow authorities and applies presentation-only terminology convergence. `ReleaseCandidateGateV1` is the final V0.89 release layer: it separates local distributable RC readiness from formal Windows/Motor-CAD/human-acceptance readiness.
+## Immutable package boundary and mutable runtime state
 
-`GlobalShellTypographyCopyConvergenceV1` (V0.89-G1) is the shell/readability overlay. It does not own engineering state. It enforces full-width ownership of the engineer focus bar inside the two-column project shell, establishes Guided typography minimums for primary workflow surfaces, resolves asynchronous copy from the live UI language, and audits visible Guided Chinese controls for known raw implementation vocabulary and untranslated primary actions.
+The package manifest protects immutable application content. Runtime-owned roots (`data`, `runtime`, `results`, `logs`, `baselines`, `factory`) are explicitly outside that hash boundary. Installed builds default those roots to the user profile and sanitize legacy in-program directory overrides unless `MOTORCAD_STUDIO_ALLOW_IN_TREE_STATE=1` is intentionally enabled. This prevents normal lifecycle diagnostics from invalidating the next startup while preserving fail-closed checks for undeclared code, scripts and styles.
 
-`UISoakRecoveryFaultQualificationV1` is the top resilience authority. It does not replace solver qualification: it consumes immutable V0.89-D and formal Native 100/500 Case-soak predecessors, then qualifies 100/500 live browser cycles, 12 formal UI recovery faults and bounded browser/HMI growth. Five Native recovery faults are inherited only through the exact V0.88-F content hash frozen by V0.89-D.
 
-## V0.89-C interaction transaction authority
+## Runtime preflight concurrency and diagnostics
 
-`NavigationTransactionAuthorityV1` serializes route-changing intent across the Design, Analysis and Project editors. Guards prepare pending work without disposing the active view; the router commits only the latest intent and emits a committed event before editor teardown. Failed route application restores the last stable route/UI. The authority also owns browser unsafe-change inspection and reusable single-flight locks for duplicate actions. Design Revision commit replay and Analysis execution submission use stable transaction keys so unknown-response retries remain idempotent.
+运行环境深度检查是单一受控操作。浏览器端对同一次检查使用 single-flight；后端 `SystemService` 对并发深度检查请求进行合并，只有一个 `MotorCADPreflightRunner` 可以启动真实 Motor-CAD 进程。后到请求等待同一 generation 并复用结果。
 
-## V0.89-D workstation qualification authority
+Motor-CAD 检查子进程清理由 `terminate_process_tree` 负责，Windows 上进程在枚举子进程前自行退出属于正常竞态，`psutil.NoSuchProcess` 和 `ZombieProcess` 被视为 `already_exited`，不得转换成 HTTP 500。
 
-`WindowsNativeGoldenJourneyQualificationV1` is the top-level workstation production gate. It consumes a formally qualified `WindowsMotorCADProductionQualificationV2` predecessor by immutable `run_id + content_hash`, then requires three live full-shell Chromium journeys for SPM, IPM and AFPM. Each journey traverses the production UI from project creation and Golden Starter Rev.1 through Analysis Rev.1, full Native precheck, real Motor-CAD execution, completed Case/ResultBundle and Decide/result reopen. The qualification freezes screenshots, a Playwright trace and a journey summary under a SHA-256 evidence manifest and rejects any lineage, browser-error or artifact-integrity mismatch.
+运行诊断统一写入程序根目录 `logs`，中央日志同时按 HTTP、preflight、error、frontend、task 和 case 进行 fan-out，支持从单个目录收集完整现场证据。
 
-This authority remains separate from local test qualification. A non-Windows development host can validate the contract and HMI but cannot create a formal V0.89-D PASS.
+## 6. Route-first 浏览器交互
 
-## Design authority
+浏览器 URL 是页面导航状态的持久权威。项目内主路径包括：
 
-- Project / Solution
-- immutable Motor Design Revision
-- Golden Motor Design Starter (SPM / IPM / AFPM)
-- canonical parameter registry and engineering semantics
-- materials, winding and geometry projections
-- Studio precheck
+```text
+/app/projects/<project>/overview
+/app/projects/<project>/solutions
+/app/projects/<project>/designs/templates
+/app/projects/<project>/designs/<solution>/revisions/<revision>/<view>
+/app/projects/<project>/simulation/analyses/<analysis>/configure/<step>
+/app/projects/<project>/simulation/tasks/<task>
+/app/projects/<project>/simulation/monitor/<task>
+/app/projects/<project>/results/bundles/<bundle>
+/app/projects/<project>/data
+```
 
-A Draft is the editable engineering intent. Saving creates/updates the current design state without modifying the supplied bottom-layer template. Immutable revisions remain available for lineage and comparison.
+硬刷新时 Router 先根据 URL 调用 `/api/projects/<project>` 恢复项目上下文，再挂载页面。运行环境检查与工程 Readiness 属于补充状态，在路由可交互后后台刷新。
 
-## Motor-CAD native authority chain
-
-Current native execution uses six explicit layers:
-
-1. **V0.88-A Native Semantic Binding Authority** — determines the exact Motor-CAD variable/component names valid for the loaded template/model-source fingerprint.
-2. **V0.88-B Native Geometry & Winding Readback Authority** — reads the actual live model back and freezes a `NativeModelSnapshot`.
-3. **V0.88-C Validation Fault Tree & Native Repair Orchestration** — converts drift/unresolved/native-validity evidence into typed root-cause faults and a lineage-bound repair plan; optionally executes only `AUTO_SAFE` resynchronization actions after explicit user request.
-4. **V0.88-D Editor Transaction & Native Reconciliation** — makes the persisted Design Draft the single editor state owner and binds native evidence to its exact transaction/intention hashes with pre-run and post-run stale-lineage checks.
-5. **V0.88-E Native Preview & Visualization Reconciliation** — selects only lineage-compatible `NativeModelSnapshot` projections for read-only visualization, keeps DRIFT/PARTIAL evidence compare-only, and drives geometry/winding/material views from one Design ↔ Native reconciliation contract.
-6. **V0.88-F Native Spatial Geometry & Result Overlay Authority** — freezes GeometryTree Region/Line/Arc boundaries into the post-solve native state and binds those boundaries to the same Case's native FEA export through strict lineage and coordinate-alignment gates.
-
-The chain is:
-
-`MotorSnapshot -> NativeSemanticBindingProfile -> MotorCADBindingPlan -> live Motor-CAD -> NativeModelSnapshot -> NativeFaultRecord / NativeRepairPlan -> NativeSpatialGeometry -> same-Case FEA export -> SpatialOverlayContract -> ResultBundle / qualification evidence`
-
-`NativeModelSnapshot` is captured after binding, after native validation and after solve. Formal qualification uses the post-solve snapshot plus a stable `design_state_hash`. V0.88-C additionally requires a CLEAN RepairPlan, fault-tree hash and zero repair attempts in formal Native Closure evidence.
-
-Safe repair obeys a strict authority boundary: actions may restore live native state only to values already frozen into the current BindingPlan. Design Drafts and source templates are not mutated by the orchestrator. Template-inherited materials never become silent writable intent.
-
-## Analysis
-
-- Analysis Definition / immutable Analysis Revision
-- Analysis Template and Recipe
-- Standard Validation Package
-- operating-point/scenario definitions
-- execution plan and Task/Case lifecycle
-
-`validation` and `production` Motor-CAD runs fail closed when semantic binding/readback authority is incomplete, the typed fault tree is non-clean, or required native state is drifting.
-
-## Results
-
-- ResultBundle as the authoritative single-case result object
-- ResultSet / comparison aggregates
-- scalar, series, spectrum, map, field, vector, table and artifact result types
-- provenance, quality, trust and comparability fingerprint
-- Engineering Scorecard and requirement evaluation
-
-Native results carry the final native model snapshot, design-state hash, typed fault tree, RepairPlan hash and repair-attempt count so the result can be traced to the actual model state that was solved.
-
-## Optimization
-
-- parameter study / full-factorial sweep
-- NSGA-II / Pareto candidate sets
-- Local / Morris / Sobol sensitivity
-- convergence, response surface, parallel coordinates and Candidate Inspector
-- candidate validation and immutable promotion to a new Design Revision
-
-## Runtime
-
-Motor-CAD execution is isolated behind RuntimeResourceScheduler, worker ownership, license-capacity controls, child-process isolation/cancellation, SQLite lifecycle accounting and graceful shutdown qualification.
-
-V0.88-C also removes repeated plugin-contract/YAML reconstruction from hot qualification routes: registered plugin contract snapshots and static PM topology overrides are cached for the registry lifetime.
-
-## Production qualification
-
-The current release composes six gates:
-
-1. local Runtime Lifecycle Qualification;
-2. formal Windows + licensed Motor-CAD 2026R1 Native qualification;
-3. V0.89-D SPM/IPM/AFPM live Chromium Golden Journeys;
-4. formal 100/500 Native Case production soak;
-5. V0.89-E UI 100/500 + 12/12 recovery/fault qualification;
-6. V0.89-F finalized automated RC gate + 12/12 evidence-backed engineer acceptance.
-
-Local/CI evidence can close the distributable automated RC gate but cannot promote the formal Windows/native/human gates.
-
-## Preview authority rule
-
-Draft editing remains Design-Intent-first. In saved read-only Design views, `NativePreviewReconciliationAuthorityV1` may select a `NativeModelSnapshot.preview_projection` only when its immutable `design_snapshot_hash` matches the exact Revision. A QUALIFIED projection can become the default display source; DRIFT/PARTIAL projections require explicit Native/Compare selection; stale evidence is blocked. The rendered SVG is an engineering reconstruction from native readback semantics, with optional Motor-CAD GeometryTree digest/region evidence, not a verbatim screenshot of the Motor-CAD viewport.
-
-## Source authorities
-
-- `motorcad_studio/config/` — canonical engineering/runtime configuration.
-- `motorcad_studio/seed_data/` — supplied template/inventory seed source.
-- `data/` — runtime working data materialized on first source launch.
-- `motorcad_studio/static/` — current active HMI.
-
-### Editor transaction authority
-
-`EditorTransactionAuthorityV1` separates persistence concurrency from engineering intent. Draft `version` protects write ordering; `editor_intent_version/hash` describes durable design content; `native_reconciliation_json` records whether Motor-CAD evidence is CURRENT, STALE, DRIFT, PARTIAL or FAILED for that intent. Immutable Revision commit freezes the source transaction and reconciliation record.
-## V0.88-F spatial geometry and result overlay rule
-
-`NativeSpatialGeometryAuthorityV1` captures the live Motor-CAD GeometryTree as Region records containing ordered Line/Arc primitives, materials, hierarchy/duplication metadata and native XY bounds. The exact native primitive parameters remain evidence; arc polylines are display-only approximations. The spatial-geometry hash participates in `NativeModelSnapshot.design_state_hash`, so a boundary mutation can invalidate a post-solve state.
-
-`NativeSpatialResultOverlayAuthorityV1` accepts only a post-solve `QUALIFIED` NativeModelSnapshot and the same Case's normalized native FEA manifest. Binding-plan, Design-snapshot, model-source, native-state and spatial-geometry lineage must agree. FEA coordinate bounds must be contained by the native geometry envelope strongly enough to produce `CONFIRMED` alignment for formal qualification.
-
-Rendering follows a strict evidence rule. If the native FEA export contains real element/node connectivity, Studio may draw those native elements and apply their exported values. If connectivity is absent, Studio renders exported points only (`NO_INTERPOLATION`). It does not manufacture triangles, mesh edges or a smooth contour from point clouds. The exact GeometryTree card is currently an XY/radial native view; the longitudinal/axial engineering section remains parameter/readback reconstruction until a target-workstation API supplies an equivalent spatial section authority.
+固定导航由 `static/core/navigation-bridge.js` 在捕获阶段统一转发到 `MCSRouter.navigate()`。历史功能按钮继续由各 Feature 所有者处理；`static/core/interaction-monitor.js` 会把静默 no-op 记录为 `FRONTEND_BUTTON_NO_EFFECT`，并在每个路由完成后调用 HMI 资格检查。

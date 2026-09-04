@@ -189,32 +189,87 @@ def _child_main(payload: dict[str, Any], event_conn: Any) -> None:
             pass
 
 
-def terminate_process_tree(pid: int, grace_s: float = 3.0) -> None:
+def terminate_process_tree(pid: int, grace_s: float = 3.0) -> dict[str, Any]:
+    """Best-effort, race-safe termination of one owned process tree.
+
+    Windows process creation/exit is inherently racy.  A short-lived preflight
+    worker can disappear after ``psutil.Process(pid)`` succeeds but before
+    ``children(recursive=True)`` reads its create time.  Process cleanup must be
+    idempotent and must never turn a successful/timeout preflight into HTTP 500.
+
+    The returned evidence is intentionally small and JSON-serializable so callers
+    can include it in diagnostic logs without depending on psutil objects.
+    """
+    report: dict[str, Any] = {
+        "pid": int(pid),
+        "status": "unknown",
+        "children_seen": 0,
+        "terminate_requested": 0,
+        "kill_requested": 0,
+        "errors": [],
+    }
     try:
-        parent = psutil.Process(pid)
-    except psutil.Error:
-        return
-    children = parent.children(recursive=True)
+        parent = psutil.Process(int(pid))
+    except (psutil.NoSuchProcess, psutil.ZombieProcess):
+        report["status"] = "already_exited"
+        return report
+    except (psutil.AccessDenied, psutil.Error, OSError, ValueError) as exc:
+        report["status"] = "lookup_failed"
+        report["errors"].append(f"{type(exc).__name__}: {exc}")
+        return report
+
+    try:
+        children = parent.children(recursive=True)
+    except (psutil.NoSuchProcess, psutil.ZombieProcess):
+        # The owner vanished between lookup and child enumeration.  There is no
+        # parent left to terminate; any detached descendant is outside the reliable
+        # ownership tree and is handled by the native orphan reconciler.
+        report["status"] = "already_exited"
+        return report
+    except (psutil.AccessDenied, psutil.Error, OSError, ValueError) as exc:
+        children = []
+        report["errors"].append(f"children: {type(exc).__name__}: {exc}")
+
+    report["children_seen"] = len(children)
+    targets = [*children, parent]
     for process in children:
         try:
             process.terminate()
-        except psutil.Error:
-            pass
+            report["terminate_requested"] += 1
+        except (psutil.NoSuchProcess, psutil.ZombieProcess):
+            continue
+        except (psutil.AccessDenied, psutil.Error, OSError) as exc:
+            report["errors"].append(f"terminate child {getattr(process, 'pid', '?')}: {type(exc).__name__}: {exc}")
     try:
         parent.terminate()
-    except psutil.Error:
+        report["terminate_requested"] += 1
+    except (psutil.NoSuchProcess, psutil.ZombieProcess):
         pass
-    _, alive = psutil.wait_procs(children + [parent], timeout=max(grace_s, 0.1))
+    except (psutil.AccessDenied, psutil.Error, OSError) as exc:
+        report["errors"].append(f"terminate parent: {type(exc).__name__}: {exc}")
+
+    try:
+        _, alive = psutil.wait_procs(targets, timeout=max(float(grace_s), 0.1))
+    except (psutil.Error, OSError, ValueError) as exc:
+        alive = []
+        report["errors"].append(f"wait: {type(exc).__name__}: {exc}")
+
     for process in alive:
         try:
             process.kill()
-        except psutil.Error:
-            pass
-    # A kill request is asynchronous.  Reap the killed processes as part of the
-    # ownership boundary so callers do not observe a transient residual PID as a
-    # failed shutdown on a loaded workstation/CI host.
+            report["kill_requested"] += 1
+        except (psutil.NoSuchProcess, psutil.ZombieProcess):
+            continue
+        except (psutil.AccessDenied, psutil.Error, OSError) as exc:
+            report["errors"].append(f"kill {getattr(process, 'pid', '?')}: {type(exc).__name__}: {exc}")
+
     if alive:
-        psutil.wait_procs(alive, timeout=max(0.5, min(max(grace_s, 0.1), 2.0)))
+        try:
+            psutil.wait_procs(alive, timeout=max(0.5, min(max(float(grace_s), 0.1), 2.0)))
+        except (psutil.Error, OSError, ValueError) as exc:
+            report["errors"].append(f"reap: {type(exc).__name__}: {exc}")
+    report["status"] = "terminated" if report["terminate_requested"] or report["kill_requested"] else "already_exited"
+    return report
 
 
 class SolverProcessRunner:

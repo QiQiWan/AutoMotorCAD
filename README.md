@@ -1,218 +1,107 @@
-# MotorCAD Studio
+# MotorCAD Studio 0.91.6
 
-Current release: **0.89.9 / Schema 45**.
+MotorCAD Studio 是面向 Motor-CAD 的本地工程工作台，覆盖项目与方案管理、电机设计、材料配置、计算前检查、任务执行、结果查看、三维有限元场数据、优化、数据工厂、资格证据和原生运行时安全控制。
 
-This is the cleaned current source release. Historical implementations, obsolete runners, generated runtime state and superseded release reports are excluded from the production package.
+本发布包采用固定目录名 `AutoMotorCAD_Studio`。版本号只出现在发布压缩包名称和内部发布清单中，不再把 M、G、RC、Final、Updated 等阶段后缀写入正式目录或运行文件名。
 
-## Current increment — V0.89-G4.1 IPM, Winding, Material and Performance Repair
+## Windows 一键启动
 
-G4.1 separates immediate design-derived relationships from native Motor-CAD authority. The IPM preview now reserves a real display bridge and caps each V-leg by pole pitch; turns update conductor markers in the same frame; and slot fill follows turns/strand count/relative slot area under an explicit fixed-conductor assumption, with a recoverable manual mode. Material snapshots now expose a direct entry into the editable Draft and material-library failures are no longer silent.
+建议使用完整替换部署：
 
-Analysis loading and saving use the new `AnalysisWorkspaceService`/browser client boundary: bootstrap keeps only each Solution's latest Motor Revision plus referenced history, editor reads and writes return one latest Analysis Revision with its input catalog, and guidance refresh is deferred. Engineering-context version labels and parameter units now use the language authorities. See `docs/V0.89-G4.1_IPM_WINDING_MATERIAL_PERFORMANCE_MODULARIZATION.md`.
+1. 关闭 MotorCAD Studio 页面。
+2. 在任务管理器中停止旧的 Python、Uvicorn 和由旧程序启动的 Motor-CAD 进程。
+3. 备份旧程序目录中人为保存的 `data`、`runtime`、`results` 和 `logs`。
+4. 删除旧程序目录。
+5. 解压发布包，将完整的 `AutoMotorCAD_Studio` 文件夹复制到目标位置。
+6. 双击根目录 `start.bat`。
+7. 页面首次打开后执行一次 `Ctrl + Shift + R`。
 
-## Previous increment — V0.89-G4 Workflow Repair
+`start.bat` 会完成 Python 识别、本地虚拟环境建立、缺失依赖安装、包完整性校验、版本与模块校验、端口检查、服务启动和浏览器打开。
 
-V0.89-G4 repairs the primary Design → Validate → Decide workflow as five bounded modules. Dynamic i18n now owns reused text nodes and asynchronous status updates; low-frequency page guidance is collapsed into a compact help affordance; result-only shell geometry is scoped to the Results route; and nested-main/fixed-min-height defects no longer create blank operation regions.
-
-Analysis Configuration now loads through one project bootstrap instead of project/solution/analysis N+1 requests. The lightweight list reads only each definition's latest revision and collapses exact legacy duplicates for presentation without deleting lineage. Standard Validation runs as an observable single-flight background job, while network, precheck and validation waits have explicit deadlines and recoverable UI terminal states.
-
-Radiation-dependent values are disabled and excluded from solver projection when radiation is off. Local winding guards now distinguish total pole count from pole-pair count and reject invalid slot/phase/path, odd-pole, phase-symmetry and unqualified topology-regeneration combinations before launching Motor-CAD. Formal Windows + licensed Motor-CAD evidence remains pending. See `docs/V0.89-G4_WORKFLOW_REPAIR_IMPLEMENTATION_REPORT.md`.
-
-## Previous increment — V0.89-G3.2 + G3.3
-
-V0.89-G3.2 closes the ResultBundle coverage gap. All 44 canonical output IDs now carry an explicit physical-domain and Result Viewer module contract, typed results expose that contract directly, solver artifacts are represented as typed artifact results, and the Result Viewer consumes ResultBundle module projection before falling back to legacy heuristics. The result shell can therefore reason about overview, performance, FEA, thermal, mechanical, stress, graphs, output-data and artifact surfaces from one authoritative bundle.
-
-V0.89-G3.3 upgrades Native FEA delivery and the high-impact asynchronous HMI path. Native Motor-CAD triangle connectivity is streamed into bounded per-frame mesh chunks and rendered as filled triangle contours with optional mesh edges. The viewer covers the full archived region, plays up to 30 recorded frames, auto-focuses the model, supports wheel zoom, drag pan, Shift/right-drag rotation, tilt and reset, and keeps a bounded four-frame browser cache. The rendering contract remains evidence-preserving: it does not interpolate a synthetic volumetric field or fabricate missing connectivity.
-
-The same increment removes the largest remaining interaction stalls in Analysis Configuration. Full calculation precheck is now an immediately acknowledged background job with stage polling; Studio check, Motor-CAD native check, revision identity verification and evidence persistence are visible in the UI. Save/refresh/submit/result-load operations use explicit progress, while the shared API path provides a delayed global fallback for older controls and route/background loads. The expanded Standard Validation package is collapsed by default so it no longer creates the large blank/dead region above the analysis editor.
-
-That increment did not claim winding-feasibility guidance, full performance qualification, or licensed Windows + Motor-CAD qualification. G4 now supplies the local deterministic winding guard and bounded analysis-loading path; formal workstation evidence remains pending. See `V0.89-G3.2_G3.3_IMPLEMENTATION_REPORT.md`.
-
-## Engineer workflow
-
-The product-facing workflow remains:
-
-1. **Design** — create an SPM, IPM or AFPM Golden Motor Starter, edit guided parameters and inspect geometry/material/winding state.
-2. **Validate** — run Studio checks and the Motor-CAD native validation flow, inspect the typed native fault tree, execute an explicitly requested safe repair when eligible, then review the Engineering Scorecard and native evidence.
-3. **Decide** — compare baselines, execute parameter studies/optimization, inspect Pareto/sensitivity/convergence evidence and promote a validated candidate to a Design Revision.
-
-Guided mode is the default. Raw Python/JSON, worker leases and low-level solver implementation details stay outside the normal engineer workflow.
-
-## V0.89 workflow truth and HMI qualification
-
-V0.89-A adds `GlobalWorkflowTruthV1` and `MCSEngineeringContextV3`. The top-level engineer journey remains **Design → Validate → Decide**, while a persistent breadcrumb exposes the exact **Project → Solution → Motor Revision → Analysis → Task → Result** lineage. Browser-persisted descendant IDs are resume hints only; backend lineage is required before they become authoritative after reload. The backend resumes from one deepest persisted leaf and derives all ancestors from that leaf, preventing mixed-branch context.
-
-V0.89-B adds `HMIActionQualificationAuthorityV1`. Every rendered button receives a semantic action identity, stable control identity and handler-ownership evidence. V0.89-B established a **87-button** fixed-control baseline. V0.89-E added the UI Soak qualification refresh control and V0.89-F adds two Release Candidate controls; the current 0.89.9 shell contains **90 fixed buttons**, all 90 retain stable identity/handler ownership. V0.89-G2 now records **79 triggered + 11 correctly workflow/IDLE-gated** in the empty-shell sweep, with zero missing controls, page errors or console errors and zero action-readiness dead ends. Dynamic buttons are observed and qualified as semantic action families when they are rendered.
-
-See:
-
-- `docs/V0.89-A_GLOBAL_WORKFLOW_TRUTH.md`
-- `docs/V0.89-B_FULL_BUTTON_HMI_QUALIFICATION.md`
-- `docs/V0.89-B_HMI_QUALIFICATION_MATRIX.md`
-
-## V0.89-C editor/navigation transaction hardening
-
-V0.89-C adds `NavigationTransactionAuthorityV1` and makes editor leave a two-phase transaction: prepare pending work first, commit the latest navigation intent second, and dispose the old editor only after the route succeeds. Design Revision commit carries a stable replay key, analysis execution reuses one submission key for an unchanged frozen intent, Project settings prompt before unsaved data can be discarded, and duplicate write actions are single-flight. Dialog close/removal is deterministic and route failures roll back to the last stable UI state.
-
-See `docs/V0.89-C_EDITOR_NAVIGATION_TRANSACTION_HARDENING.md`.
-
-## V0.89-D Windows Native Golden Journey qualification
-
-V0.89-D adds `WindowsNativeGoldenJourneyQualificationV1` on top of the existing V0.88-F Native workstation authority. Formal production status now requires both layers: the V0.88-F SPM/IPM/AFPM/IM Native matrix + 17 observed fault/recovery evidence rows, and three live Chromium full-shell journeys for SPM/IPM/AFPM. Each UI journey creates a project and Golden Starter Rev.1, creates an Analysis Rev.1, runs the full Native precheck, submits the real Motor-CAD task, waits for a completed Case/ResultBundle, reloads Studio and opens the exact result from Decide. Screenshots and a Playwright trace are frozen under a SHA-256 manifest.
-
-Golden Starter `production_verified` badges now require the corresponding formal V0.89-D journey. Local unit tests and mocked E2E remain qualification-contract evidence only.
-
-See `docs/V0.89-D_WINDOWS_NATIVE_GOLDEN_JOURNEY_REAL_WORKSTATION_QUALIFICATION.md`.
-
-## V0.89-E UI Soak / Recovery / Fault Injection qualification
-
-V0.89-E adds `UISoakRecoveryFaultQualificationV1`. Formal production resilience now requires the V0.89-D Windows Golden Journey predecessor, the existing formal Native 100/500 Case soak, live full-shell `UI_SOAK_100` + `UI_SOAK_500`, and **12/12** deliberate UI recovery faults. The soak watches engineering-context drift, duplicate writes, unsaved-data loss, orphan dialogs, page/console/HTTP failures, unhandled rejections, DOM growth, optional JS heap growth and HMI action-registry growth.
-
-V0.89-E also hash-links five Native recovery faults back to the exact V0.88-F run frozen by V0.89-D. Local Chromium mode verifies 10 pure UI/control-plane recovery scenarios; active Task refresh and ResultBundle reopen remain formal-only because they require the real V0.89-D task/result lineage. Local evidence can never claim Windows/Motor-CAD production qualification.
-
-See `docs/V0.89-E_UI_SOAK_RECOVERY_FAULT_INJECTION_QUALIFICATION.md`.
-
-## V0.89-F Engineer UX Convergence & Release Candidate Gate
-
-V0.89-F adds `EngineerUXConvergenceV1` and `ReleaseCandidateGateV1`. It established the four engineer questions **当前位置 / 当前状态 / 需要处理 / 下一步** from the existing workflow/context authorities; the current G1R shell presents those questions in a compact three-region strip: **当前 / 状态或需要处理 / 下一步**. Internal terms such as Design Revision, Case, ResultBundle and Native Binding are translated on the Guided Chinese presentation layer to 电机版本、计算工况、计算结果 and Motor-CAD 参数映射; Expert/Developer evidence surfaces retain the authority vocabulary and hashes.
-
-The RC Gate deliberately separates **Local RC Ready** from **Formal RC Ready**. Local RC requires a finalized manifest, the complete automated regression inventory, unique/version-pinned static assets, 100% fixed-button qualification and zero browser errors. Formal RC additionally requires the licensed Windows Native gate, V0.89-D SPM/IPM/AFPM Golden Journeys, Native 100/500 Case Soak, V0.89-E UI 100/500 + 12/12 recovery evidence, and a **12/12 evidence-backed engineer human acceptance**. The shipped checklist starts PENDING and cannot pre-approve a release.
-
-See `docs/V0.89-F_ENGINEER_UX_CONVERGENCE_RELEASE_CANDIDATE_GATE.md`.
-
-## V0.89-G1 Global Shell + Typography + Copy Cleanup
-
-V0.89-G1 adds the presentation-only `GlobalShellTypographyCopyConvergenceV1`. It fixes the project-shell grid defect that could compress **当前位置 / 当前状态 / 需要处理 / 下一步** into the left project column, raises critical Guided workflow text out of the legacy 9–11 px diagnostic range, and makes asynchronous preflight copy follow the live language selection. Guided Chinese primary surfaces now use engineer terminology such as 电机版本、分析版本、计算工况、计算结果 and 执行计划 while Expert/Developer evidence keeps the raw authority vocabulary.
-
-The G1 browser audit also checks full-width status-bar ownership, horizontal overflow, known raw internal terms and untranslated all-English primary actions. G1 deliberately leaves save/native-check readiness orchestration, 90% material assignment workbench and magnetic-curve physics to G2/G3/G4.
-
-See `docs/V0.89-G1_GLOBAL_SHELL_TYPOGRAPHY_COPY_CLEANUP.md`.
-
-## V0.89-G2 Workflow Action Readiness + Dead-end Elimination
-
-V0.89-G2 makes primary actions self-explanatory and fail-safe. Every engineer-facing primary action resolves to READY, BLOCKED, IDLE or BUSY. BLOCKED means a prerequisite is missing and must include a concrete executable recovery action; IDLE means the action has no work to perform and is not treated as an error.
-
-The new `WorkflowActionReadinessAuthorityV1` covers Project, Solution, Motor/Design, Native Check, Analysis, Task/Result, optimization, qualification, requirements, material and system actions. HMI qualification now exports blocker/recovery semantics and fails the local RC gate when a visible primary action is unmanaged or a BLOCKED action has no executable recovery.
-
-See `docs/V0.89-G2_WORKFLOW_ACTION_READINESS_DEAD_END_ELIMINATION.md`.
-
-## V0.89-G1R Shell / Material / Analysis Usability Repair
-
-V0.89-G1R is the screenshot-driven usability repair on top of G1. The project shell now uses a compact three-part engineer strip (**当前 / 状态或需要处理 / 下一步**) and hides the technical lineage breadcrumb in both Operator and Engineering modes. A structural CSS defect that placed explanatory copy inside a `height:1px` separator was removed, eliminating the material-card text/button overlap seen on the Motor Configuration page.
-
-The Material Library now opens at **90vw × 90vh**, collapses database-source details by default, keeps the material list/detail workspace in the remaining height, and retains the existing target-component picker with explicit assign action and double-click assignment. Magnet charts now distinguish derived reference data from raw database samples and display coercivity as engineering magnitude `|HcJ|` while preserving the raw database sign.
-
-Analysis Configuration now fails soft: optional catalog failures degrade to empty catalogs, and a fatal initial read error leaves route controls and retry/back actions alive instead of allowing Router teardown to remove every event handler. Native validation can also materialize a clean persisted editor transaction when no value changes exist, eliminating the “must save first / save disabled” dead-end without creating a new immutable motor revision.
-
-See `docs/V0.89-G1R_SHELL_MATERIAL_ANALYSIS_USABILITY_REPAIR.md`.
-
-## Startup self-check
-
-Studio automatically performs a shallow environment self-check at startup and shows 0–100% progress. The shallow check does not launch Motor-CAD or consume a license. The Motor-CAD deep check remains manual before first native calculation or after installation changes.
-
-## Native authority chain
-
-V0.88-A establishes **Native Semantic Binding Authority**: exact Motor-CAD variable/component names are qualified against the loaded model, scoped by target release, binding contract, template and model-source fingerprint.
-
-V0.88-B adds **Native Geometry & Winding Readback Authority**. After Studio applies a frozen BindingPlan, the loaded Motor-CAD model is read back into one `NativeModelSnapshot` covering topology, geometry/magnet parameters, structured winding and live material assignments. The snapshot is captured at `post_binding`, `post_native_validation` and `post_solve`; a stable `design_state_hash` proves the solved model still represents the qualified Design.
-
-V0.88-C adds **Validation Fault Tree & Native Repair Orchestration**. Legacy validation rows are normalized into deterministic typed faults with root-cause rank, parameter/component locators and a lineage-bound `NativeRepairPlan`. Repair actions are classified as `AUTO_SAFE`, `CONFIRM_REQUIRED`, `MANUAL_ONLY` or `BLOCKED`.
-
-V0.88-D adds **Editor Transaction Convergence & Native State Reconciliation**. Geometry, winding and material editing share one persisted transaction; native validation is launched only from that persisted Draft and the result is attached only after a second transaction/intent-hash check. The HMI explicitly distinguishes unsaved changes, saved Draft state, native-current, stale evidence and native drift.
-
-V0.88-E adds **Native Preview & Design Visualization Reconciliation**. Read-only Design views now choose between Design Intent, a lineage-compatible `NativeModelSnapshot` projection, and a side-by-side difference view. A `QUALIFIED` post-solve native projection may become the default read-only source only when its immutable Design Snapshot hash matches the current Revision. `DRIFT/PARTIAL` evidence remains explicit compare-only evidence; stale lineage is fail-closed. Geometry, winding and material renderers consume the same reconciliation object.
-
-V0.88-F adds **Native Spatial Geometry & Result Overlay Authority**. Studio captures the live Motor-CAD GeometryTree as region-level Line/Arc primitives, freezes exact spatial lineage into the post-solve `NativeModelSnapshot`, and reconciles those boundaries with the same Case's `save_fea_data` export. Native mesh/field overlays are enabled only when Design, model-source, snapshot, spatial-geometry and FEA lineage agree. If element connectivity is unavailable, Studio renders the exported native points only and does not synthesize an interpolated contour.
-
-`AUTO_SAFE` is deliberately narrow: Studio may only resynchronize a live Motor-CAD session to values already frozen in the current BindingPlan and qualified by V0.88-A. It cannot silently edit the Design Draft, source template or template-inherited material intent. The normal production/Native Closure path does not auto-repair; formal qualification requires a CLEAN post-solve RepairPlan and zero repair attempts.
-
-Required readback drift or missing evidence causes `validation`/`production` execution to fail closed. Development mode may continue for diagnosis while remaining explicitly unqualified.
-
-`NativeModelSnapshot.preview_projection` is lineage-bound. Native values can drive a result/case view only when the snapshot belongs to the same Design lineage; an arbitrary latest native run is never substituted into an active edited Draft.
-
-See:
-
-- `docs/V0.88-A_NATIVE_SEMANTIC_BINDING_AUTHORITY.md`
-- `docs/V0.88-B_NATIVE_GEOMETRY_WINDING_READBACK_AUTHORITY.md`
-- `docs/V0.88-C_VALIDATION_FAULT_TREE_NATIVE_REPAIR_ORCHESTRATION.md`
-- `docs/V0.88-D_EDITOR_TRANSACTION_CONVERGENCE_NATIVE_STATE_RECONCILIATION.md`
-- `docs/V0.88-E_NATIVE_PREVIEW_DESIGN_VISUALIZATION_RECONCILIATION.md`
-- `docs/V0.88-F_NATIVE_SPATIAL_GEOMETRY_RESULT_OVERLAY_AUTHORITY.md`
-- `docs/OFFICIAL_PYMOTORCAD_MAPPING.md`
-
-## Native qualification
-
-Explicit semantic qualification:
+仅检查部署环境，不启动服务：
 
 ```bat
-python scripts\qualify_native_semantic_bindings.py --fail-on-partial --visible
+start.bat --check-only
 ```
 
-Formal Windows production qualification:
+离线界面与流程验证：
 
 ```bat
-run_windows_production_qualification.bat
+start.bat --mock
 ```
 
-The base Native Windows qualification contract remains **`0.88-F`**. Every SPM/IPM/AFPM/IM scenario requires V0.88-A semantic-profile evidence, a V0.88-B `QUALIFIED` post-solve NativeModelSnapshot with snapshot/design-state hashes, a V0.88-C CLEAN RepairPlan with typed fault-tree hash and zero hidden repair attempts, the V0.88-D editor transaction/reconciliation and V0.88-E visualization gates, and a V0.88-F `QUALIFIED` spatial-overlay contract with immutable spatial/overlay hashes and `CONFIRMED` coordinate alignment.
+不自动打开浏览器：
 
-The current automated release-candidate contract overlay is **`0.89-G1`** on the V0.89-F RC authority. It retains the complete V0.88-F → V0.89-D → Native Soak → V0.89-E qualification chain and adds G1 shell/typography/copy qualification without creating a replacement Native evidence lineage. The current build environment cannot launch the target licensed Windows Motor-CAD 2026R1 workstation, so formal workstation qualification remains pending.
-
-## Production hardening
-
-- `run_windows_production_qualification.bat` — V0.88-F Native qualification → V0.89-D live Golden Journeys → Native 100/500 Case soak → V0.89-E UI 100/500 + fault recovery → V0.89-F RC evaluation/human sign-off.
-- `run_production_soak.bat` — formal 100/500 native Case soak.
-- `start_windows_motorcad.bat` — normal Windows launch with Motor-CAD dependencies.
-
-See `docs/PRODUCTION_QUALIFICATION.md`.
-
-## Install
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r requirements-motorcad.txt
+```bat
+start.bat --no-browser
 ```
 
-Development/testing:
+指定端口：
 
-```bash
-pip install -e ".[dev,e2e]"
-scripts/run_current_release_gate.sh
+```bat
+start.bat --host 127.0.0.1 --port 8766
 ```
 
-## Source layout
+工作站存在多个 Python 环境时，可显式指定：
 
-- `motorcad_studio/` — application/domain/runtime code.
-- `motorcad_studio/config/` — canonical engineering and runtime configuration.
-- `motorcad_studio/seed_data/` — supplied template/catalog seed source.
-- `data/` — runtime-materialized working data; empty in clean release.
-- `scripts/` — current operational/audit/qualification utilities.
-- `tests/` — compact current-release regression/product/qualification suite.
-- `docs/` — current architecture, onboarding, mapping and qualification documentation.
+```bat
+set MOTORCAD_STUDIO_PYTHON=C:\Path\To\python.exe
+start.bat
+```
 
-## Current release evidence
+Python 版本要求为 3.10 或更高。正式 Motor-CAD 计算还要求目标工作站已安装并授权 Motor-CAD 2026 R1，以及与该安装匹配的 PyMotorCAD 环境。
 
-- Studio version: `0.89.8`
-- Database schema: `45`
-- Native binding contract: `motorcad-2026R1-v2`
-- Native readback authority: `NativeGeometryWindingReadbackAuthorityV1`
-- Validation fault-tree authority: `NativeValidationFaultTreeAuthorityV1`
-- Native repair authority: `NativeRepairOrchestratorV1`
-- Editor transaction authority: `EditorTransactionAuthorityV1`
-- Native preview authority: `NativePreviewReconciliationAuthorityV1`
-- Native spatial geometry authority: `NativeSpatialGeometryAuthorityV1`
-- Native result overlay authority: `NativeSpatialResultOverlayAuthorityV1`
-- Windows Native base qualification contract: `0.88-F`
-- Windows UI Golden Journey qualification contract: `0.89-D`
-- V0.88-A live semantic profiles: **PENDING target-workstation qualification**
-- V0.88-B live NativeModelSnapshots: **PENDING target-workstation qualification**
-- V0.88-C live fault-tree/repair evidence: **PENDING target-workstation qualification**
-- V0.88-D live editor/native reconciliation release evidence: **PENDING target-workstation qualification**
-- V0.88-E live native-preview/reconciliation release evidence: **PENDING target-workstation qualification**
-- V0.88-F live native spatial geometry/result-overlay evidence: **PENDING target-workstation qualification**
-- V0.89-D live SPM/IPM/AFPM UI Golden Journeys: **PENDING target-workstation qualification**
-- Formal Windows Motor-CAD qualification: **PENDING**
+## 数据目录
 
-See `TEST_REPORT.md` for verified local gates and `CLEANUP_MANIFEST.md` for package cleanup policy.
+默认数据目录位于程序目录之外：
+
+```text
+%LOCALAPPDATA%\MotorCADStudio\data
+```
+
+`data`、`runtime`、`results`、`logs`、`baselines` 和 `factory` 属于运行时可变状态，不参与程序文件 SHA-256 清单。工程数据、结果和运行状态默认继续放在用户数据目录；从 0.91.6 开始，诊断日志单独固定在程序根目录 `logs`，便于现场直接打包排查。
+
+日志默认位于程序根目录：
+
+```text
+AutoMotorCAD_Studio\logs
+```
+
+其中 `startup.log`、`studio.log/jsonl`、`http.jsonl`、`preflight.jsonl`、`errors.log/jsonl`、`frontend.jsonl`、`tasks/`、`cases/` 和 `snapshots/` 分别保存启动、系统、HTTP、运行环境检查、错误、前端、任务、工况和诊断快照。替换程序目录前如需保留现场证据，应先备份 `logs`。工程数据库和结果仍默认位于 `%LOCALAPPDATA%\MotorCADStudio\data`。
+
+## 当前架构状态
+
+0.91.6 延续 0.91 系列的模块化架构，并针对 Windows 实机检查链增加三项稳定性修复：深度运行环境检查前后端单飞/合并、Motor-CAD 短生命周期进程退出竞态保护、根目录分层诊断日志。
+
+- Optimization、Data Factory、Qualification、Native Runtime Safety 和 Requirements 已进入统一事务控制平面，支持幂等命令、乐观并发、Transactional Outbox、不可变证据、租约和 Fencing Token。
+- 后端公开处理器已按 13 个有界上下文物理拆分，兼容路由操作数为 0，全部 OpenAPI 操作带 `x-module-owner`。
+- 浏览器只加载一个 ES Module 启动入口和一个样式文件；89 个历史源码由可复现的密封 Runtime Capsule 执行，事件、计时器、Observer、Worker、Fetch 和 WebGL 资源受统一生命周期控制。
+- FieldData 支持 `MotorCADFieldDataBinaryV1`、TypedArray、Indexed Geometry、Range 请求、ETag、Topology Hash 复用、仅更新 Scalar Buffer、WebGL2 上下文恢复和 JSON/LOD 回退。
+
+可读的 89 个历史前端源码仍保存在 `motorcad_studio/frontend_legacy`，用于差异定位和后续逐功能重写；浏览器不会逐文件装载这些源码，也不会允许它们直接污染产品全局命名空间。
+
+## 发布前验证
+
+在程序根目录执行：
+
+```powershell
+python -m motorcad_studio.tools.sync_release_versions --check
+python -m motorcad_studio.tools.module_audit
+python -m motorcad_studio.tools.validate_release
+python -m pytest -q
+```
+
+有限元二进制链路性能诊断：
+
+```powershell
+python -m motorcad_studio.tools.benchmark_field_data --triangles 250000 --frames 30
+```
+
+当前自动化验证覆盖本地代码、API、事务、数据完整性、前端生命周期、二进制 FieldData 和合成性能。Licensed Motor-CAD 实际求解、真实百万级网格浏览器 GPU 性能和长时间工作站 Soak 需要在目标 Windows 工作站形成资格证据。
+
+## 当前文档
+
+- `docs/ARCHITECTURE.md`：模块边界、事务、前端和 FieldData 架构。
+- `docs/DEPLOYMENT.md`：完整替换、一键启动和故障处理。
+- `docs/VALIDATION.md`：完成度、自动化证据和资格边界。
+- `docs/CHANGELOG.md`：当前稳定版本变更。

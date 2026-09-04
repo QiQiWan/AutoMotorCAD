@@ -74,6 +74,38 @@ def _installed_user_data_dir() -> Path:
     return base / "motorcad-studio" / "data"
 
 
+def _is_within(path: Path, root: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(root.resolve(strict=False))
+        return True
+    except (ValueError, OSError, RuntimeError):
+        return False
+
+
+def _mutable_directory(name: str, default: Path, *, distribution_root: Path, source_checkout: bool) -> Path:
+    """Resolve a mutable directory without allowing an installed package to self-modify.
+
+    Legacy releases sometimes persisted values such as ``data`` or ``runtime`` in
+    environment variables. In an installed distribution those values resolve below
+    the application directory and cause generated diagnostics to look like tampered
+    package files. Unless explicitly opted into portable/development state, such
+    in-tree overrides fall back to the user-profile default. Source checkouts retain
+    the historical in-tree behaviour for tests and development.
+    """
+    raw = os.getenv(name)
+    candidate = Path(raw).expanduser() if raw else Path(default)
+    if not candidate.is_absolute():
+        candidate = distribution_root / candidate
+    candidate = candidate.resolve(strict=False)
+    allow_in_tree = source_checkout or _env_bool("MOTORCAD_STUDIO_ALLOW_IN_TREE_STATE", False)
+    if not allow_in_tree and _is_within(candidate, distribution_root):
+        candidate = Path(default).expanduser()
+        if not candidate.is_absolute():
+            candidate = distribution_root / candidate
+        candidate = candidate.resolve(strict=False)
+    return candidate
+
+
 def _materialize_packaged_seed(package_root: Path, data_dir: Path) -> None:
     seed_root = package_root / "seed_data"
     if not (seed_root / "inventory.json").is_file():
@@ -104,15 +136,37 @@ def load_settings() -> Settings:
     else:
         config_dir = packaged_config_dir
     default_data_dir = root / "data" if source_checkout else _installed_user_data_dir()
-    data_dir = Path(os.getenv("MOTORCAD_STUDIO_DATA_DIR", str(default_data_dir))).expanduser().resolve()
+    data_dir = _mutable_directory(
+        "MOTORCAD_STUDIO_DATA_DIR", default_data_dir, distribution_root=root, source_checkout=source_checkout
+    )
     _materialize_packaged_seed(package_root, data_dir)
     templates_dir = data_dir / "templates"
-    results_dir = Path(os.getenv("MOTORCAD_STUDIO_RESULTS_DIR", str(data_dir / "results"))).resolve()
-    runtime_dir = Path(os.getenv("MOTORCAD_STUDIO_RUNTIME_DIR", str(data_dir / "runtime"))).resolve()
-    baselines_dir = Path(os.getenv("MOTORCAD_STUDIO_BASELINES_DIR", str(data_dir / "baselines"))).resolve()
-    factory_dir = Path(os.getenv("MOTORCAD_STUDIO_FACTORY_DIR", str(data_dir / "factory"))).resolve()
-    default_logs_dir = root / "logs" if source_checkout else data_dir / "logs"
-    logs_dir = Path(os.getenv("MOTORCAD_STUDIO_LOG_DIR", str(default_logs_dir))).expanduser().resolve()
+    results_dir = _mutable_directory(
+        "MOTORCAD_STUDIO_RESULTS_DIR", data_dir / "results", distribution_root=root, source_checkout=source_checkout
+    )
+    runtime_dir = _mutable_directory(
+        "MOTORCAD_STUDIO_RUNTIME_DIR", data_dir / "runtime", distribution_root=root, source_checkout=source_checkout
+    )
+    baselines_dir = _mutable_directory(
+        "MOTORCAD_STUDIO_BASELINES_DIR", data_dir / "baselines", distribution_root=root, source_checkout=source_checkout
+    )
+    factory_dir = _mutable_directory(
+        "MOTORCAD_STUDIO_FACTORY_DIR", data_dir / "factory", distribution_root=root, source_checkout=source_checkout
+    )
+    # Logs are deliberately colocated with the application root for workstation
+    # support. ``logs`` is a declared mutable runtime root and is excluded from the
+    # immutable package manifest, so diagnostic files can be collected by copying
+    # one folder without weakening code-integrity checks. An explicit absolute
+    # MOTORCAD_STUDIO_LOG_DIR still overrides this location.
+    default_logs_dir = root / "logs"
+    raw_log_dir = os.getenv("MOTORCAD_STUDIO_LOG_DIR")
+    if raw_log_dir:
+        logs_dir = Path(raw_log_dir).expanduser()
+        if not logs_dir.is_absolute():
+            logs_dir = root / logs_dir
+        logs_dir = logs_dir.resolve(strict=False)
+    else:
+        logs_dir = default_logs_dir.resolve(strict=False)
     for directory in (data_dir, templates_dir, results_dir, runtime_dir, baselines_dir, factory_dir, logs_dir):
         directory.mkdir(parents=True, exist_ok=True)
     return Settings(

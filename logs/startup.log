@@ -1,0 +1,17 @@
+2026-09-04T08:29:41+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:29:41+00:00 [INFO] Release and module validation passed.
+2026-09-04T08:39:16+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:39:16+00:00 [INFO] Release and module validation passed.
+2026-09-04T08:39:24+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:39:24+00:00 [INFO] Release and module validation passed.
+2026-09-04T08:41:28+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:41:28+00:00 [ERROR] Release or module validation failed. Run from a clean, complete package directory.
+2026-09-04T08:41:56+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:41:56+00:00 [INFO] Release and module validation passed.
+2026-09-04T08:42:03+00:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T08:42:04+00:00 [INFO] Release and module validation passed.
+2026-09-04T16:55:07+08:00 [INFO] MotorCAD Studio 0.91.8 startup preflight
+2026-09-04T16:55:08+08:00 [INFO] Release and module validation passed.
+2026-09-04T16:55:11+08:00 [INFO] Starting service at http://127.0.0.1:8765/
+2026-09-04T16:55:14+08:00 [INFO] Service is ready: http://127.0.0.1:8765/
+2026-09-04T17:22:05+08:00 [INFO] Shutdown requested.

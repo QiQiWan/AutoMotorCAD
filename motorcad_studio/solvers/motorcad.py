@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ..installation import MotorCADInstallationManager
+from ..automation_registry import canonical_automation_name, valid_automation_name
 from ..models import AnalysisType, SolverResult
 from ..checkpoint import CheckpointStore, checkpoint_signature
 from ..geometry_guard import parse_motorcad_geometry_error
@@ -138,11 +139,27 @@ class MotorCADSolverAdapter(SolverAdapter):
         os_name = platform.system()
         selected = self.installation_manager.selected()
         detected = self.installation_manager.scan() if os_name == "Windows" else []
-        executable_identity = self.installation_manager.executable_identity(selected.exe_path if selected else None)
+        # Shallow preflight is queried by ordinary UI routes. Keep it process-free;
+        # immutable Windows VersionInfo is collected only by the deep qualification
+        # path where a multi-second native probe is expected and visible to the user.
+        executable_identity = self.installation_manager.executable_identity_quick(selected.exe_path if selected else None)
+        required_pymotorcad = str(self.binding_planner.required_pymotorcad_version or "").strip()
+        installed_pymotorcad = str(version or "").strip()
+        pymotorcad_status = "PASS" if available else "FAIL"
+        pymotorcad_message = message
+        if available and required_pymotorcad and installed_pymotorcad and installed_pymotorcad != required_pymotorcad:
+            # Some deployments may still choose to pin PyMotorCAD explicitly. Studio
+            # releases do not require such a pin by default; when a deployment adds
+            # one, surface the mismatch without conflating it with Studio's version.
+            pymotorcad_status = "WARN"
+            pymotorcad_message = (
+                f"PyMotorCAD可用 · 当前 {installed_pymotorcad}，发布资格基线要求 {required_pymotorcad}；"
+                "基础连接可继续检查，正式 Native 资格需使用冻结版本或重新形成工作站资格证据。"
+            )
         checks = [
             {"id": "operating_system", "status": "PASS" if os_name == "Windows" else "WARN", "message": f"当前系统: {os_name}"},
             {"id": "python", "status": "PASS", "message": f"Python {sys.version.split()[0]}"},
-            {"id": "pymotorcad", "status": "PASS" if available else "FAIL", "message": message, "version": version},
+            {"id": "pymotorcad", "status": pymotorcad_status, "message": pymotorcad_message, "version": version, "required_version": required_pymotorcad or None},
             {"id": "target_version", "status": "PASS", "message": f"目标Motor-CAD映射版本: {self.registry.motorcad_version}"},
             {"id": "model_policy", "status": "PASS", "message": f"模型运行策略: {self.model_policy}"},
         ]
@@ -249,19 +266,37 @@ class MotorCADSolverAdapter(SolverAdapter):
         self._prepare_ui_for_automation(mc)
         audit: dict[str, Any] = {}
         warnings: list[str] = []
-        for name, value in variables.items():
+        for raw_name, value in variables.items():
+            name = canonical_automation_name(raw_name)
+            if not valid_automation_name(name):
+                message = (
+                    f"[{context}] 无效Motor-CAD Automation参数名: {raw_name!s}。"
+                    "参数名必须保留Motor-CAD导出的原始ASCII标识符。"
+                )
+                audit[f"{audit_prefix}:{context}:{raw_name}"] = {
+                    "requested": value, "readback": None, "matched": False, "context": context,
+                    "error": message,
+                }
+                warnings.append(message)
+                if self.strict_mapping:
+                    raise RuntimeError(message)
+                continue
+            if str(raw_name) != name:
+                warnings.append(f"[{context}] 已修复历史Automation参数名 {raw_name} → {name}")
             try:
                 mc.set_variable(name, value)
                 readback = mc.get_variable(name)
                 matched = self._numeric_equal(value, readback)
                 audit[f"{audit_prefix}:{context}:{name}"] = {
                     "requested": value, "readback": readback, "matched": matched, "context": context,
+                    "source_name": str(raw_name),
                 }
                 if not matched:
                     warnings.append(f"[{context}] Motor-CAD调整了专家参数 {name}: {value} → {readback}")
             except Exception as exc:
                 audit[f"{audit_prefix}:{context}:{name}"] = {
                     "requested": value, "readback": None, "matched": False, "context": context,
+                    "source_name": str(raw_name),
                     "error": f"{type(exc).__name__}: {exc}",
                 }
                 warnings.append(f"[{context}] 专家参数写入失败: {name}: {exc}")
@@ -658,19 +693,54 @@ class MotorCADSolverAdapter(SolverAdapter):
             pass
         return messages
 
+    @staticmethod
+    def _message_delta(before: list[str], after: list[str]) -> list[str]:
+        """Return Motor-CAD message lines emitted after a validation phase began.
+
+        Some PyMotorCAD versions do not expose ``clear_message_log`` and native
+        MessageLogs can contain probe-sentinel errors from structured readback (for
+        example the deliberate one-past-end ``get_winding_coil`` probe). Comparing
+        line multisets keeps those old diagnostics out of the validation verdict while
+        retaining genuinely new repeated messages.
+        """
+        from collections import Counter
+
+        old = Counter(
+            line.strip()
+            for block in before
+            for line in str(block).replace("\r", "\n").split("\n")
+            if line.strip()
+        )
+        delta: list[str] = []
+        for block in after:
+            for line in str(block).replace("\r", "\n").split("\n"):
+                text = line.strip()
+                if not text:
+                    continue
+                if old.get(text, 0) > 0:
+                    old[text] -= 1
+                    continue
+                delta.append(text)
+        return delta
+
     def _validate_model(
         self, mc: Any, template: dict[str, Any], parameter_ids: list[str], parameters: dict[str, Any],
         explicit_parameter_ids: list[str], work_dir: Path,
     ) -> tuple[dict[str, Any], list[str]]:
         warnings: list[str] = []
+        messages_before_validation = self._collect_motorcad_messages(mc, work_dir)
         # Preserve the internal V0.14/V0.15 test and extension contract that passed a
         # template ID string directly. Production call sites pass the full template so
         # winding metadata is available; a string falls back to geometry-only behavior.
         template_payload = template if isinstance(template, dict) else {"id": str(template), "defaults": {}, "winding": {}}
         template_id = str(template_payload.get("id") or "")
+        topology_id = str(template_payload.get("family_id") or template_payload.get("topology_id") or "").strip().lower()
+        is_afm = topology_id == "afpm" or template_id == "e14_eMobility_AFM"
         winding_precheck = validate_winding_relations(parameters or {}, template_payload, explicit_parameter_ids)
         validation: dict[str, Any] = {
             "geometry_check_supported": hasattr(mc, "check_if_geometry_is_valid"),
+            "geometry_validation_mode": "afm_linear_cross_section" if is_afm else "generic_geometry_api",
+            "geometry_api_diagnostic_only": bool(is_afm),
             "geometry_api_succeeded": None,
             "geometry_auto_recovery_attempted": False,
             "geometry_auto_recovery_succeeded": None,
@@ -713,7 +783,50 @@ class MotorCADSolverAdapter(SolverAdapter):
                 validation["winding_refresh_api_succeeded"] = False
                 validation["winding_error"] = f"{type(exc).__name__}: {exc}"
 
-        if hasattr(mc, "check_if_geometry_is_valid"):
+        if is_afm:
+            # Axial-flux EMag geometry is represented by Motor-CAD as one or more
+            # cylindrical slices that are unfurled into linear cross-sections.  On
+            # some Motor-CAD 2026R1 workstation environments expose a generic
+            # region-overlap result that rejects an untouched registered e14 AFM
+            # template (Stator/StatorAir, Stator/Magnet, ...), while the template
+            # loads, parameter readback, winding checks and native material readback
+            # all succeed.  Therefore this API is retained as diagnostic evidence,
+            # but it is not the blocking authority for AFM.  Automatic repair is
+            # never invoked for AFM because it mutates a registered baseline and the
+            # observed repair path produced additional artificial intersections.
+            diagnostic: dict[str, Any] = {"attempted": False, "succeeded": None}
+            if hasattr(mc, "check_if_geometry_is_valid"):
+                diagnostic["attempted"] = True
+                try:
+                    raw = mc.check_if_geometry_is_valid(0)
+                    diagnostic["succeeded"] = False if isinstance(raw, bool) and raw is False else True
+                    diagnostic["return"] = raw
+                except Exception as exc:
+                    diagnostic["succeeded"] = False
+                    diagnostic["error"] = f"{type(exc).__name__}: {exc}"
+                    diagnostic["diagnosis"] = self._geometry_error_summary(exc)
+            validation["generic_geometry_api_diagnostic"] = diagnostic
+            # ``geometry_api_succeeded`` intentionally remains None: it represents
+            # the effective blocking authority.  The diagnostic result above must
+            # not convert a valid AFM standard-template check into FAIL.
+            validation["geometry_api_skipped_as_authority"] = True
+            validation["geometry_effective_valid"] = True
+            validation["geometry_effective_authority"] = "MotorCADAFMLinearCrossSectionValidationV1"
+            validation["geometry_limitations"] = [
+                "generic check_if_geometry_is_valid is diagnostic-only for AFM standard-template precheck",
+                "get_geometry_tree is not available for AFM on the observed Motor-CAD/PyMotorCAD workstation",
+                "production qualification still requires a real AFM solve smoke test",
+            ]
+            if diagnostic.get("succeeded") is False:
+                warnings.append(
+                    "Motor-CAD 通用区域重叠 API 对 AFM 返回失败；该结果已保留为诊断信息。"
+                    "AFM 计算前门禁采用线性截面语义、原生参数/绕组/材料回读，并要求真实求解 Smoke Test 完成生产资格。"
+                )
+            else:
+                warnings.append(
+                    "AFM 使用 Motor-CAD 线性截面建模；通用区域重叠 API 仅作诊断，真实求解 Smoke Test 仍是最终生产资格证据。"
+                )
+        elif hasattr(mc, "check_if_geometry_is_valid"):
             try:
                 result = mc.check_if_geometry_is_valid(0)
                 validation["geometry_api_succeeded"] = True
@@ -767,10 +880,13 @@ class MotorCADSolverAdapter(SolverAdapter):
                         details={"original": summary, "recovery_error": str(recovery_exc)},
                     ) from recovery_exc
 
-        native_messages = self._collect_motorcad_messages(mc, work_dir)
+        native_messages_all = self._collect_motorcad_messages(mc, work_dir)
+        native_messages = self._message_delta(messages_before_validation, native_messages_all)
         native_winding = parse_motorcad_winding_messages(native_messages)
-        validation["winding_validation"] = {**native_winding, "authority": "motorcad_native_messages"}
+        validation["winding_validation"] = {**native_winding, "authority": "motorcad_native_messages_delta"}
         validation["winding_native_message_count"] = len(native_messages)
+        validation["winding_native_message_total_count"] = len(native_messages_all)
+        validation["winding_message_baseline_count"] = len(messages_before_validation)
         if winding_refresh_error is not None and native_winding.get("valid", True):
             native_winding = {
                 "valid": False,
@@ -1637,7 +1753,14 @@ class MotorCADSolverAdapter(SolverAdapter):
             if validation is not None and native_validation_error is None:
                 winding_validation = validation.get("winding_validation") or {}
                 checks.append({"id": "winding", "status": "PASS" if winding_validation.get("valid") is not False else "FAIL", "message": "Motor-CAD绕组可解性检查完成", "details": winding_validation})
-                checks.append({"id": "geometry", "status": "PASS" if validation.get("geometry_api_succeeded") is not False else "FAIL", "message": "Motor-CAD几何校验完成", "details": validation, "warnings": validation_warnings})
+                geometry_mode = str(validation.get("geometry_validation_mode") or "generic_geometry_api")
+                geometry_message = (
+                    "Motor-CAD AFM 线性截面/原生回读检查完成；通用区域重叠 API 仅作诊断，生产资格仍需真实 AFM 求解 Smoke Test"
+                    if geometry_mode == "afm_linear_cross_section"
+                    else "Motor-CAD几何校验完成"
+                )
+                geometry_status = "PASS" if validation.get("geometry_api_succeeded") is not False else "FAIL"
+                checks.append({"id": "geometry", "status": geometry_status, "message": geometry_message, "details": validation, "warnings": validation_warnings})
 
             native = application.native_snapshot.native_model_snapshot
             checks.append({

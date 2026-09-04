@@ -1,0 +1,2577 @@
+{
+  "authority": "MotorCADStudioPackageContentManifestV1",
+  "product_version": "0.91.8",
+  "release_train": "0.91",
+  "build_id": "20260904-0918",
+  "algorithm": "SHA-256",
+  "generated_at_utc": "2026-09-04T08:41:59.316138+00:00",
+  "scope": "immutable distribution files; excludes this manifest, mutable runtime-state roots, virtual environments, VCS metadata and bytecode/test caches",
+  "unexpected_file_policy": "reject",
+  "mutable_runtime_roots": [
+    "baselines",
+    "data",
+    "factory",
+    "logs",
+    "results",
+    "runtime"
+  ],
+  "file_count": 511,
+  "total_bytes": 24757381,
+  "entries": [
+    {
+      "path": "MODULE_CATALOG.json",
+      "size_bytes": 13021,
+      "sha256": "8ec4a377c1405b3e46bb49dca6b401127c64b47ec49d2a795b38913e92749c46"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 4965,
+      "sha256": "97b42b6cc4ec1d90bbbaea4b689284be7d27e4f1c08d4a7fef6db4fdd6fbcb0c"
+    },
+    {
+      "path": "RELEASE_MANIFEST.json",
+      "size_bytes": 3703,
+      "sha256": "4cb41c2f451ccefccf7c4f2f5abb508c3826b0cfef370527e09c3faf710cc365"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "size_bytes": 9435,
+      "sha256": "a661992cf699a5db4861a7415cf1bdaa3b5af488d0953b73c6092dfc34a2d532"
+    },
+    {
+      "path": "docs/CHANGELOG.md",
+      "size_bytes": 12295,
+      "sha256": "1a5992c4f6e61e9a2e1a2c21988d377bc2f7af6b422a93d93f5ed8fc13acc2a3"
+    },
+    {
+      "path": "docs/DEPLOYMENT.md",
+      "size_bytes": 6250,
+      "sha256": "ebe4357718c4b8ec12d27ec57279b62a75c28cb5d53a58182f1dcafecd11f895"
+    },
+    {
+      "path": "docs/VALIDATION.md",
+      "size_bytes": 13736,
+      "sha256": "030ad5e3290ff7fd323cd3d90ebc66b4a140153ad1602dc5fdf5871bb85d0c31"
+    },
+    {
+      "path": "motorcad_studio/__init__.py",
+      "size_bytes": 174,
+      "sha256": "d62fb41eda6adf40972a6d83a79f235a71b58db4155f2622d1fe7f839937c7ad"
+    },
+    {
+      "path": "motorcad_studio/acceptance/__init__.py",
+      "size_bytes": 56,
+      "sha256": "8f721d2d3f35ade971438fdf1064e921eae8cd062ef2ae2731cd133e0641e663"
+    },
+    {
+      "path": "motorcad_studio/acceptance/fault_evidence.py",
+      "size_bytes": 2321,
+      "sha256": "41d2794c47a75e2b81e0d202827e8e357eb107abeaa2f8c5e7563041dbd6e329"
+    },
+    {
+      "path": "motorcad_studio/acceptance/production_soak.py",
+      "size_bytes": 27207,
+      "sha256": "de9d9b82ffe9be61b722c5374049006e5a071190743e9e2af3aa100cd353c28a"
+    },
+    {
+      "path": "motorcad_studio/acceptance/production_soak_matrix.json",
+      "size_bytes": 772,
+      "sha256": "de00035de1e0a3ed8964bb6a37c73116caf0d5a9c56dd5129f7097a482bcb8f2"
+    },
+    {
+      "path": "motorcad_studio/acceptance/rc_human_acceptance_checklist.json",
+      "size_bytes": 1589,
+      "sha256": "51e6d69a3967ca3bbdff057f002328c19240e1721896e4ca59b7b381ef8e5d6f"
+    },
+    {
+      "path": "motorcad_studio/acceptance/ui_soak_recovery.py",
+      "size_bytes": 27922,
+      "sha256": "5a3ffb288279ac846b0251b8daca0867b1d2732c9575dca93494e7b9b3aa8097"
+    },
+    {
+      "path": "motorcad_studio/acceptance/ui_soak_recovery_matrix.json",
+      "size_bytes": 1941,
+      "sha256": "c91ee3765edd78e873246d1ea90f993f739b3ae13920007479c0368919848e95"
+    },
+    {
+      "path": "motorcad_studio/acceptance/windows_fullflow.py",
+      "size_bytes": 38952,
+      "sha256": "f50a2c33869874026daa1e95dfbcda6f64aa6d81e2009991a385346415df3164"
+    },
+    {
+      "path": "motorcad_studio/acceptance/windows_golden_journey.py",
+      "size_bytes": 22570,
+      "sha256": "306636fa6d894f1c4c0297251bb060c8f8c27a942ab502506d02ba9f9dd5e994"
+    },
+    {
+      "path": "motorcad_studio/acceptance/windows_golden_journey_matrix.json",
+      "size_bytes": 801,
+      "sha256": "4d013d60be15eee689fde8aeffb54930cffd290ee13416457be1d0814b4aeb0f"
+    },
+    {
+      "path": "motorcad_studio/acceptance/windows_production.py",
+      "size_bytes": 25289,
+      "sha256": "c6383bec9dc0144727d1821e8f59f45312761688b808e11ccda817d3587e4821"
+    },
+    {
+      "path": "motorcad_studio/acceptance/windows_production_matrix.json",
+      "size_bytes": 12262,
+      "sha256": "0e8f28b3701ea53b05f158a9d2301b1b04485f3adb4eb1829277a76b77666956"
+    },
+    {
+      "path": "motorcad_studio/active_learning.py",
+      "size_bytes": 4806,
+      "sha256": "be91a2d7376874daf4f630f134e2bf216232bfdda94408511bef44a64f690a98"
+    },
+    {
+      "path": "motorcad_studio/adaptive_optimization.py",
+      "size_bytes": 4924,
+      "sha256": "eeafb983ebf8ef1852ddac3cc22f64dbdb56eba47849c18e6b3a6e61aad683a5"
+    },
+    {
+      "path": "motorcad_studio/analysis_domain/__init__.py",
+      "size_bytes": 1035,
+      "sha256": "bea91b0d2d4729f668f9751e2501d95aad2a0ddbe34c52bd1da60084f8408d92"
+    },
+    {
+      "path": "motorcad_studio/analysis_domain/contracts.py",
+      "size_bytes": 5065,
+      "sha256": "62dc52f51ca14102919a4217ee87bdb749b55bc883819e0dc3b31d90a83af33c"
+    },
+    {
+      "path": "motorcad_studio/analysis_domain/planning.py",
+      "size_bytes": 19405,
+      "sha256": "d7d44ff36e3ec85fd285c7b78297193b0dd9b5c9e393b31ff1e716a1b4501126"
+    },
+    {
+      "path": "motorcad_studio/analysis_guidance.py",
+      "size_bytes": 43495,
+      "sha256": "f26c0c77a87b7e97c5a798dc154605c053a621e37f7fbcab5178c1049dcb8d82"
+    },
+    {
+      "path": "motorcad_studio/analysis_workspace_service.py",
+      "size_bytes": 4332,
+      "sha256": "2a4304d71bbd0d81db7db17e16d40297971dd5a73fa4e977f7d84281b4ec6f0f"
+    },
+    {
+      "path": "motorcad_studio/api/__init__.py",
+      "size_bytes": 51,
+      "sha256": "cc3a21d9529d0c59ef8a12fae7936fef05c53ff4b3470f47b7c8a098cf4734aa"
+    },
+    {
+      "path": "motorcad_studio/api/middleware/__init__.py",
+      "size_bytes": 51,
+      "sha256": "cc3a21d9529d0c59ef8a12fae7936fef05c53ff4b3470f47b7c8a098cf4734aa"
+    },
+    {
+      "path": "motorcad_studio/api/middleware/observability.py",
+      "size_bytes": 3394,
+      "sha256": "ad3805e749a418e35b11b9451ec91d37fc1e2be9976f828c10635510016c9a31"
+    },
+    {
+      "path": "motorcad_studio/api/operations/__init__.py",
+      "size_bytes": 288,
+      "sha256": "69d045714350285bf17019372d2cfce2a57f1ee4d51a6e334f221deb76ddf4b9"
+    },
+    {
+      "path": "motorcad_studio/api/operations/analysis_application.py",
+      "size_bytes": 29597,
+      "sha256": "44fe6d832cc913374ded9675cded2eeea0669262728c9cead353f24e202266ca"
+    },
+    {
+      "path": "motorcad_studio/api/operations/catalog.py",
+      "size_bytes": 3873,
+      "sha256": "4acb981d9e24aea539aa4220f3ee6ec3722e9fdc427585f3f3a1467ba2bc1312"
+    },
+    {
+      "path": "motorcad_studio/api/operations/context.py",
+      "size_bytes": 6984,
+      "sha256": "675bafda09445869c383f6b19fc7f416aa4d90d1ba1852d5993d86dc2d36e5a6"
+    },
+    {
+      "path": "motorcad_studio/api/operations/data_factory_application.py",
+      "size_bytes": 11198,
+      "sha256": "f38ae8e8b1e3e9faf0cdfa7f8a8110dad68fb9acce10fb1d20e4f58ffeb13fe7"
+    },
+    {
+      "path": "motorcad_studio/api/operations/engineering_experience.py",
+      "size_bytes": 8664,
+      "sha256": "a144e2ae3ad39f49f4bbd14bc5a35f1ad2743be6efb8bea70535f45bfc4b8ae0"
+    },
+    {
+      "path": "motorcad_studio/api/operations/execution_application.py",
+      "size_bytes": 46889,
+      "sha256": "1af4660814ba49841792e5647fc3a8af7ec6b9d22b7f53bdf97f739063666f76"
+    },
+    {
+      "path": "motorcad_studio/api/operations/internal.py",
+      "size_bytes": 66751,
+      "sha256": "35c2f3beb12dd1873d7d5684bc1ff6c106cfc9bfe6d0dbe70912ff3f78e016eb"
+    },
+    {
+      "path": "motorcad_studio/api/operations/native_closure.py",
+      "size_bytes": 16607,
+      "sha256": "0263bb95b948beeee9017901c22a2386e058b06b9cbeca0f26edcc828cbb60d2"
+    },
+    {
+      "path": "motorcad_studio/api/operations/optimization_application.py",
+      "size_bytes": 100681,
+      "sha256": "48db918d2fc71f482a7a6bfea5695cafb5c7d423ea52b4d67f77ccdf1aed3676"
+    },
+    {
+      "path": "motorcad_studio/api/operations/platform_semantics.py",
+      "size_bytes": 9191,
+      "sha256": "af380a54e4f48f8553bcb3c793dfe670fe57655488025267df4fe5f0f0211729"
+    },
+    {
+      "path": "motorcad_studio/api/operations/qualification_application.py",
+      "size_bytes": 20983,
+      "sha256": "5141f5ef691cd7badf50f2ca429a246e31b6875208c77164f13ce31611689183"
+    },
+    {
+      "path": "motorcad_studio/api/operations/requirements_application.py",
+      "size_bytes": 17824,
+      "sha256": "872d17bf50e2d7d27a482cc20303aa88389285ab7065ee7869bcc6f16f16e841"
+    },
+    {
+      "path": "motorcad_studio/api/operations/routing.py",
+      "size_bytes": 570,
+      "sha256": "de798c12bf45a4d65586a0ec6f0b016e3c7e82ffd2963a531afa8879e544f531"
+    },
+    {
+      "path": "motorcad_studio/api/operations/shared.py",
+      "size_bytes": 81302,
+      "sha256": "7c207d3c70bf2db4bd5d43afca99b5ce4be629776a35fb83d68af4ee82ca5548"
+    },
+    {
+      "path": "motorcad_studio/api/operations/workspace_materials.py",
+      "size_bytes": 15808,
+      "sha256": "589011efec5811d56346744e712f6d9af7b5297dd3fdb5e4ccb9322395a5e220"
+    },
+    {
+      "path": "motorcad_studio/api/operations/workspace_motor_design.py",
+      "size_bytes": 45581,
+      "sha256": "31eb44833c77f733820da78ad1f2472a1190a4d1fb167a36560b640d06986693"
+    },
+    {
+      "path": "motorcad_studio/api/operations/workspace_projects.py",
+      "size_bytes": 16147,
+      "sha256": "4948203b89d9b8c7081f64bdcaa457be7e72395a3038242115a7378f9f4083cb"
+    },
+    {
+      "path": "motorcad_studio/api/operations/workspace_solutions.py",
+      "size_bytes": 14088,
+      "sha256": "63bfe888b982ed3f0db047cc08bfb3c7abd2818167bfd46621c670306e3751f3"
+    },
+    {
+      "path": "motorcad_studio/api_audit.py",
+      "size_bytes": 2362,
+      "sha256": "21d82178be60c55ebe96323fafbb0cde689729509da6a16454a2f7ae44b3589d"
+    },
+    {
+      "path": "motorcad_studio/automation_registry.py",
+      "size_bytes": 13188,
+      "sha256": "f249241a1f18fc858d29e901f89c9904e90c49a5bc2a002b8191f06f9a99deec"
+    },
+    {
+      "path": "motorcad_studio/baseline.py",
+      "size_bytes": 3924,
+      "sha256": "c2cdde8915873b2c760001fc9adf8dc61c790fb3934c9d8f4a479d200753c1c8"
+    },
+    {
+      "path": "motorcad_studio/bootstrap/__init__.py",
+      "size_bytes": 1456,
+      "sha256": "d952060ae037051ca5fe12222b03278aca33029bbe147d78583a9cc4fa90ae06"
+    },
+    {
+      "path": "motorcad_studio/bootstrap/app_factory.py",
+      "size_bytes": 8918,
+      "sha256": "b099466d2d532e415557aa7745ed5fc8f8c8f6b92bdeb336d0fec4c80c66475d"
+    },
+    {
+      "path": "motorcad_studio/bootstrap/composition_root.py",
+      "size_bytes": 32617,
+      "sha256": "fb8178d640be1008dad5e99a02131d552af000a3b4cee2b373bbdf5ba6329ed3"
+    },
+    {
+      "path": "motorcad_studio/bootstrap/container.py",
+      "size_bytes": 10366,
+      "sha256": "cfc8057c566d03e8d26ffd15156eb5e3bacf6230128e21b870f37f4ec0905cfd"
+    },
+    {
+      "path": "motorcad_studio/bootstrap/lifecycle.py",
+      "size_bytes": 15988,
+      "sha256": "559ac0e4613e4be9c08d9a74bef94e1aede4f3060d09ccd01af4c545636d9ffb"
+    },
+    {
+      "path": "motorcad_studio/bootstrap_cli.py",
+      "size_bytes": 11391,
+      "sha256": "9ae8b9783a486b592de17473396f0396e4d674df5faf67ffeb47e948669a5694"
+    },
+    {
+      "path": "motorcad_studio/calibration.py",
+      "size_bytes": 11102,
+      "sha256": "e738a708a7f509d32b2628bd13b939ca71a1326d0c66fd76cfcc2931636921ee"
+    },
+    {
+      "path": "motorcad_studio/checkpoint.py",
+      "size_bytes": 3549,
+      "sha256": "e7a3fde6854cadaa753ac9fa610e533bf79862adf266782b2bfec250b8c00400"
+    },
+    {
+      "path": "motorcad_studio/config/analysis_recipes.yaml",
+      "size_bytes": 20522,
+      "sha256": "0f52f937ac592893542f3873344787efc993bc4d70e7dd0b33bf17ab56335d6b"
+    },
+    {
+      "path": "motorcad_studio/config/analysis_templates.yaml",
+      "size_bytes": 10265,
+      "sha256": "7c2ffeea13e821b708b5bac6612ad8594f76be029ce0f1346bb2b0aaed6b1f2c"
+    },
+    {
+      "path": "motorcad_studio/config/automation_parameter_metadata.yaml",
+      "size_bytes": 5540,
+      "sha256": "8d5f3f200d5338e8b72d878681a80a963f772f1f1ad793c58476cb6a0f141699"
+    },
+    {
+      "path": "motorcad_studio/config/baseline_tolerances.yaml",
+      "size_bytes": 272,
+      "sha256": "25e4366912189066442b8abd673d7b2b4539886a43c165bba6f1b3388341ee10"
+    },
+    {
+      "path": "motorcad_studio/config/design_starters.yaml",
+      "size_bytes": 6555,
+      "sha256": "822d0363372286fb4fb5a431d174a01b5908c733c1e9d48a96fca1b44aa602fe"
+    },
+    {
+      "path": "motorcad_studio/config/engineering_contexts.yaml",
+      "size_bytes": 3529,
+      "sha256": "91dc8f10ddbd0060fffd42977555dee0b22ab6f1abc728cddabae9619132c6bf"
+    },
+    {
+      "path": "motorcad_studio/config/engineering_metric_semantics.yaml",
+      "size_bytes": 16684,
+      "sha256": "caaebff695affc56833119b92822e75daef5a63589a45e69cc5318243db165c4"
+    },
+    {
+      "path": "motorcad_studio/config/engineering_parameter_semantics.yaml",
+      "size_bytes": 28219,
+      "sha256": "07a157b15f283f741d409e815fffdc002ecd5426f996d2fcc8d98ff99e53eb32"
+    },
+    {
+      "path": "motorcad_studio/config/input_domains.yaml",
+      "size_bytes": 8044,
+      "sha256": "857d5b3148c3a008eb6673ab5c0a0eba8de125172807cd6e4842d99e22d44d1f"
+    },
+    {
+      "path": "motorcad_studio/config/material_catalog.yaml",
+      "size_bytes": 13528,
+      "sha256": "edae8eff8604d7456545a423530a259b90ee1ca5ec3b1e0f559558d6ceb9a52a"
+    },
+    {
+      "path": "motorcad_studio/config/model_sources.yaml",
+      "size_bytes": 792,
+      "sha256": "99dc96963e5deadf8c4dde1f561250f99820a608a44a8f6e5052c2c98391656f"
+    },
+    {
+      "path": "motorcad_studio/config/model_workbench.yaml",
+      "size_bytes": 14180,
+      "sha256": "9b4abe33945fe8e15d7a4221b5cbbb337db47e810805b89679fe6fa4c7e92130"
+    },
+    {
+      "path": "motorcad_studio/config/motor_families.yaml",
+      "size_bytes": 2166,
+      "sha256": "65763890817d96e235819ca0ff5c708df035e585efce50f8325c7578f6a6d7db"
+    },
+    {
+      "path": "motorcad_studio/config/motor_family_plugins.yaml",
+      "size_bytes": 684,
+      "sha256": "514bf1dd7105630a520b118050869a4c7bf1abfad73bea1ef4d83a784139c045"
+    },
+    {
+      "path": "motorcad_studio/config/motor_topologies.yaml",
+      "size_bytes": 3078,
+      "sha256": "abdf061c32c6c7a80db09394ba62204701835f089b846f49f960fd60612be399"
+    },
+    {
+      "path": "motorcad_studio/config/motor_types.yaml",
+      "size_bytes": 1890,
+      "sha256": "bb96a717ec8f29594a5b32e4249dbd46798f23ca97116d2f8131ebe89f9b07f9"
+    },
+    {
+      "path": "motorcad_studio/config/motorcad_native_binding.yaml",
+      "size_bytes": 4626,
+      "sha256": "533a750788c6e71af517fbbce8c8f05f65943c2932c8818a164d616091904122"
+    },
+    {
+      "path": "motorcad_studio/config/native_closure_profiles.yaml",
+      "size_bytes": 5856,
+      "sha256": "acb1ccd91d15662f2ee75d96203c8e0327c25c38f3f65e2002ed133eb8230f8b"
+    },
+    {
+      "path": "motorcad_studio/config/native_parity_profiles.yaml",
+      "size_bytes": 126,
+      "sha256": "1e7ac3089836885bfbbbf7bed33e3a88740d3a08f7a23eda413456b2b75b4245"
+    },
+    {
+      "path": "motorcad_studio/config/output_registry.yaml",
+      "size_bytes": 12143,
+      "sha256": "44b623aaa7e4076616f0dd5e4b86afa05cb4b1bbb0a468adc5933f928a5d0805"
+    },
+    {
+      "path": "motorcad_studio/config/parameter_registry.yaml",
+      "size_bytes": 9800,
+      "sha256": "73d668f7920ed29defc051067264e06c39dcd97467375d827707cb2e49740172"
+    },
+    {
+      "path": "motorcad_studio/config/precheck_rules.yaml",
+      "size_bytes": 5028,
+      "sha256": "ce2505b1d26245add31b45e15730d166639420892212d3e5cdc689facb213569"
+    },
+    {
+      "path": "motorcad_studio/config/pymotorcad_api_catalog.yaml",
+      "size_bytes": 4726,
+      "sha256": "a1dde12bbbaa6d9a838517d4b8cc16afc4ced7e8ef722f2e03bf7e91459dbb72"
+    },
+    {
+      "path": "motorcad_studio/config/quality_profiles.yaml",
+      "size_bytes": 433,
+      "sha256": "23e7d25fb31eb9525fded74a595cab222aca0171844c7902e992052a9537be63"
+    },
+    {
+      "path": "motorcad_studio/config/result_viewer_catalog.yaml",
+      "size_bytes": 4905,
+      "sha256": "a3e85e4538f4c5d2b4360521c62dd8b922a9dc8f9021b00b6b59baa58584a398"
+    },
+    {
+      "path": "motorcad_studio/config/scenario_registry.yaml",
+      "size_bytes": 564,
+      "sha256": "3631ba393968dea81a976cb01263eff180d2ef842d8e1aec55d52a7314104fc1"
+    },
+    {
+      "path": "motorcad_studio/config/solver_controls.yaml",
+      "size_bytes": 7567,
+      "sha256": "7e4f906f3a7654ebc024dccdf74b07ccc2878c4d30f8b723e3f93647af8122db"
+    },
+    {
+      "path": "motorcad_studio/config/solver_versions/2026R1/output_mapping.yaml",
+      "size_bytes": 1863,
+      "sha256": "ced51da070a3168024426823e6bee86edb5aaf7fc18e1e490e2df84b672eaa1d"
+    },
+    {
+      "path": "motorcad_studio/config/solver_versions/2026R1/parameter_mapping.yaml",
+      "size_bytes": 3383,
+      "sha256": "6946d6499470eaebcf7f90bd973daf0bdf96da03bbbbd02fcb999ad22424b998"
+    },
+    {
+      "path": "motorcad_studio/config/solver_versions/2026R1/template_capabilities.yaml",
+      "size_bytes": 1169,
+      "sha256": "4c2da7fe5383885e3502faf5ed0fec0738cfa049a68a684abeb44a0d25bf9b76"
+    },
+    {
+      "path": "motorcad_studio/config/template_profiles.yaml",
+      "size_bytes": 3398,
+      "sha256": "3ee16c49d2bfa88a974581964ea1d9a650137a216a0d8a050ec44835544861bc"
+    },
+    {
+      "path": "motorcad_studio/config/ui_terms.yaml",
+      "size_bytes": 4017,
+      "sha256": "d280b079776818833ec981fca5cb350ff93e5a7d555faa03593737981838c8da"
+    },
+    {
+      "path": "motorcad_studio/config_schema.py",
+      "size_bytes": 2418,
+      "sha256": "8d23e5ae0a83fc8690e883c68dc6941d67f647d2ef5b258c5af1809eb8b243b8"
+    },
+    {
+      "path": "motorcad_studio/data_factory.py",
+      "size_bytes": 31276,
+      "sha256": "572afa1aae75a5d57f73cb53a49d6cd12a94ec6edaaef3f1234afa86814f56e2"
+    },
+    {
+      "path": "motorcad_studio/db.py",
+      "size_bytes": 96163,
+      "sha256": "e1e12e36e7ecf6aa21885d956b32b69fd966f60bac277f09193f83db4c9c488e"
+    },
+    {
+      "path": "motorcad_studio/derived_metrics.py",
+      "size_bytes": 4653,
+      "sha256": "6d09b5e393163acb63248cef23c97d195faf753e4fbecf32ae7bdee7feaacd82"
+    },
+    {
+      "path": "motorcad_studio/design_starters.py",
+      "size_bytes": 14717,
+      "sha256": "845389a1972ad75ee3a7387a63be0646d7ad5d447eda213e71d070e23e62d5aa"
+    },
+    {
+      "path": "motorcad_studio/domain.py",
+      "size_bytes": 36407,
+      "sha256": "0f044e270eebcead61f9a4b431d5b02ffeb5d0f9a977201e72ebb149cf96b4aa"
+    },
+    {
+      "path": "motorcad_studio/editor_transaction.py",
+      "size_bytes": 10152,
+      "sha256": "0a5366f3112b5df57c61e1a9fe709e9da70dfce5293df44e49c8498547b754fa"
+    },
+    {
+      "path": "motorcad_studio/engineer_journey.py",
+      "size_bytes": 7144,
+      "sha256": "b38dc9476c61a4aa99866b4e85dfdd59a094c68364bcc7b203eda8839bccf7d9"
+    },
+    {
+      "path": "motorcad_studio/engineering_lineage.py",
+      "size_bytes": 19886,
+      "sha256": "e28a7116c4bd459cd6a9607646f7af0f1131a9a587d26b7e57f1552b8b82580b"
+    },
+    {
+      "path": "motorcad_studio/engineering_platform.py",
+      "size_bytes": 62521,
+      "sha256": "d7957f4f797bd832dcb4cdd91a8ff588e1513783f78fad58f172e79b28e72c6f"
+    },
+    {
+      "path": "motorcad_studio/engineering_precheck.py",
+      "size_bytes": 23006,
+      "sha256": "f7304aa1ae5a0473e10af35a22fd337c209e09512e4c66694fddcfb0864e5cc5"
+    },
+    {
+      "path": "motorcad_studio/engineering_requirements.py",
+      "size_bytes": 27054,
+      "sha256": "57d25a2c03819a4011cef0c54a759a851c17cd3890011197679e5efe5d5c499a"
+    },
+    {
+      "path": "motorcad_studio/engineering_workflow.py",
+      "size_bytes": 30258,
+      "sha256": "c9b194400ddd59498bc3587ce57379a4668e803c345744d8606f1046d04e07e5"
+    },
+    {
+      "path": "motorcad_studio/experiment_lifecycle.py",
+      "size_bytes": 6711,
+      "sha256": "d8dc3cdb9ec08454720e9f001d8e23f45a3a9f7ef421a4aa54f2c3ea9370c746"
+    },
+    {
+      "path": "motorcad_studio/experiments.py",
+      "size_bytes": 9258,
+      "sha256": "f4d6fed4c83974a038645bb7ce09b4e6d6b77915460a0de73a4aac2c244b25c8"
+    },
+    {
+      "path": "motorcad_studio/fea_evidence.py",
+      "size_bytes": 39538,
+      "sha256": "5093e910b8e345550a8055163b60f5bc6f5a807e6d30616ee90a69d18737c076"
+    },
+    {
+      "path": "motorcad_studio/fea_pipeline.py",
+      "size_bytes": 10040,
+      "sha256": "b9518c9d2eb0e49e9b7758673f02dec7360a1d55d9ecd674f0643d223818c0be"
+    },
+    {
+      "path": "motorcad_studio/fea_views.py",
+      "size_bytes": 5813,
+      "sha256": "dfce6cb70529fac8917331392ef72f2d10254f2f94f93d2c5918432204de7675"
+    },
+    {
+      "path": "motorcad_studio/fingerprint.py",
+      "size_bytes": 3040,
+      "sha256": "e5739345da14e6e76311e9710debf67f2f624e7909bd1f00b4a29b369b0a828a"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/guidance.js",
+      "size_bytes": 5882,
+      "sha256": "39928452b33fe7eec815a88ff85f1e37430d9f4cb0af166b486cc0383415f707"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/labels.js",
+      "size_bytes": 3035,
+      "sha256": "b536a9f0ace1715f660b39ac60e692796fc0506d2f6af479eff590592cd16c0b"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/monitor.js",
+      "size_bytes": 4944,
+      "sha256": "e69ca9c54fe2f071c05ee149e78a9392726446912f66e1570e4124b9195d6d22"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/standard-validation.js",
+      "size_bytes": 19187,
+      "sha256": "188fc7d9a753b1d5014616ca9fa1e1bc6f9c12e3fc10ac7509398432765b2220"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/unified-configuration.js",
+      "size_bytes": 107220,
+      "sha256": "da57e6ab22ad604ff6e3d6710667db855b83d31dcf464e700cf6400f21e8978f"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/analysis/workspace-client.js",
+      "size_bytes": 1203,
+      "sha256": "40731663e515d274c05f82b571b49569398ecb431bed93c0b68e1978bb76d112"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/app-core.js",
+      "size_bytes": 2118,
+      "sha256": "e70d12694107d400a75c93d3c188423e1fa69ae2c542bf6c5019e9b935e10a46"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/app.js",
+      "size_bytes": 205058,
+      "sha256": "6df25d5abda741c41e15f58775fd2594a263d1a350d6558e395d4f688f8853cf"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/canonical-project-flow.js",
+      "size_bytes": 10806,
+      "sha256": "57c54151e17d230854c26a783d965d119958774dda06bf8b783c482a34ee97bd"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/derived-parameters.js",
+      "size_bytes": 4631,
+      "sha256": "ac26f713d9142b379b6672bff4b69b2cf64e6ffd2497c980de36a674a6e26c0f"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/design-starters.js",
+      "size_bytes": 9934,
+      "sha256": "365992d1ceaeb81bdca976b458cf8189901df09fb57b0765aff62c83ee1f7431"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/draft-service.js",
+      "size_bytes": 9313,
+      "sha256": "71728187ce470bc548e6c096cc7697eb2c9efb79c732cd8c3a2f7c21298d9fce"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/editor.js",
+      "size_bytes": 71837,
+      "sha256": "2c159c1484d17e03c46c27d4aaef4dc9c29f75322cdfcb34f7100826da8427de"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/geometry.js",
+      "size_bytes": 33111,
+      "sha256": "4d6fe7c446297a81a3aaadcad78cc826e74c025c3452c5aec23bfd7eef89229d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/materials.js",
+      "size_bytes": 8975,
+      "sha256": "ed951a0f42cea12a898cff3a183099c0c8b3a35036dc967b8c3c5a837af6bcee"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/navigation.js",
+      "size_bytes": 6435,
+      "sha256": "a7ec2a749390366e90bb2f4ee78c76ed3091719dea7ca51b787ddc333f26a592"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/parameter-catalog.js",
+      "size_bytes": 5115,
+      "sha256": "a34457c36cc9fb4e007965580ed143d887ff578ab114932d25cdae585152df06"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/parameter-inspector.js",
+      "size_bytes": 8387,
+      "sha256": "add7e1b9fe635d4f239e87057cb3dbd69a3a1f98bb1fd057a40fa813a8e3fd61"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/precheck.js",
+      "size_bytes": 6452,
+      "sha256": "49915fe23aeaabb88eccfe4e9cd007b1d4705836b55a1e1d65fc21c63fc8aacd"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/render-utils.js",
+      "size_bytes": 9061,
+      "sha256": "28f64bd7a54fe4963233098b7f346e56ebb1be85f666e36d0ad0db08755effc5"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/renderer.js",
+      "size_bytes": 13330,
+      "sha256": "aa8b76926a9f94f61dba63711e20ae1a292cb64f289c9bf39f8f8330d5bd379d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/store.js",
+      "size_bytes": 5093,
+      "sha256": "8dddbd02df67cf80c7a7c2eea7d593d6234f3233a17a8823bd4b3aef7d5d416e"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/validation.js",
+      "size_bytes": 13295,
+      "sha256": "7ebef3c0bc142ca591406d2dfce1ebc181c3b8f7d71504f33743fefb903a77bf"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/viewer.js",
+      "size_bytes": 15509,
+      "sha256": "a2b255eae173fdc262c5747df049b5b6261c5dabda31bd7828c9740755878534"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/winding.js",
+      "size_bytes": 16557,
+      "sha256": "efe2c9f3b5b521cbc3caa05344a071ada040d75297714fd24b45f266fb40fe53"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/design/workbench.js",
+      "size_bytes": 6084,
+      "sha256": "7d9777d2cb133999750a8a75310eb31ab56d82d435e69679af1408f43b1a8473"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/dialogs.js",
+      "size_bytes": 5037,
+      "sha256": "8c0aacb7756b29ccf9417fd7ed7d1dcaa2096205237e09155435735fa931e90d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/domain/induction-motor-object.js",
+      "size_bytes": 8122,
+      "sha256": "843048ce8edcd3c4237a4c8fdc4d55a0a4deb26ff7c25f826651e4f3bbb0ce4b"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/domain/motor-domain.js",
+      "size_bytes": 2809,
+      "sha256": "5bd0609461096311df8ae3e774c47e6324f235cd88860fae873e94b0fa8bde9b"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/domain/motor-object.js",
+      "size_bytes": 1481,
+      "sha256": "fa4c125fc6a75be5b9fc0eec4a7426c77f74216266c743dbf92eec454f419037"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/domain/pm-motor-object.js",
+      "size_bytes": 8990,
+      "sha256": "7e98915fa75cde22bb4b19978a6e69d6d71723564c8df2f3d1158d243f933293"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/frontend-core.js",
+      "size_bytes": 6750,
+      "sha256": "ee4f756be2b5e986749ccb70740b3d669301326db490bd3c80d23444c663134c"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/geometry.js",
+      "size_bytes": 6238,
+      "sha256": "9be74cea7f3e5cfadc7d1c7c5d50367701cec35fb4d0c6219dc36a5713ea8858"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/hmi/action-registry.js",
+      "size_bytes": 13776,
+      "sha256": "5feaf9789e1a5ee4898dbec7832c9a759f8f2d24ff0aaac1bdf62d32dba5a661"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/hmi/operation-progress.js",
+      "size_bytes": 12070,
+      "sha256": "9ffae06509898382bad006acc3b43c25d177c77bb26b01695cd4caf1df9020d1"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/i18n.js",
+      "size_bytes": 13244,
+      "sha256": "ce8396e7bcb10e197a6514f7abaf74ac7f3228eea7f68acf6c31aa3239adb01a"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/locale-data.js",
+      "size_bytes": 80507,
+      "sha256": "bcd89df998981d1ce11e8e01698732e6faef652a887744a05d055bebad5381ca"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/materials/library.js",
+      "size_bytes": 34804,
+      "sha256": "b2e74037bb8cb5f5aed949d9a9bc63de18fd9b83434e8cb2739307981ee2e652"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/module-registry.js",
+      "size_bytes": 6444,
+      "sha256": "52cfd08fcae4d81da3f48e2dcf7dadb401a577f18592880c45bed5cba97868bd"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/native-parity.js",
+      "size_bytes": 13372,
+      "sha256": "55ca3e36f3bf286096bc14b5abca7450a8a436c2d2e3f989ee42f040b53998ea"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/operator-flow.js",
+      "size_bytes": 21799,
+      "sha256": "160154145299794dc623100d199eecae64c26553d6cb2e7c7d995890e89812d6"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/production.js",
+      "size_bytes": 29268,
+      "sha256": "aaaba52c0b228f6f0b1a9baa23f7baf69dfb5bd97ace3216227879d7821d2851"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/realtime.js",
+      "size_bytes": 2043,
+      "sha256": "866b9f1ddca8e2a186083d4ec2c79357549f4f8a91596bfbb7e10838fd082a7e"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/release-manifest.js",
+      "size_bytes": 2406,
+      "sha256": "23b350a8aa3c98b03eeee68b49b747960c6aec97f593e8e2478ac38a66016818"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/aggregate-client.js",
+      "size_bytes": 2249,
+      "sha256": "fc135759f1050744858b653a0313155248c52ba3789c50d876d45c0c70322187"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/case-compare.js",
+      "size_bytes": 15299,
+      "sha256": "27f246947888247998b51ebccb9d073276d106f219876285a085e9eda4dcf34a"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/case-viewer.js",
+      "size_bytes": 41770,
+      "sha256": "38c05dfa6e363324622a922c45f4ecf6e9775ae38fd7edf48b5e4e8d0eb2d3f8"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/decision-cockpit.js",
+      "size_bytes": 8502,
+      "sha256": "55969c46279e948ff5106526e79ee96bab8922d4ae5b662397ca227f3972c000"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/engineering-scorecard.js",
+      "size_bytes": 4469,
+      "sha256": "fa000db1b692c23990fa6b6e7dd9b02550d8f89c0eef5d6ffeabd53bae83daa6"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/fea-thermal.js",
+      "size_bytes": 14061,
+      "sha256": "30bb124bd9fb7ad3c3764c1b702027f1b9e1ddd70c8277e58a57fc112aa6c6a6"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/field-viewer.js",
+      "size_bytes": 79001,
+      "sha256": "b1a4294a792f0fcdef2c6287408863d2291383336d385fe4c408040164612e66"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/interpretation.js",
+      "size_bytes": 9099,
+      "sha256": "317a57e60891dc9732a0bf5baf253ce398ca558c7819f90998bcca311bec9a09"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/manufacturing-robustness.js",
+      "size_bytes": 2238,
+      "sha256": "fdd957acbbc9db2f720154ffeb80cbf40dc74f671868d0006de132f980bf1044"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/native-evidence.js",
+      "size_bytes": 20844,
+      "sha256": "c3bea8d2fdf98372a39c30cf5bb289f335ad888eda3f67389e7fbb05afd426d2"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/native-tables.js",
+      "size_bytes": 4679,
+      "sha256": "766cc3f52bac250b052bc59e371f69482a43d304d7f01348790159ea8b6c6aec"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/optimization-decision.js",
+      "size_bytes": 29521,
+      "sha256": "cad0878ca6e0f2e1c1a7f36183bb8103f2dc32f929fd17e7df2e3208e44e1fb9"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/optimization.js",
+      "size_bytes": 75125,
+      "sha256": "a14838151a66e78ed628af36f9db329df1b0e12c4ddac728b0b19bd914e7a00d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/qualification-campaign.js",
+      "size_bytes": 11523,
+      "sha256": "bfc96e6e82b403adbe3f94bfc7018be0b7b9086ebfb6be36d489c891c921f56c"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/requirements.js",
+      "size_bytes": 12728,
+      "sha256": "5a5e21d74fe6d930ed65a71977d97c97f9f011852a7d77ed3f1135f9a1486a1c"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/result-data-client.js",
+      "size_bytes": 3215,
+      "sha256": "13cde52e9eb106abbb3a1a23db26d97c26a4a76b676094378257d3d1ae51b1dc"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/result-set-client.js",
+      "size_bytes": 1792,
+      "sha256": "939d1d0e2f4521d72b1db95e1c93ec3d3102484c77989c1cf70095f8caeba068"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/revision-compare.js",
+      "size_bytes": 10628,
+      "sha256": "0125b9530bd8154a46fb5fb0929ff88f26dea6da906288429400ee5c0f8e8e65"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/trust-ui.js",
+      "size_bytes": 3620,
+      "sha256": "8205ae68783f48360fe8e48ebbb18dac44ff6100e9bf60ea10a45c013c26ae91"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/results/workbench.js",
+      "size_bytes": 18048,
+      "sha256": "061a052d818577e26597d4def8c5fb813cf1cc8900bef2682d49b9227da58587"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/router.js",
+      "size_bytes": 22823,
+      "sha256": "dbc428031ca6da08c8b84f99a900808e4cd097ee93de6de237431a850dea293c"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/routing/engineering-context-store.js",
+      "size_bytes": 17498,
+      "sha256": "d36fe71430b1381e5c3ddbcca43180b22ed79ed64bf07b497f56624021934102"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/routing/navigation-transaction.js",
+      "size_bytes": 6562,
+      "sha256": "4b65f06d6dc7017bc7ca99e7111d50d899299ba01858b04dc40ad262c6113a86"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/routing/page-controllers.js",
+      "size_bytes": 9153,
+      "sha256": "94cc756fc7f77a9641b4e807c72d01cf0353feb15c6f99686558cd98bdaba4a3"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/routing/result-context.js",
+      "size_bytes": 4156,
+      "sha256": "8abdb29311e20fd3e1243b8555f2d9510f7f0f9eff72af8edfe1208bd02e6f52"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/execution-lease.js",
+      "size_bytes": 8854,
+      "sha256": "3f54d0c7ed957d6f368494897e531733db178e2125a319a08a3013bcc26f64e8"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/experiment-lifecycle.js",
+      "size_bytes": 3783,
+      "sha256": "1dc26d34b5b23f1e9f771b8d0756ec61c64f839d29306337bfcfed21ea2e9cc7"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/lifecycle-qualification.js",
+      "size_bytes": 3400,
+      "sha256": "32253ecf46c31495d7292346c5e224a6a2365e4dd189d91be37f6b09e76e7e1d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/native-fea-session.js",
+      "size_bytes": 14521,
+      "sha256": "c64477fdb4e0e45818aed2e7f3f48f8fedb036d1a9328869db1df20448da8930"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/production-soak.js",
+      "size_bytes": 4660,
+      "sha256": "df5433e670f4ee16da71ce7a13a4f86cb5eb60c6ce5e93fc8d8101e6109e135a"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/release-candidate-gate.js",
+      "size_bytes": 3488,
+      "sha256": "76472235a9dc50dbd91101082c922e28df96f8737e3c97cac885daca742bbb07"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/resource-scheduler.js",
+      "size_bytes": 12400,
+      "sha256": "6a66a796cc68097d29b24f816fb2f970f246658ffb4259841143d2253c3dc6af"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/runtime-ownership.js",
+      "size_bytes": 2155,
+      "sha256": "26705d7e6470155047d064de6e91c08beafd40bdc2e58f14656836e8f5e0f53a"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/solver-evidence.js",
+      "size_bytes": 14027,
+      "sha256": "664d0989890438d4e2ab82fed3e174dad2f84a9d15a1d563b5cbc38b8f0f8a2f"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/ui-soak-qualification.js",
+      "size_bytes": 4804,
+      "sha256": "f1ae09e112b8e748684c978c9d3ac40bb80d198fa502494745b43932db294bc0"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime/workstation-acceptance.js",
+      "size_bytes": 11420,
+      "sha256": "2f4f367ada15874c7555c4dd8609803bd17716f1de30ee41dac95bd327874687"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/runtime-catalog.json",
+      "size_bytes": 3638,
+      "sha256": "2500bca6955a5b51026eb90e07a81f1544f7552820e487230e463c2d8102fa1d"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/action-readiness.js",
+      "size_bytes": 39340,
+      "sha256": "011e73721c547b92545f58bfd2c99549d69845b4345c7b5ad73c843d5f152173"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/compact-flow-header.js",
+      "size_bytes": 1821,
+      "sha256": "8dcffa93a9b28228266cb288afe70962516a9cfd001e55d4979bcca546fcf4ad"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/engineer-journey.js",
+      "size_bytes": 5343,
+      "sha256": "a18f0352497256cc8e1fa2b9732b741baaa14392631161e80460d70fca3b5f13"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/engineer-ux-convergence.js",
+      "size_bytes": 8057,
+      "sha256": "cffe97ab9f8ae476619a13a45f8af366cf2ab6bd7051f4acbec3b64d1546c732"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/engineering-workflow.js",
+      "size_bytes": 9999,
+      "sha256": "6d26f95b4d11e3c3e98f1630d5ebe8bfa387534c8b909ca681366ef6014c360f"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/global-shell-convergence.js",
+      "size_bytes": 4249,
+      "sha256": "355525d6036f3ce59e3b6a7fbcb7375101201a135049771c50f27c460b99d9f6"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/global-workflow-truth.js",
+      "size_bytes": 5443,
+      "sha256": "3cf4d4baac3db9f889e3843a077eed32c389bd75858c65b0c8e39aab1f5f7300"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/native-context.js",
+      "size_bytes": 19930,
+      "sha256": "610d73900e8fc2ca6db01d77aacb7e177050d20551ff83c48c4dd2ee8fe86967"
+    },
+    {
+      "path": "motorcad_studio/frontend_legacy/workflow/usability-closure.js",
+      "size_bytes": 1241,
+      "sha256": "f694c6cffcaca75a50e1545cae51b6e4ebce86c375c1a228d4f8893980484bdc"
+    },
+    {
+      "path": "motorcad_studio/geometry_guard.py",
+      "size_bytes": 15204,
+      "sha256": "2ecbeac0b045bb79fe91fe689672f3410748a437f8f65012e3d407ebec795199"
+    },
+    {
+      "path": "motorcad_studio/installation.py",
+      "size_bytes": 25029,
+      "sha256": "f5b5170cd77425b3805bbec309e7368b4d07e347f36b02c5d3cddc4091e386cb"
+    },
+    {
+      "path": "motorcad_studio/launcher.py",
+      "size_bytes": 5903,
+      "sha256": "c3ac8383e91b7074c60bd4f2fcfd480d62f11c3e82a946315f3eb7574b8f588d"
+    },
+    {
+      "path": "motorcad_studio/main.py",
+      "size_bytes": 647,
+      "sha256": "7e88603f177420fb6bcf1d78c7755ea4b2b7391d6fa8c82c7ce10dfe06e62ebc"
+    },
+    {
+      "path": "motorcad_studio/manufacturing_robustness.py",
+      "size_bytes": 15421,
+      "sha256": "d41bfbbfcdfa53dfdb7875cd04219a42bca56601448d6931faedfffd4af771b4"
+    },
+    {
+      "path": "motorcad_studio/material_catalog.py",
+      "size_bytes": 1375,
+      "sha256": "1de175ee40ed2fbb4559b6de2c021f1e59acd93743fad1ddd356b4e57a1af935"
+    },
+    {
+      "path": "motorcad_studio/material_library.py",
+      "size_bytes": 34978,
+      "sha256": "2a1d6e7852387ab66d5888b76e493094055c3c46ef05bd35dea0501349445f42"
+    },
+    {
+      "path": "motorcad_studio/model_workbench.py",
+      "size_bytes": 29240,
+      "sha256": "0e8da6f6840ae4750f7a0c58ea73df4feefeafd043f95bd408950b56afb15d4d"
+    },
+    {
+      "path": "motorcad_studio/models.py",
+      "size_bytes": 36382,
+      "sha256": "f20a76764ec0ae39d91e0cfe71eaaf4a9da98aabfce81fe5c9b4debf283a62b1"
+    },
+    {
+      "path": "motorcad_studio/module_system/__init__.py",
+      "size_bytes": 578,
+      "sha256": "f17f3bd0a143c4171786e46c6a10f99f9c8ccf425e018801a767ed94587ad50d"
+    },
+    {
+      "path": "motorcad_studio/module_system/catalog.py",
+      "size_bytes": 13903,
+      "sha256": "92b6fa8f7799252dfcecfff540e7859541ea8d9528ec78aa02796ae5b284bf8a"
+    },
+    {
+      "path": "motorcad_studio/module_system/contracts.py",
+      "size_bytes": 2540,
+      "sha256": "c56b0517823b89a24d00dfd648f5801650f571a81e8bb083db7ad23783cd5485"
+    },
+    {
+      "path": "motorcad_studio/module_system/distribution.py",
+      "size_bytes": 18826,
+      "sha256": "21d44be4da09ed85e872b7510747b029975d4b7565f8e3f7f43d5f6b8ccf1485"
+    },
+    {
+      "path": "motorcad_studio/module_system/registry.py",
+      "size_bytes": 4540,
+      "sha256": "fd5ddf7d68b59b00956004cd55e2211b38765c8bd077909cd5cf37f6198724a1"
+    },
+    {
+      "path": "motorcad_studio/modules/__init__.py",
+      "size_bytes": 125,
+      "sha256": "06d351b491d979428af61dd2eceeb26d47eb45a430e99d9ecae0518b2d562440"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/__init__.py",
+      "size_bytes": 1208,
+      "sha256": "1355fae9508d2cc284d46c367cc1f6bf4bf065051fd5be44d0eda06ae4e225dd"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/adapters/__init__.py",
+      "size_bytes": 294,
+      "sha256": "f9cdbaab9080d33d7cf463a1111fd813dc2644d1dfc5f95d2e0572ab1fd48f07"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/adapters/read_repository.py",
+      "size_bytes": 2751,
+      "sha256": "868b2874e5019faadb99fbce1de781013b44c1152a4b71059f1697326cd1760b"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/adapters/sqlite_workflow_repository.py",
+      "size_bytes": 4952,
+      "sha256": "7a03e1b840353ca25030afdb83e220c89ec70fa694b466b61dbe89194b078103"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/api/__init__.py",
+      "size_bytes": 61,
+      "sha256": "93fa9556027a499b466b3d9a0edb123c19c807ff3cf109d027142e47ff1eaf5d"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/api/router.py",
+      "size_bytes": 3414,
+      "sha256": "0fbee7144180d21c8f6fc5026c3982bdf83f8bea0d9f0bead150fe7e8d2b8f81"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/application/__init__.py",
+      "size_bytes": 253,
+      "sha256": "fced9102c7f4866091348988667f0a64282b88ef85c6970418eedc2cd60d3c74"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/application/facade.py",
+      "size_bytes": 1651,
+      "sha256": "8366bb267e30eb696a56f02e90ed65dc1bfc6472ed8d0355f708a3c499cda2c2"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/application/readiness.py",
+      "size_bytes": 10116,
+      "sha256": "4a4da424beba5d37ca5a10dce0df78a3a5a5457f2d247a7da6d38fc0b0395685"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/application/workflow.py",
+      "size_bytes": 21337,
+      "sha256": "998d45928914ea716fc7b0c3471bc233c9f0ac574dabcb3a793433028f961d57"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/domain/__init__.py",
+      "size_bytes": 119,
+      "sha256": "83e13c476007da0423016f5d0fa711b1814e96da5679df498ef5dce8a4617759"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/domain/workflow.py",
+      "size_bytes": 1829,
+      "sha256": "197137a825dcf9cc2a6fce90d4da506a952f2143f2e978587f877e83ff727918"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/ports/__init__.py",
+      "size_bytes": 110,
+      "sha256": "79060d9d299ce3fbbb7334d8bfc84b68350687ed80b6e65b5896993f7f65ae94"
+    },
+    {
+      "path": "motorcad_studio/modules/analysis/ports/workflow_repository.py",
+      "size_bytes": 1077,
+      "sha256": "887c59503b674d6ea884fd5bb74abbc76fa70f65c4bb4a7bb8dd9fc9156983f2"
+    },
+    {
+      "path": "motorcad_studio/modules/control_plane/__init__.py",
+      "size_bytes": 585,
+      "sha256": "534098f796a2a6968a02546ceadca61822f65434200eb96ffea7e201db7363fe"
+    },
+    {
+      "path": "motorcad_studio/modules/control_plane/core.py",
+      "size_bytes": 66673,
+      "sha256": "809dab0ade12f1f2aa2d91fbca0beb577a7a7a1a79a625f85d937dedb6fdd313"
+    },
+    {
+      "path": "motorcad_studio/modules/control_plane/router.py",
+      "size_bytes": 1517,
+      "sha256": "01c1dfb76fedd96d624c81d70ff27a8f375cdd5b178094920e3c35c65769c424"
+    },
+    {
+      "path": "motorcad_studio/modules/data_factory_control/__init__.py",
+      "size_bytes": 81,
+      "sha256": "0393ac4c845b1f6a873d2dc739d331404a7207ddeeb2cee17c6644eafab97e7f"
+    },
+    {
+      "path": "motorcad_studio/modules/data_factory_control/router.py",
+      "size_bytes": 2527,
+      "sha256": "e1d0b16c10f6c885396e3278ce5192fd13db37634c83af452f3f2e113c5bbe91"
+    },
+    {
+      "path": "motorcad_studio/modules/engineering_context/__init__.py",
+      "size_bytes": 667,
+      "sha256": "6aa034a01eee135f23eaf8360035f8e4b9a0fa10512b7a60d841629df123a081"
+    },
+    {
+      "path": "motorcad_studio/modules/engineering_context/repository.py",
+      "size_bytes": 18570,
+      "sha256": "b8fb383feb74387408d630098d441278b773c0548b892dc3bfdf2160183894db"
+    },
+    {
+      "path": "motorcad_studio/modules/engineering_context/router.py",
+      "size_bytes": 3085,
+      "sha256": "38eea249f3b857b4d212e2df407bfd7a86c354a555618d09e3a035abc80d850e"
+    },
+    {
+      "path": "motorcad_studio/modules/engineering_context/service.py",
+      "size_bytes": 895,
+      "sha256": "abde43dc5bda2d694c05712e89506f1802ac7b98d4068d72375cd6e34ee04530"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/__init__.py",
+      "size_bytes": 843,
+      "sha256": "c70b3e42e1090a5ba0ecc206490e68e04d9ac0087c9f8abb433eaf6535b49603"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/adapters/__init__.py",
+      "size_bytes": 248,
+      "sha256": "46b84c70ba6d4e8d77b034fd757351a9316d4aa6d421598144d6e7d38b763c5f"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/adapters/sqlite_command_repository.py",
+      "size_bytes": 8670,
+      "sha256": "fc9610c13d92910b8ea31fce6f894b7586274b32b6c2045efdd77c2b33aa6e6c"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/adapters/task_manager_repository.py",
+      "size_bytes": 1776,
+      "sha256": "b1d0d9fc5795e070fa4b7327b822d0a94280d4d4376422545bd4ffe4b8b2ba44"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/api/__init__.py",
+      "size_bytes": 143,
+      "sha256": "4c9c7e756f7b0ea5161d12a6026330e79fabc298ea76aec7f446c5ac0d2665b2"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/api/router.py",
+      "size_bytes": 3432,
+      "sha256": "bb43337f6f29206a30314a74f2a02a5321224ecede11d2c30d3d94cf647d1945"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/application/__init__.py",
+      "size_bytes": 130,
+      "sha256": "91e31e26a92b7c1a0a89a1e6df9bd5c2272e9ff297a6bce934c757a7841077d3"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/application/service.py",
+      "size_bytes": 18439,
+      "sha256": "a93ecff79170892df3af56aa9b96b07f460bab4bbffb7362fa5ba46aa858eb2e"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/domain/__init__.py",
+      "size_bytes": 213,
+      "sha256": "9081b7505aeec53022e4f408e38cbb51d71aca9022ec4eb3216e917cbb4200f1"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/domain/commands.py",
+      "size_bytes": 1846,
+      "sha256": "df33a71784383bd5a2967449aeb5d9d42c61b04b2519db9aa9d1a61b1a2161cb"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/ports/__init__.py",
+      "size_bytes": 182,
+      "sha256": "c71511a4769d1a17e489172c3372aa90effe9efded70deef47354e25b3f5fb4f"
+    },
+    {
+      "path": "motorcad_studio/modules/execution/ports/repositories.py",
+      "size_bytes": 1212,
+      "sha256": "4ff0f621d00f3a5746cd8d9c6eff91766849de869843cee71c0ddf2db208b745"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/__init__.py",
+      "size_bytes": 452,
+      "sha256": "3651fa837d9bd1d89f5c44087d84dee3eeae14fa77f01544311a7319d4732541"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/adapters/__init__.py",
+      "size_bytes": 101,
+      "sha256": "43eda23e63e8211e082e411a7a636734c546ce59d84cd9eaa4e3eb6109b8761c"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/adapters/compatibility.py",
+      "size_bytes": 54837,
+      "sha256": "0160184cfa764549b0375644cb6363af5ce9098197082f2cbd75dfa88b689c27"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/api/__init__.py",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/api/router.py",
+      "size_bytes": 7883,
+      "sha256": "4515904c68d8ea29a63b9798220a7459e4cba19ea5ddd56da1c14edd1ab36145"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/application/__init__.py",
+      "size_bytes": 91,
+      "sha256": "d2548591a9875fd48b1435afcb4ea66ce33a5b696af99662bc47579699f4e7d8"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/application/service.py",
+      "size_bytes": 2165,
+      "sha256": "14ae4f9f9876d59a3bb34a1d8ed62f20d82dd6e505a4a03b25b393e35ea4b131"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/binary.py",
+      "size_bytes": 20786,
+      "sha256": "ae78188db138bc4cb1409aef8f3e5e049c621bb14127e413b3d843dff523cad0"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/domain/__init__.py",
+      "size_bytes": 201,
+      "sha256": "b9d35f4956ac87460c2cde73387c13eebb30c78e6857a43389a5b1bc067920e1"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/domain/contracts.py",
+      "size_bytes": 1751,
+      "sha256": "935617299c286ff64d4d1df08d9f4bde2be467c6d3a577b89cde7a3691a6dce1"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/ports/__init__.py",
+      "size_bytes": 84,
+      "sha256": "401cedd190511c30b41e4664d23ae1a006916d6a01959bd55abd5546ed1e6b55"
+    },
+    {
+      "path": "motorcad_studio/modules/field_data/ports/operations.py",
+      "size_bytes": 359,
+      "sha256": "1ed2eaa3392d312f3355f4faba9bb58e3b79e81a5d74dcae09779345f1b9f529"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/__init__.py",
+      "size_bytes": 446,
+      "sha256": "1be85983b1b2ae71c2d13bcde338256878957a95111e32f37bf53ab87cc78b63"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/adapters/__init__.py",
+      "size_bytes": 26,
+      "sha256": "9114404bdb60f2427cb0ef200f1338742d55216da7025b42da41f7d36583b39c"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/api/__init__.py",
+      "size_bytes": 61,
+      "sha256": "93fa9556027a499b466b3d9a0edb123c19c807ff3cf109d027142e47ff1eaf5d"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/api/router.py",
+      "size_bytes": 1267,
+      "sha256": "690ffeef27026edef323e4966885861195d0ffa8d6b57e2f7451d5dd7adfe038"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/application/__init__.py",
+      "size_bytes": 91,
+      "sha256": "8a5e0c3a29dd837c4f47e836d70b0ecc138705ecc5ca6b9b6d56711c074659e9"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/application/projection.py",
+      "size_bytes": 10026,
+      "sha256": "b98783f535b9b4d30ca64fb071954b4dd40356fff32c096ad44481d394b0cfbb"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/domain/__init__.py",
+      "size_bytes": 95,
+      "sha256": "81f07d68a786eb54114e3e4d0e85fa25b05428607bce0e6d97cd69c475bf015e"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/domain/projection.py",
+      "size_bytes": 989,
+      "sha256": "dc42ab188da97517b41995811d6b3546d4a4191f49564bda3baf7124461ad55c"
+    },
+    {
+      "path": "motorcad_studio/modules/materials/ports/__init__.py",
+      "size_bytes": 85,
+      "sha256": "7e04cc1b6168d826b28078cb8650b0e96483bc57d3b7eaecbd56f87df01d1318"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/__init__.py",
+      "size_bytes": 679,
+      "sha256": "5860c80e4f3deed47ed8a2353cfd84b1ad48ea0704c0723c0b0de675c70a5c18"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/adapters/__init__.py",
+      "size_bytes": 209,
+      "sha256": "5f8eb6ae84e15a0f6bb2173d4c67a534a283e4718825853a46883288d65c224a"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/adapters/sqlite_transaction_repository.py",
+      "size_bytes": 9036,
+      "sha256": "1757b19954291c09fc74a5a4410bf9a82a4474bfcb8dc9508bfb79dd2ed6d10a"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/api/__init__.py",
+      "size_bytes": 61,
+      "sha256": "93fa9556027a499b466b3d9a0edb123c19c807ff3cf109d027142e47ff1eaf5d"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/api/router.py",
+      "size_bytes": 4454,
+      "sha256": "3501e6fdec432cb381a86e93e4f74652365b9e0ba647bcd0e4780c1be5bf9c22"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/application/__init__.py",
+      "size_bytes": 91,
+      "sha256": "3faf8080ed2b4edd461130b749bed86f202230f8e3db8835b0d6a35125798842"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/application/transactions.py",
+      "size_bytes": 22034,
+      "sha256": "c884752e317a0799ce3530f5958d53ae751402e4a33e6cf874e25ec56b50f94d"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/domain/__init__.py",
+      "size_bytes": 109,
+      "sha256": "d0fc3452b41fb0d79564ab1471403dd4e73d603f13357e14a8d0e80938c7284b"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/domain/transactions.py",
+      "size_bytes": 3216,
+      "sha256": "ef4660eb069cb81472c389d0a73b1880f30511ca3abc822ae7cd438efc20adc2"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/ports/__init__.py",
+      "size_bytes": 115,
+      "sha256": "47dc5080846c1681aa28366f001fe1e038678de1eb1bded2e8516efc026f58ae"
+    },
+    {
+      "path": "motorcad_studio/modules/motor_design/ports/transaction_repository.py",
+      "size_bytes": 1678,
+      "sha256": "e216808ffed70af21f6b15de41d78642a457767f36afe85fd8d5bf15364fd960"
+    },
+    {
+      "path": "motorcad_studio/modules/native_runtime/__init__.py",
+      "size_bytes": 81,
+      "sha256": "0393ac4c845b1f6a873d2dc739d331404a7207ddeeb2cee17c6644eafab97e7f"
+    },
+    {
+      "path": "motorcad_studio/modules/native_runtime/router.py",
+      "size_bytes": 2362,
+      "sha256": "08d736e6dd3090bd4c13c64bbf010a9dadb8bee2a0d4255043856dbf9f39a2ea"
+    },
+    {
+      "path": "motorcad_studio/modules/optimization/__init__.py",
+      "size_bytes": 84,
+      "sha256": "08936d39a0c19c7266fab368d5dccb48db2c2cafd2fdba61007cc389153419e2"
+    },
+    {
+      "path": "motorcad_studio/modules/optimization/router.py",
+      "size_bytes": 3362,
+      "sha256": "4a7438a52f33fe3e35949075d90059efc3c12172cf6feac0332cc4bf23d1cd42"
+    },
+    {
+      "path": "motorcad_studio/modules/projects/__init__.py",
+      "size_bytes": 605,
+      "sha256": "702e2600e5b72ffa261dee16d88ed485c483cdd93762a413834187f7f24fb001"
+    },
+    {
+      "path": "motorcad_studio/modules/projects/application.py",
+      "size_bytes": 3488,
+      "sha256": "c6709283d5fa84f80ad9252d347b88d71d74168aa188b51b769f71a538f5b4b7"
+    },
+    {
+      "path": "motorcad_studio/modules/projects/repository.py",
+      "size_bytes": 2458,
+      "sha256": "cac0efdcfe74a98daafcb1d8901cc392c1e7df16c4b3f19593071ea09abc49f0"
+    },
+    {
+      "path": "motorcad_studio/modules/projects/router.py",
+      "size_bytes": 3099,
+      "sha256": "1d4f4625cea0086cccc9ba4100f275bc5f01197f83e3c1be8ea7a98f450528b1"
+    },
+    {
+      "path": "motorcad_studio/modules/qualification_control/__init__.py",
+      "size_bytes": 81,
+      "sha256": "0393ac4c845b1f6a873d2dc739d331404a7207ddeeb2cee17c6644eafab97e7f"
+    },
+    {
+      "path": "motorcad_studio/modules/qualification_control/router.py",
+      "size_bytes": 1862,
+      "sha256": "758f7a653f7d721a1d4ef633491dc5ce7b8b915264017f251d241b98601c9455"
+    },
+    {
+      "path": "motorcad_studio/modules/requirements_control/__init__.py",
+      "size_bytes": 81,
+      "sha256": "0393ac4c845b1f6a873d2dc739d331404a7207ddeeb2cee17c6644eafab97e7f"
+    },
+    {
+      "path": "motorcad_studio/modules/requirements_control/router.py",
+      "size_bytes": 1856,
+      "sha256": "5658b7e73edc2b1966d217720c74fc6979e684de4c017048968b859dd2c7e046"
+    },
+    {
+      "path": "motorcad_studio/modules/results/__init__.py",
+      "size_bytes": 354,
+      "sha256": "a11d96fbabd600a95ed492d0c33cc4f1a43b6807ebd39a0d73305cab370d506e"
+    },
+    {
+      "path": "motorcad_studio/modules/results/adapters/__init__.py",
+      "size_bytes": 97,
+      "sha256": "fbbeb916e609d4a65278ac0e5883652bc9f7c5fb71468fa63cee0befe3836f53"
+    },
+    {
+      "path": "motorcad_studio/modules/results/adapters/compatibility.py",
+      "size_bytes": 89826,
+      "sha256": "9bc5990bb18e494fa2494cf46615e9d0446c7bd8bfa0d166fcc187e0518f4ae5"
+    },
+    {
+      "path": "motorcad_studio/modules/results/api/__init__.py",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "motorcad_studio/modules/results/api/router.py",
+      "size_bytes": 8518,
+      "sha256": "fe8759d11c5b7a12ace213e3463e32920281d38b402363bc55989f409a298c6e"
+    },
+    {
+      "path": "motorcad_studio/modules/results/application/__init__.py",
+      "size_bytes": 87,
+      "sha256": "a02bf3ef3da268971296a5daefa841f5c168e08ee93cabc2b8b92c8094078503"
+    },
+    {
+      "path": "motorcad_studio/modules/results/application/service.py",
+      "size_bytes": 2288,
+      "sha256": "5a302d5c5a072b9741c096888211230f3192ee214b59fec8a2f745b36eeb2245"
+    },
+    {
+      "path": "motorcad_studio/modules/results/domain/__init__.py",
+      "size_bytes": 83,
+      "sha256": "ef81aa2add324d9d63a76c79f54b7dccbccafcab3fa802ce9ea5674c0fda72e3"
+    },
+    {
+      "path": "motorcad_studio/modules/results/domain/contracts.py",
+      "size_bytes": 817,
+      "sha256": "515aa23429ba9f8c45b1a1a5f7edddae1694f80d5695a8ebf23170ef90bb8695"
+    },
+    {
+      "path": "motorcad_studio/modules/results/ports/__init__.py",
+      "size_bytes": 80,
+      "sha256": "9eed6f7ea31556463b7ca559bcf32f1fda9ec0a58da2397094fc62c3ed16f6da"
+    },
+    {
+      "path": "motorcad_studio/modules/results/ports/operations.py",
+      "size_bytes": 353,
+      "sha256": "745c6f06f6bb527067de6e7253303f021c4ccd4b792aa9f1b64f32b1b2934799"
+    },
+    {
+      "path": "motorcad_studio/modules/shared/__init__.py",
+      "size_bytes": 1243,
+      "sha256": "4409b2fbf40d7997a1a271fa9a5c552f394eccd7a9bd2defcc0de1482bc682fc"
+    },
+    {
+      "path": "motorcad_studio/modules/shared/context.py",
+      "size_bytes": 4227,
+      "sha256": "8d28891a2373473958298d55b84e5d6aa2b236fd3088fb9146ac50559892af64"
+    },
+    {
+      "path": "motorcad_studio/modules/shared/contracts.py",
+      "size_bytes": 2420,
+      "sha256": "913063d756b8aa0e3f23f9ba2f1be91c184e235ad78911ddefcc8dbf86de9c79"
+    },
+    {
+      "path": "motorcad_studio/modules/shared/hashing.py",
+      "size_bytes": 519,
+      "sha256": "c69ae476dc5fc1f84a131995477afefa7bad9318813330e7771a60f038d781bb"
+    },
+    {
+      "path": "motorcad_studio/modules/shared/transfer_budget.py",
+      "size_bytes": 10491,
+      "sha256": "49799a46d0a1097ec9c684b9b2d707c79cd81872a35235125ed18b03f7d79812"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/__init__.py",
+      "size_bytes": 630,
+      "sha256": "6555c5eea5ffa87ac1a3d1b015cf449d5bdcc7c9d29221485695b8d82a139376"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/adapters/__init__.py",
+      "size_bytes": 99,
+      "sha256": "d3e152818e09e95419f9248970ca654c5e2c8d2804f3e1f123f272f7325df4aa"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/adapters/solution_service_adapter.py",
+      "size_bytes": 1666,
+      "sha256": "83422797848d01f8d96f2c147ef52a68f75d7ba28998eac7a8b02099cabb659f"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/api/__init__.py",
+      "size_bytes": 61,
+      "sha256": "93fa9556027a499b466b3d9a0edb123c19c807ff3cf109d027142e47ff1eaf5d"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/api/router.py",
+      "size_bytes": 812,
+      "sha256": "bf1a21d58dcd1693b895c8c2410529ce8f718086654d2ff815ccec082453aaf9"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/application/__init__.py",
+      "size_bytes": 90,
+      "sha256": "51e6556402337a2fd8959fc08fefbd791fa79cffbe659d824db89efbce116981"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/application/service.py",
+      "size_bytes": 760,
+      "sha256": "010e8eeabc732beb9c00ac5a3d8e1d855b31cd885f35023b13bcab01b5a29466"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/domain/__init__.py",
+      "size_bytes": 69,
+      "sha256": "a5d640df22c81ff0dfd48863be4b0454dd4df91a4da6e36255d6f6d639617613"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/domain/entities.py",
+      "size_bytes": 1114,
+      "sha256": "dd5d9d091de3bd295224a1ad6338fb90bb6dd7fcf79024acbf475d7e0098476c"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/ports/__init__.py",
+      "size_bytes": 94,
+      "sha256": "87fc66c6afd09732791b120e195f046c8a195c81a43c608fb7f9a5d81095ee4e"
+    },
+    {
+      "path": "motorcad_studio/modules/solutions/ports/solution_repository.py",
+      "size_bytes": 311,
+      "sha256": "7a4f23774140cad37ede22a575ae75c18344d4b28f522040f765bd3ec2ce06d3"
+    },
+    {
+      "path": "motorcad_studio/monitoring.py",
+      "size_bytes": 33189,
+      "sha256": "67cc96e0fc93c690998e58e0d7b15ddf94d5f5adc0dca286941b20ff9c9b8019"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/__init__.py",
+      "size_bytes": 1078,
+      "sha256": "c04c8013a8840ba19ba133cef4c536984ad6f1a3c7943406db99c6b1eeb2a517"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/capabilities.py",
+      "size_bytes": 424,
+      "sha256": "256b0d44c687ee74762bb3c95e7a239633a6377d549f2a85fce07bc7164ba2fc"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/components.py",
+      "size_bytes": 1153,
+      "sha256": "daaffb10e3d2e940abd0b54cd7d003cc3a3e8c8402c80e98e953df41eaaff0ec"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/identity.py",
+      "size_bytes": 1007,
+      "sha256": "c7ac1713b4c794eeb082685bef5407d4b8771626bd44dddf3990114275f37b7e"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/induction.py",
+      "size_bytes": 8827,
+      "sha256": "979ac68c4b48c4b4f28aa325ae07be70300abe765f6e812a60e7ea40c3a81f13"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/materials.py",
+      "size_bytes": 736,
+      "sha256": "eb088858245e97d6598547652b5ee7dd372f0f3a501ac2b461f0325425d30529"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/model.py",
+      "size_bytes": 5852,
+      "sha256": "f1a4c885356d4e1ccc1b02738e120c231d73b4c3a7a34bebc7365c87dd3de107"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/parameters.py",
+      "size_bytes": 1562,
+      "sha256": "0fe8445e86e635bdc283e5be7bc7282e3e0f7550a302572869db9b2dfdcac854"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/pm.py",
+      "size_bytes": 18656,
+      "sha256": "dc986a21650ed97983b4e323545b3058464a328222447dfccc98b48348073e1c"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/registry.py",
+      "size_bytes": 25815,
+      "sha256": "e24f489693ee25f08cfdccc54ffdd3290c2d7ef29f9611eb7b3ce53cd8403b3a"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/snapshot.py",
+      "size_bytes": 2032,
+      "sha256": "0a2d3a122bf00bea10a6725bba66a304288cb1ce75ba6a37243ef15c3ecab1f1"
+    },
+    {
+      "path": "motorcad_studio/motor_domain/winding.py",
+      "size_bytes": 1154,
+      "sha256": "07c9a7fcc83bc8a7e42690439ec6eec3d30704f309f9644a0db601ceda48b78b"
+    },
+    {
+      "path": "motorcad_studio/mtt_parser.py",
+      "size_bytes": 11649,
+      "sha256": "f666dd12e21c993cf18ce39ea7b472b22c40adc1e0bc99587a119fcbb887d253"
+    },
+    {
+      "path": "motorcad_studio/native/__init__.py",
+      "size_bytes": 235,
+      "sha256": "e7decfec828b4c2066bbaf88b07ef06f74e5bc3712116a9444cafeb0a3aa2485"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/__init__.py",
+      "size_bytes": 1557,
+      "sha256": "6d8a865a82eef66128dd70cdd56bed65c4434e9786765f524d67deec4b1187e2"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/contracts.py",
+      "size_bytes": 21088,
+      "sha256": "71fdb2e78bb09e75a5b0470258dedb14983aee7d3509bc2553bcf3566e226e55"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/executor.py",
+      "size_bytes": 41612,
+      "sha256": "ef2938f8ef07828b658b2a95705e29a3286b5d85a5fe384f0b1e04fce1f287d4"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/fault_tree.py",
+      "size_bytes": 23088,
+      "sha256": "875f5111c4dbb40569f36dfd0ea2394519c48ae5c00ed81f4e1dd72347bd872a"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/planner.py",
+      "size_bytes": 42400,
+      "sha256": "51a958f3650288f97aa4e55b274e078a120bc4e9a915cbfc4264108974dc4fba"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/readback_authority.py",
+      "size_bytes": 43584,
+      "sha256": "a663bbb4a743cf791be0c715db65eb5e3c57fc011932a9dd736bc3918f5bdc15"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/repair_orchestration.py",
+      "size_bytes": 9609,
+      "sha256": "5dd95f7692c81cdfe2454a8a48839f61ce57b36cd51e5d38f5865ac14badc9fc"
+    },
+    {
+      "path": "motorcad_studio/native/motorcad/semantic_authority.py",
+      "size_bytes": 32278,
+      "sha256": "740b41c5af0c8942b6d771ae0b9884d8640a47d7d2a39f2aa0bacd9c7db976cb"
+    },
+    {
+      "path": "motorcad_studio/native_closure.py",
+      "size_bytes": 2902,
+      "sha256": "165b48e8591ed030a23e466273a6a62f993a9afce0c73b305d19c814da0cd474"
+    },
+    {
+      "path": "motorcad_studio/native_closure_registry.py",
+      "size_bytes": 1513,
+      "sha256": "27635fcb36f80e1a2b146057604f45c722ae7ef065965cc6003da8d21cc75134"
+    },
+    {
+      "path": "motorcad_studio/native_fea_stream.py",
+      "size_bytes": 41168,
+      "sha256": "9d5d60c36c9ac243b707d66401081e4f951dc0e3308bc499982ea758c04a5af4"
+    },
+    {
+      "path": "motorcad_studio/native_parity.py",
+      "size_bytes": 18918,
+      "sha256": "dc61d360a00de54a0dbef757e47e72e1af9ed5986dd7360ac9a2237510b8c212"
+    },
+    {
+      "path": "motorcad_studio/native_preview.py",
+      "size_bytes": 14727,
+      "sha256": "1a39eaf6701a66067d3cd3510072d4edb995f377e356056a39cb0c46f1c0f58c"
+    },
+    {
+      "path": "motorcad_studio/native_spatial.py",
+      "size_bytes": 18944,
+      "sha256": "c0ac28c1c1b7644c27d0a08c669b1fe07fd915e6a9713f5aae3732135c8900f7"
+    },
+    {
+      "path": "motorcad_studio/native_tables.py",
+      "size_bytes": 8526,
+      "sha256": "3c1291f968b1358e0f601d2d0c15a1f2bead6881c1902309543718ecd62de5ac"
+    },
+    {
+      "path": "motorcad_studio/observability.py",
+      "size_bytes": 38065,
+      "sha256": "0c32911271e454576a459400989675e3aac0ebddbb2875ab94f1bd2c083ba5c6"
+    },
+    {
+      "path": "motorcad_studio/observable_jobs.py",
+      "size_bytes": 8455,
+      "sha256": "ab7ae98ebfc5335e16a6ea5b838c27a9f0b1f8f7f595858230a9996120183789"
+    },
+    {
+      "path": "motorcad_studio/optimization_decision_views.py",
+      "size_bytes": 17977,
+      "sha256": "5ca65d72bb9af7d05c5c12f2c3e0e06a9548b9ed8afea1e9b8ff34f334123a08"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/__init__.py",
+      "size_bytes": 596,
+      "sha256": "3799c0ff06e8b34222a657bd37bf2096777e5436b0694afc1839dc04cb75f1fa"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/aggregators.py",
+      "size_bytes": 6488,
+      "sha256": "14556ccaee4f866d18eb7e6fe6cc1b76ae69d62e61f24b829eaf0701b2447830"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/authority.py",
+      "size_bytes": 14261,
+      "sha256": "8b08f26ffec97dc07eb1380b6affe5a6a1abdc9bce87485851836d1aca9b0872"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/contracts.py",
+      "size_bytes": 27093,
+      "sha256": "fe333f9029c878ec7cbff40653b9df77740eeff8d7aa19fc2d334f1f058ecfd8"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/evidence.py",
+      "size_bytes": 39872,
+      "sha256": "c3bfba59885e73e6619f52f7bf1e888b967a9364ec0382687ffde0092fedb332"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/planning.py",
+      "size_bytes": 8859,
+      "sha256": "3c6b05b10fd4062c63d2db5975784b0372c23dbf320a47886f49b731275890d8"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/reproducibility.py",
+      "size_bytes": 19739,
+      "sha256": "eb71a569eb67413bd9d881599a579537ba3b2877b4a9159523d0b0921c30efeb"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/robustness.py",
+      "size_bytes": 14289,
+      "sha256": "be6cf545794b338a392c158f6ba66adfe78152a0bd270603a1276efb2859cda0"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/sensitivity.py",
+      "size_bytes": 7421,
+      "sha256": "0dd13f59744a0ab5fdec9fa3087232a0f0a7721afb3432de094189f66e3df5d5"
+    },
+    {
+      "path": "motorcad_studio/optimization_domain/validation.py",
+      "size_bytes": 26113,
+      "sha256": "b7232d08e58baf6d58fd64f7fabbcfa8a30f5a2166c53efbfff4f34d2b337a19"
+    },
+    {
+      "path": "motorcad_studio/optimization_guidance.py",
+      "size_bytes": 30730,
+      "sha256": "34bc37c917a1f407d779429e5fc82e6ae3a8b5414cc4b1ac69d29aa47dc122d7"
+    },
+    {
+      "path": "motorcad_studio/package_integrity.py",
+      "size_bytes": 10675,
+      "sha256": "92d0f916f5a315f99c18508a0c5cab10c910b83dcdd8211c1dece12cb0d8f091"
+    },
+    {
+      "path": "motorcad_studio/platform/__init__.py",
+      "size_bytes": 126,
+      "sha256": "ca71f17703aad52104f6e6da9903182acfa16db5fe11040ba9b1c1e1ceed05df"
+    },
+    {
+      "path": "motorcad_studio/platform/observability/__init__.py",
+      "size_bytes": 688,
+      "sha256": "d1f3891e72189e16554f21272e0af3e42d43c28e5693d8a3c9a30ac20a1bc6c0"
+    },
+    {
+      "path": "motorcad_studio/platform/observability/router.py",
+      "size_bytes": 6760,
+      "sha256": "d9980044166bf5d439510e25a05be2c1dee39afdb9d29a17259a8376eeaad5dc"
+    },
+    {
+      "path": "motorcad_studio/platform/observability/service.py",
+      "size_bytes": 21492,
+      "sha256": "9eea8d783f10f71e979ee61d91a88464a884a5c88b329e175b2eba20d482825d"
+    },
+    {
+      "path": "motorcad_studio/platform/release/__init__.py",
+      "size_bytes": 670,
+      "sha256": "fa852e04b91242ecf5fc84192e774160a5b589c4335eaafeadd28f43a8d8e63b"
+    },
+    {
+      "path": "motorcad_studio/platform/release/router.py",
+      "size_bytes": 1540,
+      "sha256": "237d472826e4085b989d8bd02d270fd39d2808552ad079003e34e2c92c297377"
+    },
+    {
+      "path": "motorcad_studio/platform/release/service.py",
+      "size_bytes": 16729,
+      "sha256": "b418df8ffb1cf39de71283a06578b1baa4ed86f26046631794554d76f10bc12c"
+    },
+    {
+      "path": "motorcad_studio/platform/system/__init__.py",
+      "size_bytes": 667,
+      "sha256": "a639e2d8b474bd4193ec38cae26e381b8bee44a5fe68967daa18ca0024bc7c92"
+    },
+    {
+      "path": "motorcad_studio/platform/system/router.py",
+      "size_bytes": 9563,
+      "sha256": "322e37d24d1d459254b45ce11e8ddc0b378e447eafd96772fcaf226a83e8bdf4"
+    },
+    {
+      "path": "motorcad_studio/platform/system/service.py",
+      "size_bytes": 39330,
+      "sha256": "ffe833bff088bfacf098c4ddbc3df79a0de6434ad69796829cf5987d9b229989"
+    },
+    {
+      "path": "motorcad_studio/plugins/__init__.py",
+      "size_bytes": 634,
+      "sha256": "b13c0393d180518cb8fc0454393af44b75fe0dfaad9a86be180dfbb2e70a28fd"
+    },
+    {
+      "path": "motorcad_studio/plugins/builtin_induction.py",
+      "size_bytes": 18175,
+      "sha256": "6ad8f255037b43bd07d0cbbf03dc9465e29e89eead3ed0656029593214fe55a1"
+    },
+    {
+      "path": "motorcad_studio/plugins/builtin_pm.py",
+      "size_bytes": 7525,
+      "sha256": "fff7d5ba7ef1c91aa4c2347fc48828cc200537274debce05f680d142d0330561"
+    },
+    {
+      "path": "motorcad_studio/plugins/contracts.py",
+      "size_bytes": 3351,
+      "sha256": "cb8c4dc00c5c13d0b91380aa52d48fa8c7c77c786d407ded91e0e91643e32218"
+    },
+    {
+      "path": "motorcad_studio/plugins/registry.py",
+      "size_bytes": 20689,
+      "sha256": "2cc87aa07de677e59b11e7b834040effa8e3c929bb5c70a3d81e660c49445811"
+    },
+    {
+      "path": "motorcad_studio/production_soak_qualification.py",
+      "size_bytes": 26174,
+      "sha256": "d6df1b88dde70bf203ac3cbb7bcefc51f00d3e02fd2528473f542f98ad80dd95"
+    },
+    {
+      "path": "motorcad_studio/qualification_campaign.py",
+      "size_bytes": 43736,
+      "sha256": "07d6e574d55affb23110c5c77ad6d5acb14c4278e5d1b817dfefca17da2541c0"
+    },
+    {
+      "path": "motorcad_studio/registry.py",
+      "size_bytes": 28140,
+      "sha256": "efd798c831cf0d9ce0b309a03b4b1e69a02a9c75aa990817d1d3be261a8512d9"
+    },
+    {
+      "path": "motorcad_studio/release.py",
+      "size_bytes": 7930,
+      "sha256": "be88e1ba3745df61a24f80b805d2b02b3a225c14c2f2767f64309fae37ac6d07"
+    },
+    {
+      "path": "motorcad_studio/release_candidate_gate.py",
+      "size_bytes": 17316,
+      "sha256": "80e81c24bde0358e5c185d23a7c0f245fda1880ff45c81cb10d55428bc9cd803"
+    },
+    {
+      "path": "motorcad_studio/reporting.py",
+      "size_bytes": 3999,
+      "sha256": "84b47e31ffc05ee0c2ce6ac026e813183cfd1893c994cec77842f455a577e2f5"
+    },
+    {
+      "path": "motorcad_studio/resource_pool.py",
+      "size_bytes": 3790,
+      "sha256": "a979e0ab3af61e5cc9b33b841ea0cb37444df0457990f43c8513183401d8196c"
+    },
+    {
+      "path": "motorcad_studio/result_domain/__init__.py",
+      "size_bytes": 3720,
+      "sha256": "c0eef0b708ce71d5a4622a7eeb3ba6df4d7bcb2778f724208c4cb924df6987ff"
+    },
+    {
+      "path": "motorcad_studio/result_domain/aggregate.py",
+      "size_bytes": 14603,
+      "sha256": "84d6d44e6e9e1b5682f5b04e0189e4239e6b262b3f8529de6a52fd9cc02dcdb3"
+    },
+    {
+      "path": "motorcad_studio/result_domain/comparison.py",
+      "size_bytes": 38610,
+      "sha256": "1bc6f8fb8e98999676729aab99f222d6597e3d4d2686b93a60240001de59d305"
+    },
+    {
+      "path": "motorcad_studio/result_domain/contracts.py",
+      "size_bytes": 8473,
+      "sha256": "90dc58bef316bbf21cd09b8f32cb5b745b7017262343b14faef4dc0206eeed88"
+    },
+    {
+      "path": "motorcad_studio/result_domain/heavy_data.py",
+      "size_bytes": 45312,
+      "sha256": "55cdeb65637c5e85b52636c742ab382696f27d5f9e85931938140311fa889b8c"
+    },
+    {
+      "path": "motorcad_studio/result_domain/interpretation.py",
+      "size_bytes": 37527,
+      "sha256": "70eb203c9cbf78073316310f7204fd6eda31036a86f52c75441ff976a313b293"
+    },
+    {
+      "path": "motorcad_studio/result_domain/module_contract.py",
+      "size_bytes": 8270,
+      "sha256": "39b37eac4b6bcc943939442e3a8fb83068af89c8c814fb39dd8d98dc3e96f6a2"
+    },
+    {
+      "path": "motorcad_studio/result_domain/presentation.py",
+      "size_bytes": 2612,
+      "sha256": "1d79c8e997a5a5db5264cddf4a6b9ab930ca89bc2f4e36fad74305dc1c017d69"
+    },
+    {
+      "path": "motorcad_studio/result_domain/service.py",
+      "size_bytes": 27308,
+      "sha256": "2ed90894f8eeff0cfdfc6527b3c041735bc82ad7de796a62863e6a82ca3b1395"
+    },
+    {
+      "path": "motorcad_studio/result_domain/trust.py",
+      "size_bytes": 16512,
+      "sha256": "35e6ad28b7549b9451557ec00b40526812247af7c4f19714e5b9d2e7d899288a"
+    },
+    {
+      "path": "motorcad_studio/result_extraction.py",
+      "size_bytes": 14358,
+      "sha256": "b4c8518230234d9e46f896008cdbe4349ce2868b9184d49cca2631fc469f45ed"
+    },
+    {
+      "path": "motorcad_studio/result_viewer.py",
+      "size_bytes": 32866,
+      "sha256": "4d7d74e1b195fc1230d25df7fd8a4675a20ff6d0217b1cb95dfa59020b7ae7d0"
+    },
+    {
+      "path": "motorcad_studio/results_optimization.py",
+      "size_bytes": 60698,
+      "sha256": "e5ef6b0df0df57afab18d096263818a30e3aaac7787e577da7010afcec015fb1"
+    },
+    {
+      "path": "motorcad_studio/runtime/__init__.py",
+      "size_bytes": 59,
+      "sha256": "daee1d99a7cf6f1eae7e566158dd8de3b0906ea8e51666d198ef3bc8caa27018"
+    },
+    {
+      "path": "motorcad_studio/runtime/lifecycle_qualification.py",
+      "size_bytes": 8414,
+      "sha256": "ac871e014df9e5b652de2e9bdc6dad0d21f0927672c34f5df5fd3076ebdb855b"
+    },
+    {
+      "path": "motorcad_studio/runtime/native_closure_process.py",
+      "size_bytes": 4841,
+      "sha256": "83769b147c93d348a6284ae59a54d3d65866291af9a8c28d3ed0be742a6218df"
+    },
+    {
+      "path": "motorcad_studio/runtime/native_parity_process.py",
+      "size_bytes": 455,
+      "sha256": "20afad8d68d501ae36762d558c58d7eabd231e5e936a1f0208ddfa292b397652"
+    },
+    {
+      "path": "motorcad_studio/runtime/persistent_solver_pool.py",
+      "size_bytes": 37554,
+      "sha256": "d14aa620c59abc0d0c085d82000481bce5fa802c32d63e955e68d9be3cc4bcc7"
+    },
+    {
+      "path": "motorcad_studio/runtime/preflight_process.py",
+      "size_bytes": 6099,
+      "sha256": "7ebd9df5dad7ea28315d9fa023363a953cdc1750483cd3f4c4252e6395aa9782"
+    },
+    {
+      "path": "motorcad_studio/runtime/qualification_process.py",
+      "size_bytes": 4137,
+      "sha256": "71b7b602323981c8d8c569d3050b2073d8ba5b96eb40a1f46a7d8f904b7fe993"
+    },
+    {
+      "path": "motorcad_studio/runtime/resource_scheduler.py",
+      "size_bytes": 19946,
+      "sha256": "3df4cf50857c34d3f1936599b8b5e3267cbc840d773ac17543da0ea0435d3548"
+    },
+    {
+      "path": "motorcad_studio/runtime/result_probe_process.py",
+      "size_bytes": 6183,
+      "sha256": "721a311112700b92955aca4e56142fe443e6fcdea95ad7a527c29a8e33b5c5a6"
+    },
+    {
+      "path": "motorcad_studio/runtime/runtime_contract.py",
+      "size_bytes": 12084,
+      "sha256": "91a17f5a87358ef69fb281b2c3d644a1150601b6f2c579cd9ad95eb798d80f43"
+    },
+    {
+      "path": "motorcad_studio/runtime/solver_process.py",
+      "size_bytes": 17315,
+      "sha256": "32e618f545a8068db4d3d8a1ae93c8ec693068f3e76c4ccddff55edb15ee610c"
+    },
+    {
+      "path": "motorcad_studio/seed_data/catalog.generated.json",
+      "size_bytes": 46716,
+      "sha256": "5624dfc16d91aca18f54361d1ef1f6c76d67677f1d052f5b76e9aeb4131e3ece"
+    },
+    {
+      "path": "motorcad_studio/seed_data/inventory.json",
+      "size_bytes": 34831,
+      "sha256": "d14972b458021271a75e84d2afa03f29cea9b3e24c43648c2cfcf42720fe36f9"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/a1.mtt",
+      "size_bytes": 545024,
+      "sha256": "2412113574488e493796600c0cd05b4db24f46398ac00d9c18f6314df7a6570b"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/a2.mtt",
+      "size_bytes": 340181,
+      "sha256": "62a4447b9ee3357fbab78f72979bb5ea6a3c9aadc009e433af934150768b6dc4"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/a3.mtt",
+      "size_bytes": 416988,
+      "sha256": "c17cfea48c09d6d5aa98ad4771b8e266afd1885eef5249f89af924e1f3d167ba"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/a4.mtt",
+      "size_bytes": 513215,
+      "sha256": "d37fa0f7d860b12f1d56e8d5025b99ba026f58806388be15c8ec774044ea2959"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e10.mtt",
+      "size_bytes": 656319,
+      "sha256": "1c865f5e31db72eb78181306cd303ba6f133c9cbaefe4d1eee5dd4418f83ec7b"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e11.mtt",
+      "size_bytes": 433313,
+      "sha256": "c736d683f58cc71d4f413570f759ca8c46c59fdc51161ab778406a31c71dbb1d"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e12_eMobility_Spoke_65kW.mtt",
+      "size_bytes": 548925,
+      "sha256": "8ea4f77dfd4cfdf1dbaaadfbcfe4f4d86627eb7c62d92a187f85d1a83d93b363"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e14_eMobility_AFM.mtt",
+      "size_bytes": 497082,
+      "sha256": "fedace8fbf56d16dc244631eeef29ecd9dd67ea464e4ed691dca74c7a738b511"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e15.mtt",
+      "size_bytes": 608036,
+      "sha256": "5752cb1b5c9bb8bbd938c521d04292ef65f86fb9fa54b832c5fe7e55db3c7668"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e1_eMobility_IPM_150kW.mtt",
+      "size_bytes": 535966,
+      "sha256": "ec7e3e367f10b16eb1d29b402912329befd86df1efab279127d9f05fb78eae85"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e2_eMobility_IPM_hairpin_150kW.mtt",
+      "size_bytes": 675640,
+      "sha256": "b83c2f9a668ecd16cfa63c27f9e236e5753de88e89c81f278a42934c64b7e82d"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e3_eMobility_WFSM_150kW.mtt",
+      "size_bytes": 839228,
+      "sha256": "32f897289c13055a21dde7b19b95c1fbd6c3d31b1000e8d19e5a6ce3038b9a94"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e4_eMobility_BPMOR_hairpin.mtt",
+      "size_bytes": 588388,
+      "sha256": "97215fd8342d47c69e91d7806c76a7aa820b458895f1a1d0f2b1573bfd1994f9"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e4a_EMobility_IPM.mtt",
+      "size_bytes": 554213,
+      "sha256": "640f7bacef958aeb8f4bffeeff2dd4c4c55b7ed90759e3381fd58826619648d5"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e5_eMobility_IM_150kW.mtt",
+      "size_bytes": 491106,
+      "sha256": "dd1b1197f3cc5c6d75bb52bf6f2b109392877c97e5aae1f82036ae60bd241965"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e6_emobility_SRM_100kW.mtt",
+      "size_bytes": 438596,
+      "sha256": "1126b595200053e62d294bf202a29f6b00fa5d56f6a66446b44c3d238a3bec68"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e7_eMobility_SPM_20kW.mtt",
+      "size_bytes": 533456,
+      "sha256": "75d7388be0e91486154e28bc8125c0181182854144191b9c7abac98faf270ba6"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e8_eMobility_IPM.mtt",
+      "size_bytes": 505991,
+      "sha256": "38cbbb723e9c88c75aebe576cbd4063901530be989d601839b799b00d71f4470"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/e9_eMobility_IPM.mtt",
+      "size_bytes": 420389,
+      "sha256": "627050a37b96d9049ec0342298c65826a3738d44a6c76133a4e223f1e3945a09"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i10_Syncrel_Adaptive_Rotor_barriers.mtt",
+      "size_bytes": 475388,
+      "sha256": "e6c7ed7bbbea6ebcaf32adcb6cb34f444ebebedc5f4bdbf1515c29f78cca29f6"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i11_Industrial_IM1PH_Compressor.mtt",
+      "size_bytes": 368925,
+      "sha256": "832dc75e305d7b7357e3238e67be984efa79ebff5dec4ae28f190affbb6ef8d3"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i1_Industrial_SPM_square.mtt",
+      "size_bytes": 426976,
+      "sha256": "cd00c2f55d3bfe9632eadd1b7f85292571293c14dfbfcc7300863e7cd2eff034"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i2_Industrial_SPM_sine.mtt",
+      "size_bytes": 451562,
+      "sha256": "2197e2f336b86880982d7b5bcbe8193b8088fdc988110f3763cb37e1d68cfafd"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i3_Industrial_SyncRel.mtt",
+      "size_bytes": 447757,
+      "sha256": "2a75b7ca0e4a784e5d0b9d6d20bb954a9de1498b276050151c97af99776d13cd"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i4_Industrial_IM.mtt",
+      "size_bytes": 391602,
+      "sha256": "afe2579b8ad013f410d04ab7ac3d637a3b268df6edc7955ee7944a8792f9cdd2"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i5_Industrial_SPM_Servo_Tooth_Wound.mtt",
+      "size_bytes": 421312,
+      "sha256": "6f28853b1386cf1d59393385c633d22bbf370b84a1c2ff7bbce0de0422411996"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i6a_HV_1MW_FOC.mtt",
+      "size_bytes": 418110,
+      "sha256": "9bbb9973f673984a091b84e4aff7adec09415110dba0043f620e8a65dd134442"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i6b_HV_IM_oilgas.mtt",
+      "size_bytes": 370718,
+      "sha256": "0b5a09610eb1e96f9e09286a9e31b8d074510d4120473058ba96030fa029db27"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i7_IM_1MW_Generator.mtt",
+      "size_bytes": 447034,
+      "sha256": "1ecf07b7de61e8ef43a52870ab3607b4ae565fac5497e321b408867033750d2c"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i8_IEEJ_IPM_D-Model.mtt",
+      "size_bytes": 504408,
+      "sha256": "8f814c2e27cf1b4220759819b326d6270157ba7b9f480ac641aa79e6a426e77e"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/i9_SYNC_HV_325kW_Generator.mtt",
+      "size_bytes": 383637,
+      "sha256": "bf664c0e026a8ec543b008d84505f2c66c94c2e2f317d511626fdcaabb538992"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/r1.mtt",
+      "size_bytes": 443808,
+      "sha256": "ab9bf6c39af616146451a3573a9ad2d58e21d4db0db0f3c7e8f2ebfdfcd2be2c"
+    },
+    {
+      "path": "motorcad_studio/seed_data/templates/r2.mtt",
+      "size_bytes": 515746,
+      "sha256": "d2f06f50ade8c1a2d31b257be26a0541dd75e2cc1cb2c35987b8e6a3c32cf9d7"
+    },
+    {
+      "path": "motorcad_studio/session_supervisor.py",
+      "size_bytes": 7361,
+      "sha256": "8f5bf8eb9d9f3d09ac1d7ee272403fc93e929fcd1c614cd9d4f168e2b6875aaf"
+    },
+    {
+      "path": "motorcad_studio/settings.py",
+      "size_bytes": 11170,
+      "sha256": "60ae81cc9b6aba19fb52151dcd5b66724a1551e6b98a4eecbe4d57cc0591d8c3"
+    },
+    {
+      "path": "motorcad_studio/solution_repository.py",
+      "size_bytes": 26982,
+      "sha256": "e7d1ea6a99f0181379a960d57ec9085e070ecf5e2d03f4803e50bcc58966c2eb"
+    },
+    {
+      "path": "motorcad_studio/solution_service.py",
+      "size_bytes": 16327,
+      "sha256": "8cc32068311eceb95afb186f4f1984f6fc670430df0f753d81f1a85fd15d4892"
+    },
+    {
+      "path": "motorcad_studio/solvers/base.py",
+      "size_bytes": 1209,
+      "sha256": "ce0a663bd16ed03925f43003045f55bce279b3b78b187331cea43d6eca088153"
+    },
+    {
+      "path": "motorcad_studio/solvers/mock.py",
+      "size_bytes": 10853,
+      "sha256": "9454df2e262752b78c0a8d0b9eba2d18d0999681c56a9489caa0bf793cdc516e"
+    },
+    {
+      "path": "motorcad_studio/solvers/motorcad.py",
+      "size_bytes": 235284,
+      "sha256": "c39f3a0b633265e2ed36cbd0bf367584bfa352fef58c9768ea5f742f7628aabd"
+    },
+    {
+      "path": "motorcad_studio/solvers/motorcad_runtime.py",
+      "size_bytes": 10072,
+      "sha256": "365a9bcd6530c9b4d8e94e4e89935e123dfc0b30e207e97cffd9c68b34e22ef5"
+    },
+    {
+      "path": "motorcad_studio/standard_validation.py",
+      "size_bytes": 23087,
+      "sha256": "dc991af35a3931b1417247b2d454ce4a70605e610d4db2bcc890be161fbb2421"
+    },
+    {
+      "path": "motorcad_studio/static/app.css",
+      "size_bytes": 487856,
+      "sha256": "29c4335701846fa466f55a23bbacbebd391557e0d1abde607cfcd75f40298116"
+    },
+    {
+      "path": "motorcad_studio/static/core/api-client.js",
+      "size_bytes": 6243,
+      "sha256": "707ee3c02bcebb8635a1c7b611f48bb4d77da3c6ffe686a007bf7399a451a15a"
+    },
+    {
+      "path": "motorcad_studio/static/core/bootstrap.js",
+      "size_bytes": 9922,
+      "sha256": "17e3e939ca5687f838f02add27eedf9ffd526b55f403cdbc22112a2c52bcfa4d"
+    },
+    {
+      "path": "motorcad_studio/static/core/classic-runtime-source.js",
+      "size_bytes": 1542245,
+      "sha256": "3c35b85d364f89b3780bc31b9bca9a0dc9b3dd74a6d0edc820157d05d894f465"
+    },
+    {
+      "path": "motorcad_studio/static/core/classic-runtime.catalog.json",
+      "size_bytes": 22140,
+      "sha256": "2175c496c443af215b7fb236a862fc01efb8803862cf1f511c50be9e234c6299"
+    },
+    {
+      "path": "motorcad_studio/static/core/diagnostics.js",
+      "size_bytes": 703,
+      "sha256": "4c741866d8234ce28f1d8b79c0b3536ee34f689a0d50eb842ec7da7bd99069a9"
+    },
+    {
+      "path": "motorcad_studio/static/core/disposable-scope.js",
+      "size_bytes": 2358,
+      "sha256": "d053bef9ded10b88845fa61efe5f74434cb77649a0ba0334898838a6ac2a7135"
+    },
+    {
+      "path": "motorcad_studio/static/core/event-bus.js",
+      "size_bytes": 555,
+      "sha256": "eebf40c89fe6ea00996fd44a42682ff8b19a885e2bd5a2b45205526109d6dcec"
+    },
+    {
+      "path": "motorcad_studio/static/core/feature-registry.js",
+      "size_bytes": 2292,
+      "sha256": "ba580705d4866fdf5183da3fd1f57ef8a8a36e34244ae01879bae4836386cceb"
+    },
+    {
+      "path": "motorcad_studio/static/core/interaction-monitor.js",
+      "size_bytes": 5313,
+      "sha256": "39922e5403fb2b242426beba58f8611e28d5502b7af1f93e18e5ffd615e41fcb"
+    },
+    {
+      "path": "motorcad_studio/static/core/legacy-runtime.js",
+      "size_bytes": 16566,
+      "sha256": "c06a366bd149cb1213ad66cb08a9a4e4dc2f67cf21cb7eeffeceeb20ad40b05d"
+    },
+    {
+      "path": "motorcad_studio/static/core/navigation-bridge.js",
+      "size_bytes": 2092,
+      "sha256": "b44d149dd91a7787cbcdbd5528c6dcfaa698e6b93a07d4b657b44113e52ef559"
+    },
+    {
+      "path": "motorcad_studio/static/core/store.js",
+      "size_bytes": 917,
+      "sha256": "bd80327fc4123d7f3232bcc79b7839f67c9147e3a1da2a5c1586456964944a6b"
+    },
+    {
+      "path": "motorcad_studio/static/features/control-plane/client.js",
+      "size_bytes": 10217,
+      "sha256": "748bae5cdf90f03ce59647a1f7ff502f0fa97f1b41e254987e248ea26d7d260a"
+    },
+    {
+      "path": "motorcad_studio/static/features/control-plane/feature.js",
+      "size_bytes": 1806,
+      "sha256": "b2bfa66f8f1ec3c36309afcfea254d48e5a707aa890777b7dd88b003d26af2e5"
+    },
+    {
+      "path": "motorcad_studio/static/features/results/binary-field-viewer.js",
+      "size_bytes": 29317,
+      "sha256": "2482ce7cecbd2db27087302edfe5e81c62fb7b0dfa13be80134f8e1552f08256"
+    },
+    {
+      "path": "motorcad_studio/static/help.html",
+      "size_bytes": 8386,
+      "sha256": "c0a4feccb3604e4fcc075c5f7f695f15a561c52e56b4ca04f7c2f59b1645e9b2"
+    },
+    {
+      "path": "motorcad_studio/static/index.html",
+      "size_bytes": 51810,
+      "sha256": "7e0d9e224831fee15ebf3741d0f18b440eb8458fae7383eb3e62371b1a781a4b"
+    },
+    {
+      "path": "motorcad_studio/static/results/field-worker.js",
+      "size_bytes": 14426,
+      "sha256": "ce3fdfd794f9efc7330bcda300f262fce3945d4cb4a2f062f132fcf664e91be2"
+    },
+    {
+      "path": "motorcad_studio/task_manager.py",
+      "size_bytes": 195005,
+      "sha256": "274490e561a1a301560bce23c30b3b424c16e57474bb08c7336988b56d095b64"
+    },
+    {
+      "path": "motorcad_studio/template_service.py",
+      "size_bytes": 14882,
+      "sha256": "2b3e28c8dfece56679e01b06ac25a2dce373a426f2bd9b0decd3e66559b99253"
+    },
+    {
+      "path": "motorcad_studio/thermal_network.py",
+      "size_bytes": 4606,
+      "sha256": "649cbfc6769827590f38284c2fd660db9f5c0a918e2d2c9f4a88943f7e62faac"
+    },
+    {
+      "path": "motorcad_studio/tools/__init__.py",
+      "size_bytes": 53,
+      "sha256": "90ce9910f541bec12c64ea2d99ad80460b2c8559a30e07a83fc0dcef93eb6505"
+    },
+    {
+      "path": "motorcad_studio/tools/benchmark_field_data.py",
+      "size_bytes": 6319,
+      "sha256": "8e05363b00ea9727ca6cec2efa9cf905ab9362d7871c07bea6ad663de0713c78"
+    },
+    {
+      "path": "motorcad_studio/tools/build_frontend_capsule.py",
+      "size_bytes": 6066,
+      "sha256": "82c33499c37c45611494a6e5b96a5e472d6ca7877d772d41db061306b4f0998f"
+    },
+    {
+      "path": "motorcad_studio/tools/module_audit.py",
+      "size_bytes": 2032,
+      "sha256": "5e6ddf90c9b852740b77c9f383d0c21b0b0534de5fcfe7f6db11d648c12dc418"
+    },
+    {
+      "path": "motorcad_studio/tools/sync_release_versions.py",
+      "size_bytes": 23275,
+      "sha256": "feb897e7b99e70c5b2a2600c267cd1ed3e8b16dc6610bf6f3d58947c226393cc"
+    },
+    {
+      "path": "motorcad_studio/tools/validate_release.py",
+      "size_bytes": 45099,
+      "sha256": "e2f85465187c284ee6442335abd245e605820057923ee2b22a1ce25ca088e98e"
+    },
+    {
+      "path": "motorcad_studio/ui_guidance.py",
+      "size_bytes": 6398,
+      "sha256": "f0f744af94dc8d7ff02eecba3a10bbf08c859d81edf56afa2dbf0176b3134655"
+    },
+    {
+      "path": "motorcad_studio/ui_soak_qualification.py",
+      "size_bytes": 23598,
+      "sha256": "e516be84e61ab4b6dbbe9fa3b907ee9b0d836b9d498f0cb175104e4304344e47"
+    },
+    {
+      "path": "motorcad_studio/units.py",
+      "size_bytes": 6100,
+      "sha256": "122308738d39304d3745fdf9bf9327fad0406e191839f63dde9a1c6d7b0a74df"
+    },
+    {
+      "path": "motorcad_studio/validation.py",
+      "size_bytes": 12365,
+      "sha256": "4d94d2e815c94bc8042ad144b48446b8308ee5a3eea343015fea04c053d42833"
+    },
+    {
+      "path": "motorcad_studio/version.py",
+      "size_bytes": 299,
+      "sha256": "00effdebbe214434f3b1e0ae01eef9d965fe11a144c086e0dea87ca9f1f7ea5f"
+    },
+    {
+      "path": "motorcad_studio/winding_definition.py",
+      "size_bytes": 6517,
+      "sha256": "96df054975381311889da5ab97b0ffe2578ea954ce7a54ecb5ab95e2492db0b5"
+    },
+    {
+      "path": "motorcad_studio/winding_guard.py",
+      "size_bytes": 20240,
+      "sha256": "9de628256413ac46527737459d31d7435a03e50b5b8c261f4217cbd838c26a9a"
+    },
+    {
+      "path": "motorcad_studio/windows_golden_journey_qualification.py",
+      "size_bytes": 19194,
+      "sha256": "314c7f446d5b54919517005dac62fc7e38fcbfb1c05af09b0d983fe274f52661"
+    },
+    {
+      "path": "motorcad_studio/windows_production_qualification.py",
+      "size_bytes": 33472,
+      "sha256": "4f6a02d4ffa909df448aec29c07dc23b8129b0552209954cf187534b519a05fd"
+    },
+    {
+      "path": "motorcad_studio/workspace.py",
+      "size_bytes": 37760,
+      "sha256": "f970bc4d853fc3161cecf0e836eb1b6a99605aabe438875791a69f8253920c9e"
+    },
+    {
+      "path": "motorcad_studio/workstation_acceptance.py",
+      "size_bytes": 13560,
+      "sha256": "4760bb99ff43f4754954c7c8110b00900f33d7576064eda1339d6c24d8db8139"
+    },
+    {
+      "path": "requirements.txt",
+      "size_bytes": 120,
+      "sha256": "02c20ee2ed418160ade1bbb73da5d1440130f96964050d0ad2315e0a5278c55d"
+    },
+    {
+      "path": "start.bat",
+      "size_bytes": 1111,
+      "sha256": "4329d7ea56d490a09b425d3a988fa6aea70630cfd2270a48fe424b9d16eaf067"
+    },
+    {
+      "path": "tests/test_architecture.py",
+      "size_bytes": 6675,
+      "sha256": "6236532fe31562ccee91511b72d75b58174a64966123d57f0fa7dede68db718c"
+    },
+    {
+      "path": "tests/test_bootstrap.py",
+      "size_bytes": 8035,
+      "sha256": "22e3276a2cbb93684f686177c8aa85a6bc63fdea991262128ca953cc360c528d"
+    },
+    {
+      "path": "tests/test_bounded_contexts.py",
+      "size_bytes": 15383,
+      "sha256": "736df60978efc781a047e4e3f006a41814211f64067d2b67b94067395803294b"
+    },
+    {
+      "path": "tests/test_control_plane.py",
+      "size_bytes": 19333,
+      "sha256": "1c88087cd7440bcc27843f488c058f6cae598cea7b8b88fa5f433a07cf5830c5"
+    },
+    {
+      "path": "tests/test_distribution.py",
+      "size_bytes": 7751,
+      "sha256": "b03c680f87d8abf1368d28f9f3120b76bec13b63ad58537f6dc101cf6454b4e6"
+    },
+    {
+      "path": "tests/test_frontend_runtime.py",
+      "size_bytes": 16438,
+      "sha256": "bac224d1433d9a8a854d4f46fef2397f8d36ee2f36dce8f6800574a2f9af6b11"
+    },
+    {
+      "path": "tests/test_regressions.py",
+      "size_bytes": 25046,
+      "sha256": "aa9ca26cd8a5864b169222759a59f562f227609f4033a43391fa33a1c9311016"
+    },
+    {
+      "path": "tests/test_results_field_data.py",
+      "size_bytes": 34010,
+      "sha256": "5eaafffc66bd97efde73c99f5c566ece1af6a554b45a32ee7d484991a1e6dd4e"
+    },
+    {
+      "path": "tests/test_runtime_diagnostics.py",
+      "size_bytes": 6668,
+      "sha256": "6d29daa7cc64af7eac5c2d53fcc411ecd837ad7c5d2da0b3cef2b12515f8f4da"
+    },
+    {
+      "path": "tests/test_workflows.py",
+      "size_bytes": 15471,
+      "sha256": "f2feaf7cae75258be1bdfb95c6bd17c09dc13d931fb9837ecbd0fa134c085159"
+    },
+    {
+      "path": "validation/evidence.json",
+      "size_bytes": 18322,
+      "sha256": "1f77116235b00c33a16ebf4eea01bed743e0970e2c303872486ca9ccb9568d97"
+    },
+    {
+      "path": "validation/field_data_benchmark.json",
+      "size_bytes": 2699,
+      "sha256": "82377005983ead56cf94994f2dab342086c4bff571f2d9d8a3d510e1668b3ec7"
+    },
+    {
+      "path": "validation/openapi_baseline.json",
+      "size_bytes": 98664,
+      "sha256": "cb5ce60694008e9f976c7a458b2f71814f449d22ba4a21bfdb986d460cad15e1"
+    }
+  ]
+}

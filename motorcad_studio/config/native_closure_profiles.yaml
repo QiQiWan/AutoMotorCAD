@@ -4,8 +4,7 @@ qualification_contract_version: 2
 profiles:
   bpm:
     label: BPM 基准族
-    description: Motor-CAD Brushless PM 家族级基准，使用 a1 Surface PM 模板验证通用 BPM 参数、绕组、材料与
-      EMag 结果链。
+    description: Motor-CAD Brushless PM 家族级基准，使用 a1 Surface PM 模板验证通用 BPM 参数、绕组、材料与 EMag 结果链。
     template_id: a1
     analysis: emag
     required_geometry_parameters:
@@ -17,30 +16,11 @@ profiles:
     - stator_lamination_length
     - rotor_lamination_length
     - shaft_diameter
-    required_winding_parameters:
-    - turns_per_coil
-    - parallel_paths
-    - slot_fill_factor
-    required_operating_inputs:
-    - shaft_speed_rpm
-    - peak_current_a
-    - dc_bus_voltage_v
-    - phase_advance_deg
-    required_material_components:
-    - Stator Lamination
-    - Rotor Lamination
-    - Magnet
-    - Conductor
-    required_results:
-    - shaft_torque_nm
-    - peak_line_voltage_v
-    - efficiency_percent
-    - total_loss_w
-    - magnet_loss_w
-    - torque_angle_curve
-    geometry_screens:
-    - Radial
-    - Axial
+    required_winding_parameters: [turns_per_coil, parallel_paths, slot_fill_factor]
+    required_operating_inputs: [shaft_speed_rpm, peak_current_a, dc_bus_voltage_v, phase_advance_deg]
+    required_material_components: [Stator Lamination, Rotor Lamination, Magnet, Conductor]
+    required_results: [shaft_torque_nm, peak_line_voltage_v, efficiency_percent, total_loss_w, magnet_loss_w, torque_angle_curve]
+    geometry_screens: [Radial, Axial]
   spm:
     label: SPM 工业伺服
     description: 工业 Tooth-Wound SPM 基准，验证 12 槽/8 极、集中绕组、N30UH 与 M350-50A 等常用设计链。
@@ -63,33 +43,11 @@ profiles:
     - magnet_length
     - magnet_arc_deg
     - shaft_diameter
-    required_winding_parameters:
-    - turns_per_coil
-    - parallel_paths
-    - slot_fill_factor
-    required_operating_inputs:
-    - shaft_speed_rpm
-    - peak_current_a
-    - rms_current_a
-    - dc_bus_voltage_v
-    - phase_advance_deg
-    required_material_components:
-    - Stator Lamination
-    - Rotor Lamination
-    - Magnet
-    - Conductor
-    - Housing
-    required_results:
-    - shaft_torque_nm
-    - peak_line_voltage_v
-    - efficiency_percent
-    - total_loss_w
-    - magnet_loss_w
-    - torque_angle_curve
-    - airgap_flux_density_curve
-    geometry_screens:
-    - Radial
-    - Axial
+    required_winding_parameters: [turns_per_coil, parallel_paths, slot_fill_factor]
+    required_operating_inputs: [shaft_speed_rpm, peak_current_a, rms_current_a, dc_bus_voltage_v, phase_advance_deg]
+    required_material_components: [Stator Lamination, Rotor Lamination, Magnet, Conductor, Housing]
+    required_results: [shaft_torque_nm, peak_line_voltage_v, efficiency_percent, total_loss_w, magnet_loss_w, torque_angle_curve, airgap_flux_density_curve]
+    geometry_screens: [Radial, Axial]
   ipm:
     label: IPM eMobility
     description: 48 槽/8 极 eMobility IPM 基准，验证嵌入式磁体几何、双并联支路与高电流 EMag 结果链。
@@ -111,36 +69,14 @@ profiles:
     - magnet_thickness
     - magnet_length
     - shaft_diameter
-    required_winding_parameters:
-    - turns_per_coil
-    - parallel_paths
-    - slot_fill_factor
-    required_operating_inputs:
-    - shaft_speed_rpm
-    - peak_current_a
-    - rms_current_a
-    - dc_bus_voltage_v
-    - phase_advance_deg
-    required_material_components:
-    - Stator Lamination
-    - Rotor Lamination
-    - Magnet
-    - Conductor
-    - Housing
-    required_results:
-    - shaft_torque_nm
-    - peak_line_voltage_v
-    - efficiency_percent
-    - total_loss_w
-    - magnet_loss_w
-    - torque_angle_curve
-    - airgap_flux_density_curve
-    geometry_screens:
-    - Radial
-    - Axial
+    required_winding_parameters: [turns_per_coil, parallel_paths, slot_fill_factor]
+    required_operating_inputs: [shaft_speed_rpm, peak_current_a, rms_current_a, dc_bus_voltage_v, phase_advance_deg]
+    required_material_components: [Stator Lamination, Rotor Lamination, Magnet, Conductor, Housing]
+    required_results: [shaft_torque_nm, peak_line_voltage_v, efficiency_percent, total_loss_w, magnet_loss_w, torque_angle_curve, airgap_flux_density_curve]
+    geometry_screens: [Radial, Axial]
   afpm:
     label: AFPM e14 YASA
-    description: e14 单定子双转子 Yokeless AFPM 基准，重点验证轴向几何、槽数联动、双转子磁体及轴向原生画面。
+    description: e14 单定子双转子 Yokeless AFPM 基准，重点验证轴向盘径、轴向几何、槽数联动、双转子磁体及轴向原生画面。
     template_id: e14_eMobility_AFM
     analysis: emag
     required_geometry_parameters:
@@ -149,6 +85,7 @@ profiles:
     - housing_diameter
     - stator_outer_diameter
     - stator_inner_diameter
+    - axial_rotor_diameter
     - air_gap
     - stator_lamination_length
     - rotor_lamination_length
@@ -159,38 +96,14 @@ profiles:
     - magnet_length
     - shaft_diameter
     - shaft_hole_diameter
-    required_winding_parameters:
-    - turns_per_coil
-    - parallel_paths
-    - slot_fill_factor
-    required_operating_inputs:
-    - shaft_speed_rpm
-    - peak_current_a
-    - rms_current_a
-    - dc_bus_voltage_v
-    - phase_advance_deg
-    required_material_components:
-    - Stator Lamination
-    - Rotor Lamination
-    - Magnet
-    - Conductor
-    - Shaft
-    - Housing
-    required_results:
-    - shaft_torque_nm
-    - peak_line_voltage_v
-    - efficiency_percent
-    - total_loss_w
-    - magnet_loss_w
-    - torque_angle_curve
-    - airgap_flux_density_curve
-    geometry_screens:
-    - Radial
-    - Axial
+    required_winding_parameters: [turns_per_coil, parallel_paths, slot_fill_factor]
+    required_operating_inputs: [shaft_speed_rpm, peak_current_a, rms_current_a, dc_bus_voltage_v, phase_advance_deg]
+    required_material_components: [Stator Lamination, Rotor Lamination, Magnet, Conductor, Shaft, Housing]
+    required_results: [shaft_torque_nm, peak_line_voltage_v, efficiency_percent, total_loss_w, magnet_loss_w, torque_angle_curve, airgap_flux_density_curve]
+    geometry_screens: [Radial, Axial]
   im:
     label: IM 工业鼠笼感应电机
-    description: V0.75-B 三相感应电机插件基准；验证定转子几何、鼠笼导条/端环、定子绕组、转子铜材料、EMag 计算与 IM 结果提取。真实
-      2026R1 workstation qualification pending.
+    description: V0.75-B 三相感应电机插件基准；验证定转子几何、鼠笼导条/端环、定子绕组、转子铜材料、EMag 计算与 IM 结果提取。真实 2026R1 workstation qualification pending.
     template_id: i4_Industrial_IM
     analysis: emag
     topology_id: induction
@@ -208,51 +121,18 @@ profiles:
     - rotor_bar_depth
     - rotor_bar_width
     - end_ring_thickness
-    required_winding_parameters:
-    - turns_per_coil
-    - parallel_paths
-    - slot_fill_factor
-    required_operating_inputs:
-    - shaft_speed_rpm
-    - peak_current_a
-    - induction_slip
-    required_material_components:
-    - Stator Lamination
-    - Rotor Lamination
-    - Conductor
-    - Rotor Bar
-    - End Ring
-    required_results:
-    - shaft_torque_nm
-    - efficiency_percent
-    - total_loss_w
-    - rotor_copper_loss_w
-    - power_factor
-    geometry_screens:
-    - Radial
-    - Axial
-    required_pre_calculation_commands:
-    - calculate_im_saturation_model
+    required_winding_parameters: [turns_per_coil, parallel_paths, slot_fill_factor]
+    required_operating_inputs: [shaft_speed_rpm, peak_current_a, induction_slip]
+    required_material_components: [Stator Lamination, Rotor Lamination, Conductor, Rotor Bar, End Ring]
+    required_results: [shaft_torque_nm, efficiency_percent, total_loss_w, rotor_copper_loss_w, power_factor]
+    geometry_screens: [Radial, Axial]
+    required_pre_calculation_commands: [calculate_im_saturation_model]
 tolerances:
-  integer:
-    absolute: 0.0
-    relative: 0.0
-  geometry_mm:
-    absolute: 1.0e-05
-    relative: 1.0e-07
-  angle_deg:
-    absolute: 1.0e-05
-    relative: 1.0e-07
-  ratio:
-    absolute: 1.0e-07
-    relative: 1.0e-06
-  operating:
-    absolute: 1.0e-05
-    relative: 1.0e-06
-  result_scalar:
-    absolute: 1.0e-06
-    relative: 1.0e-05
-  result_series:
-    absolute: 1.0e-06
-    relative: 1.0e-05
-required_pymotorcad_version: 0.8.8
+  integer: {absolute: 0.0, relative: 0.0}
+  geometry_mm: {absolute: 1.0e-05, relative: 1.0e-07}
+  angle_deg: {absolute: 1.0e-05, relative: 1.0e-07}
+  ratio: {absolute: 1.0e-07, relative: 1.0e-06}
+  operating: {absolute: 1.0e-05, relative: 1.0e-06}
+  result_scalar: {absolute: 1.0e-06, relative: 1.0e-05}
+  result_series: {absolute: 1.0e-06, relative: 1.0e-05}
+required_pymotorcad_version: null

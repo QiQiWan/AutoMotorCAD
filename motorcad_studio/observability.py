@@ -161,12 +161,61 @@ class StructuredLogStore:
         self.qualification_path = self.root / "qualification.jsonl"
         self.plugin_path = self.root / "plugins.jsonl"
         self.trace_path = self.root / "traces.jsonl"
+        self.frontend_path = self.root / "frontend.jsonl"
+        self.http_path = self.root / "http.jsonl"
+        self.preflight_path = self.root / "preflight.jsonl"
+        self.error_jsonl_path = self.root / "errors.jsonl"
+        self.error_text_path = self.root / "errors.log"
+        self.task_log_dir = self.root / "tasks"
+        self.case_log_dir = self.root / "cases"
+        self.snapshot_dir = self.root / "snapshots"
+        for directory in (self.task_log_dir, self.case_log_dir, self.snapshot_dir):
+            directory.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self._records: deque[dict[str, Any]] = deque(maxlen=max(200, int(memory_records)))
         self.session_id = f"BOOT-{uuid.uuid4().hex[:12].upper()}"
         self._seq = 0
         self.cleanup_old_files()
         self._seq = self._load_max_seq()
+        self._write_support_index()
+
+    def _write_support_index(self) -> None:
+        """Keep a small support index directly in the project-root logs folder."""
+        text = """MotorCAD Studio diagnostic logs
+
+startup.log              Launcher / environment / dependency / server startup
+studio.log               Human-readable combined runtime log
+studio.jsonl             Complete structured runtime stream
+http.jsonl               HTTP requests, operational endpoints and failures
+preflight.jsonl          Runtime shallow/deep-check lifecycle and cleanup evidence
+errors.log               Human-readable ERROR/CRITICAL records with references
+errors.jsonl             Structured ERROR/CRITICAL records
+frontend.jsonl           Browser-reported structured frontend events
+audit.jsonl              Mutating/audited operations
+native.jsonl             Motor-CAD/native runtime events
+qualification.jsonl      Qualification evidence events
+tasks/<task-id>.log      Per-task human-readable event stream
+tasks/<task-id>.jsonl    Per-task structured event stream
+cases/<case-id>.log      Per-case human-readable event stream
+cases/<case-id>.jsonl    Per-case structured event stream
+snapshots/preflight/     Per-run runtime-check result snapshots
+
+These files are runtime evidence and are intentionally excluded from the immutable
+package-content manifest. They can be zipped with the in-app diagnostics export.
+"""
+        try:
+            (self.root / "README.txt").write_text(text, encoding="utf-8")
+            (self.root / "current_session.json").write_text(
+                json.dumps({
+                    "session_id": self.session_id,
+                    "started_at": _iso_now(),
+                    "pid": os.getpid(),
+                    "log_root": str(self.root),
+                }, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
 
     def _load_max_seq(self) -> int:
         maximum = 0
@@ -214,12 +263,17 @@ class StructuredLogStore:
             pass
 
     def _write_json(self, path: Path, record: dict[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
         self._rotate(path)
         with path.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(record, ensure_ascii=False, default=str, separators=(",", ":")) + "\n")
 
-    def _write_text(self, record: dict[str, Any]) -> None:
-        self._rotate(self.text_path)
+    @staticmethod
+    def _safe_log_segment(value: Any) -> str:
+        text = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())
+        return (text[:120] or "unknown").strip(".") or "unknown"
+
+    def _format_text_line(self, record: dict[str, Any]) -> str:
         prefix = " ".join(
             part for part in [
                 record.get("timestamp", ""),
@@ -229,10 +283,40 @@ class StructuredLogStore:
                 f"task={record.get('task_id')}" if record.get("task_id") else "",
                 f"case={record.get('case_id')}" if record.get("case_id") else "",
                 f"stage={record.get('stage')}" if record.get("stage") else "",
+                f"request={record.get('request_id')}" if record.get("request_id") else "",
             ] if part
         )
-        with self.text_path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(f"{prefix} {record.get('message','')}\n")
+        return f"{prefix} {record.get('message','')}\n"
+
+    def _append_text(self, path: Path, record: dict[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self._rotate(path)
+        with path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(self._format_text_line(record))
+
+    def _write_text(self, record: dict[str, Any]) -> None:
+        self._append_text(self.text_path, record)
+
+    def write_snapshot(self, category: str, name: str, payload: Any) -> Path | None:
+        """Persist a human-inspectable JSON diagnostic below ``logs/snapshots``.
+
+        Snapshot failure is intentionally non-fatal; runtime diagnostics must not
+        change solver or API behavior.
+        """
+        safe_category = self._safe_log_segment(category)
+        safe_name = self._safe_log_segment(name)
+        target = self.snapshot_dir / safe_category / f"{safe_name}.json"
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_suffix(target.suffix + ".tmp")
+            temporary.write_text(
+                json.dumps(_safe_payload(payload), ensure_ascii=False, indent=2, default=str) + "\n",
+                encoding="utf-8",
+            )
+            temporary.replace(target)
+            return target
+        except OSError:
+            return None
 
     def log(
         self,
@@ -295,10 +379,28 @@ class StructuredLogStore:
                 "qualification": self.qualification_path,
                 "plugin": self.plugin_path,
                 "trace": self.trace_path,
+                "frontend": self.frontend_path,
             }
             channel_path = channel_paths.get(record["channel"])
             if channel_path is not None:
                 self._write_json(channel_path, record)
+            if str(record.get("event_type") or "").startswith("HTTP_"):
+                self._write_json(self.http_path, record)
+            if "PREFLIGHT" in str(record.get("event_type") or "").upper() or str(record.get("component") or "") in {"preflight", "runtime_gate"}:
+                self._write_json(self.preflight_path, record)
+            if _LEVELS.get(level, 20) >= _LEVELS["ERROR"]:
+                self._write_json(self.error_jsonl_path, record)
+                self._append_text(self.error_text_path, record)
+            task_id_value = record.get("task_id")
+            case_id_value = record.get("case_id")
+            if task_id_value:
+                task_segment = self._safe_log_segment(task_id_value)
+                self._write_json(self.task_log_dir / f"{task_segment}.jsonl", record)
+                self._append_text(self.task_log_dir / f"{task_segment}.log", record)
+            if case_id_value:
+                case_segment = self._safe_log_segment(case_id_value)
+                self._write_json(self.case_log_dir / f"{case_segment}.jsonl", record)
+                self._append_text(self.case_log_dir / f"{case_segment}.log", record)
             return record
 
     def audit(self, **kwargs: Any) -> dict[str, Any] | None:
@@ -604,7 +706,10 @@ class StructuredLogStore:
             if not path.is_file() or path.name in {".gitkeep"}:
                 continue
             try:
-                if path.stat().st_mtime < cutoff and path.name.startswith(("studio.", "audit.", "native.", "qualification.", "plugins.", "traces.")):
+                if path.stat().st_mtime < cutoff and path.name.startswith((
+                    "studio.", "audit.", "native.", "qualification.", "plugins.", "traces.",
+                    "frontend.", "http.", "preflight.", "errors.",
+                )):
                     path.unlink()
             except OSError:
                 pass
@@ -623,19 +728,34 @@ class StructuredLogStore:
             central_names = {
                 self.text_path.name, self.jsonl_path.name, self.audit_path.name, self.native_path.name,
                 self.qualification_path.name, self.plugin_path.name, self.trace_path.name,
+                self.frontend_path.name, self.http_path.name, self.preflight_path.name,
+                self.error_jsonl_path.name, self.error_text_path.name,
             }
             candidates = []
             for path in sorted(self.root.iterdir() if self.root.exists() else []):
                 if not path.is_file():
                     continue
-                if path.name in central_names or path.name.startswith(("studio.", "audit.", "native.", "qualification.", "plugins.", "traces.")):
+                if path.name in central_names or path.name.startswith((
+                    "studio.", "audit.", "native.", "qualification.", "plugins.", "traces.",
+                    "frontend.", "http.", "preflight.", "errors.",
+                )):
                     candidates.append(path)
+            if task_id:
+                task_segment = self._safe_log_segment(task_id)
+                for suffix in (".jsonl", ".log"):
+                    candidate = self.task_log_dir / f"{task_segment}{suffix}"
+                    if candidate.is_file():
+                        candidates.append(candidate)
             seen = set()
             for path in candidates:
                 if path.resolve() in seen:
                     continue
                 seen.add(path.resolve())
-                archive.write(path, arcname=f"raw/{path.name}")
+                try:
+                    relative = path.relative_to(self.root).as_posix()
+                except ValueError:
+                    relative = path.name
+                archive.write(path, arcname=f"raw/{relative}")
         return target
 
 

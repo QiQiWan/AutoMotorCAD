@@ -1,0 +1,3709 @@
+{
+  "path_count": 397,
+  "operation_count": 425,
+  "paths": {
+    "/": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "index__get"
+      }
+    },
+    "/api/analysis-catalog": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_catalog_api_analysis_catalog_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_analysis_definition_api_analysis_definitions__analysis_id__get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/auto-fix": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "apply_analysis_auto_fix_api_analysis_definitions__analysis_id__auto_fix_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/calculation-check": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "calculation_check_analysis_definition_api_analysis_definitions__analysis_id__calculation_check_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/calculation-check/jobs": {
+      "post": {
+        "status_codes": [
+          "202",
+          "422"
+        ],
+        "operation_id": "start_calculation_check_job_api_analysis_definitions__analysis_id__calculation_check_jobs_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/calculation-check/jobs/{job_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_calculation_check_job_api_analysis_definitions__analysis_id__calculation_check_jobs__job_id__get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/design-revision": {
+      "put": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_analysis_design_revision_api_analysis_definitions__analysis_id__design_revision_put"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/editor": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_analysis_editor_bundle_api_analysis_definitions__analysis_id__editor_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/editor/input-domains/{domain_id}": {
+      "put": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_analysis_editor_input_domain_api_analysis_definitions__analysis_id__editor_input_domains__domain_id__put"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/editor/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_analysis_editor_revision_api_analysis_definitions__analysis_id__editor_revisions_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/execute": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "execute_analysis_definition_api_analysis_definitions__analysis_id__execute_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/execution-plan": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_execution_plan_api_analysis_definitions__analysis_id__execution_plan_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/execution-readiness": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_execution_readiness_v1"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/experiments/execute": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "execute_analysis_experiment_api_analysis_definitions__analysis_id__experiments_execute_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/experiments/preview": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_analysis_experiment_api_analysis_definitions__analysis_id__experiments_preview_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/guidance": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_definition_guidance_api_analysis_definitions__analysis_id__guidance_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/input-domains": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_analysis_input_domains_api_analysis_definitions__analysis_id__input_domains_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/input-domains/{domain_id}": {
+      "put": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_analysis_input_domain_api_analysis_definitions__analysis_id__input_domains__domain_id__put"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/optimization-catalog": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_optimization_catalog_api_analysis_definitions__analysis_id__optimization_catalog_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/precheck": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "precheck_analysis_definition_api_analysis_definitions__analysis_id__precheck_get"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_analysis_definition_revision_api_analysis_definitions__analysis_id__revisions_post"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/workflow-v1": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_workflow_v1"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/workflow-v1/checks": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_workflow_check_history_v1"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/workflow-v1/checks/configuration": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_analysis_configuration_check_v1"
+      }
+    },
+    "/api/analysis-definitions/{analysis_id}/workflow-v1/checks/native-evidence": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "record_analysis_native_check_v1"
+      }
+    },
+    "/api/analysis-recipes/{recipe_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_recipe_schema_api_analysis_recipes__recipe_id__get"
+      }
+    },
+    "/api/analysis-templates": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_template_catalog_api_analysis_templates_get"
+      }
+    },
+    "/api/analysis-templates/{template_id}/preview": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_analysis_template_api_analysis_templates__template_id__preview_post"
+      }
+    },
+    "/api/artifacts/{artifact_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "download_artifact_api_artifacts__artifact_id__get"
+      }
+    },
+    "/api/candidate-validation-reports/{report_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_candidate_validation_report_api_candidate_validation_reports__report_id__get"
+      }
+    },
+    "/api/cases/{case_id}/baseline": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "capture_baseline_api_api_cases__case_id__baseline_post"
+      }
+    },
+    "/api/cases/{case_id}/candidate-validation": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_candidate_validation_api_cases__case_id__candidate_validation_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "start_candidate_validation_api_cases__case_id__candidate_validation_post"
+      }
+    },
+    "/api/cases/{case_id}/compare-baseline": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "compare_baseline_api_api_cases__case_id__compare_baseline_post"
+      }
+    },
+    "/api/cases/{case_id}/engineering-lineage": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_case_engineering_lineage_api_cases__case_id__engineering_lineage_get"
+      }
+    },
+    "/api/cases/{case_id}/execution-lease": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_execution_lease_api_cases__case_id__execution_lease_get"
+      }
+    },
+    "/api/cases/{case_id}/execution-state": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_execution_aggregate_state_v1"
+      }
+    },
+    "/api/cases/{case_id}/fea-evidence": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_evidence_api_cases__case_id__fea_evidence_get"
+      }
+    },
+    "/api/cases/{case_id}/fea-frames/{frame_index}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_frame_api_cases__case_id__fea_frames__frame_index__get"
+      }
+    },
+    "/api/cases/{case_id}/fea-frames/{frame_index}/mesh-chunks/{chunk_index}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_mesh_chunk_api_cases__case_id__fea_frames__frame_index__mesh_chunks__chunk_index__get"
+      }
+    },
+    "/api/cases/{case_id}/fea-frames/{frame_index}/mesh-manifest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_mesh_manifest_api_cases__case_id__fea_frames__frame_index__mesh_manifest_get"
+      }
+    },
+    "/api/cases/{case_id}/fea-frames/{frame_index}/view": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_frame_view_api_cases__case_id__fea_frames__frame_index__view_get"
+      }
+    },
+    "/api/cases/{case_id}/fea-probe": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_probe_api_cases__case_id__fea_probe_get"
+      }
+    },
+    "/api/cases/{case_id}/fea-raw": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_raw_api_cases__case_id__fea_raw_get"
+      }
+    },
+    "/api/cases/{case_id}/fea-stream": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_fea_stream_api_cases__case_id__fea_stream_get"
+      }
+    },
+    "/api/cases/{case_id}/field-data/frames/{frame_index}/binary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_binary_frame_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/frames/{frame_index}/binary-manifest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_binary_manifest_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/frames/{frame_index}/lod/{lod}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_frame_lod_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/frames/{frame_index}/mesh-chunks/{chunk_index}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_mesh_chunk_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/frames/{frame_index}/mesh-manifest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_mesh_manifest_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/integrity": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_integrity_v1"
+      }
+    },
+    "/api/cases/{case_id}/field-data/manifest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "field_data_manifest_v1"
+      }
+    },
+    "/api/cases/{case_id}/native-screen": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_native_screen_api_cases__case_id__native_screen_get"
+      }
+    },
+    "/api/cases/{case_id}/native-tables/{output_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_native_table_api_cases__case_id__native_tables__output_id__get"
+      }
+    },
+    "/api/cases/{case_id}/native-tables/{output_id}/rows": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_native_table_rows_api_cases__case_id__native_tables__output_id__rows_get"
+      }
+    },
+    "/api/cases/{case_id}/promote-design-revision": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "promote_optimization_candidate_api_cases__case_id__promote_design_revision_post"
+      }
+    },
+    "/api/cases/{case_id}/result-bundle": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_result_bundle_api_cases__case_id__result_bundle_get"
+      }
+    },
+    "/api/cases/{case_id}/spatial-overlay": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_spatial_overlay_api_cases__case_id__spatial_overlay_get"
+      }
+    },
+    "/api/cases/{case_id}/thermal-network": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_thermal_network_api_cases__case_id__thermal_network_get"
+      }
+    },
+    "/api/cases/{case_id}/trust": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_result_trust_api_cases__case_id__trust_get"
+      }
+    },
+    "/api/cases/{case_id}/viewer": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "case_result_viewer_api_cases__case_id__viewer_get"
+      }
+    },
+    "/api/client-contract": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "client_contract_api_client_contract_get"
+      }
+    },
+    "/api/client-events": {
+      "post": {
+        "status_codes": [
+          "204",
+          "422"
+        ],
+        "operation_id": "client_event_api_client_events_post"
+      }
+    },
+    "/api/control-plane/commands/{command_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "control_plane_command_v1"
+      }
+    },
+    "/api/control-plane/outbox": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "control_plane_outbox_v1"
+      }
+    },
+    "/api/control-plane/outbox/acknowledge": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "control_plane_outbox_ack_v1"
+      }
+    },
+    "/api/control-plane/runtime": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "control_plane_runtime_v1"
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "dashboard_api_dashboard_get"
+      }
+    },
+    "/api/data-factory/summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "data_factory_summary_api_data_factory_summary_get"
+      }
+    },
+    "/api/data-factory/tasks/{task_id}/ingest": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "ingest_task_data_api_data_factory_tasks__task_id__ingest_post"
+      }
+    },
+    "/api/data-factory/tasks/{task_id}/quality": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_data_quality_api_data_factory_tasks__task_id__quality_get"
+      }
+    },
+    "/api/data-factory/v2/build-jobs/{job_id}/transition": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "transition_dataset_build_v2"
+      }
+    },
+    "/api/data-factory/v2/datasets": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_dataset_v2"
+      }
+    },
+    "/api/data-factory/v2/datasets/{dataset_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_dataset_v2"
+      }
+    },
+    "/api/data-factory/v2/datasets/{dataset_id}/versions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_dataset_version_v2"
+      }
+    },
+    "/api/data-factory/v2/versions/{version_id}/build-jobs": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_dataset_build_v2"
+      }
+    },
+    "/api/data-factory/v2/versions/{version_id}/publish": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "publish_dataset_version_v2"
+      }
+    },
+    "/api/data-factory/v2/versions/{version_id}/quality-reports": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "record_dataset_quality_v2"
+      }
+    },
+    "/api/datasets": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_datasets_api_datasets_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "build_dataset_api_datasets_post"
+      }
+    },
+    "/api/datasets/{dataset_id}/versions/{version}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_dataset_version_api_datasets__dataset_id__versions__version__get"
+      }
+    },
+    "/api/datasets/{dataset_id}/versions/{version}/download/{format_name}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "download_dataset_api_datasets__dataset_id__versions__version__download__format_name__get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/material-projection": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "component_material_projection_v1"
+      }
+    },
+    "/api/design-revisions/{revision_id}/motor-object": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_revision_motor_object_api_design_revisions__revision_id__motor_object_get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/motor-snapshot": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_revision_motor_snapshot_api_design_revisions__revision_id__motor_snapshot_get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/motor-snapshot/change-impact": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_design_revision_motor_change_api_design_revisions__revision_id__motor_snapshot_change_impact_post"
+      }
+    },
+    "/api/design-revisions/{revision_id}/motorcad-binding-plan": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_motorcad_binding_plan_api_design_revisions__revision_id__motorcad_binding_plan_post"
+      }
+    },
+    "/api/design-revisions/{revision_id}/optimization-evidence-ledger": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "revision_optimization_evidence_ledger_api_design_revisions__revision_id__optimization_evidence_ledger_get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/optimization-promotion-authority": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_optimization_promotion_authority_api_design_revisions__revision_id__optimization_promotion_authority_get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/workbench": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_revision_workbench_api_design_revisions__revision_id__workbench_get"
+      }
+    },
+    "/api/design-revisions/{revision_id}/workbench/precheck": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "precheck_design_revision_workbench_api_design_revisions__revision_id__workbench_precheck_post"
+      }
+    },
+    "/api/design-starters": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "list_design_starters_api_design_starters_get"
+      }
+    },
+    "/api/design-starters/{starter_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_starter_api_design_starters__starter_id__get"
+      }
+    },
+    "/api/design-transactions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "open_design_transaction_v1"
+      }
+    },
+    "/api/design-transactions/{transaction_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_transaction_v1"
+      },
+      "patch": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "patch_design_transaction_v1"
+      }
+    },
+    "/api/design-transactions/{transaction_id}/abort": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "abort_design_transaction_v1"
+      }
+    },
+    "/api/design-transactions/{transaction_id}/commit": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "commit_design_transaction_v1"
+      }
+    },
+    "/api/design-transactions/{transaction_id}/validate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "validate_design_transaction_v1"
+      }
+    },
+    "/api/designs": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_design_api_designs_post"
+      }
+    },
+    "/api/designs/{design_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_api_designs__design_id__get"
+      }
+    },
+    "/api/designs/{design_id}/draft": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "delete_design_draft_api_designs__design_id__draft_delete"
+      },
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_design_draft_api_designs__design_id__draft_get"
+      },
+      "put": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "save_design_draft_api_designs__design_id__draft_put"
+      }
+    },
+    "/api/designs/{design_id}/draft/commit": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "commit_design_draft_api_designs__design_id__draft_commit_post"
+      }
+    },
+    "/api/designs/{design_id}/draft/native-check": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_design_draft_native_check_api_designs__design_id__draft_native_check_post"
+      }
+    },
+    "/api/designs/{design_id}/revision-compare": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "compare_design_revisions_api_designs__design_id__revision_compare_get"
+      }
+    },
+    "/api/designs/{design_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_design_revision_api_designs__design_id__revisions_post"
+      }
+    },
+    "/api/engineering-context/resolve": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "resolve_engineering_context"
+      },
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "resolve_engineering_context_post"
+      }
+    },
+    "/api/engineering-contexts": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "engineering_contexts_api_engineering_contexts_get"
+      }
+    },
+    "/api/engineering-lineage": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_engineering_lineage_api_engineering_lineage_get"
+      }
+    },
+    "/api/engineering-lineage-cache": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_engineering_lineage_cache_info_api_engineering_lineage_cache_get"
+      }
+    },
+    "/api/engineering-semantics": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "engineering_semantics_api_engineering_semantics_get"
+      }
+    },
+    "/api/engineering-semantics/parameters": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "engineering_parameter_semantics_api_engineering_semantics_parameters_get"
+      }
+    },
+    "/api/engineering-semantics/results": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "engineering_result_semantics_api_engineering_semantics_results_get"
+      }
+    },
+    "/api/execution-plans/{execution_plan_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_execution_plan_api_execution_plans__execution_plan_id__get"
+      }
+    },
+    "/api/execution-plans/{execution_plan_id}/engineering-lineage": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_execution_plan_engineering_lineage_api_execution_plans__execution_plan_id__engineering_lineage_get"
+      }
+    },
+    "/api/execution/admission-v1": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "execution_admission_v1"
+      }
+    },
+    "/api/execution/module-summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "execution_module_summary_v1"
+      }
+    },
+    "/api/field-data-gateway": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "field_data_gateway_status_v1"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "health_api_health_get"
+      }
+    },
+    "/api/input-domains": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "input_domain_catalog_api_input_domains_get"
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "query_logs_api_logs_get"
+      }
+    },
+    "/api/logs/diagnostics": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "log_diagnostics_api_logs_diagnostics_get"
+      }
+    },
+    "/api/logs/export.zip": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "export_logs_api_logs_export_zip_get"
+      }
+    },
+    "/api/logs/stream": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "log_stream_api_logs_stream_get"
+      }
+    },
+    "/api/logs/summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "log_summary_api_logs_summary_get"
+      }
+    },
+    "/api/material-library": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_list_api_material_library_get"
+      },
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_create_api_material_library_post"
+      }
+    },
+    "/api/material-library/export-managed": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_export_managed_api_material_library_export_managed_post"
+      }
+    },
+    "/api/material-library/import": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_import_api_material_library_import_post"
+      }
+    },
+    "/api/material-library/scan": {
+      "post": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "material_library_scan_api_material_library_scan_post"
+      }
+    },
+    "/api/material-library/status": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "material_library_status_api_material_library_status_get"
+      }
+    },
+    "/api/material-library/{record_id}": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_delete_api_material_library__record_id__delete"
+      },
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_detail_api_material_library__record_id__get"
+      },
+      "patch": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_update_api_material_library__record_id__patch"
+      }
+    },
+    "/api/material-library/{record_id}/clone": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_library_clone_api_material_library__record_id__clone_post"
+      }
+    },
+    "/api/materials/bindings": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "material_bindings_api_materials_bindings_get"
+      }
+    },
+    "/api/materials/catalog": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "materials_catalog_api_materials_catalog_get"
+      }
+    },
+    "/api/materials/validate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "validate_material_configuration_api_materials_validate_post"
+      }
+    },
+    "/api/materials/verify": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "verify_material_bindings_api_materials_verify_post"
+      }
+    },
+    "/api/model-revisions/{revision_id}/parameter-catalog": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "model_parameter_catalog_api_model_revisions__revision_id__parameter_catalog_get"
+      }
+    },
+    "/api/model-types": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "model_type_catalog_api_model_types_get"
+      }
+    },
+    "/api/motor-domain/catalog": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_motor_domain_catalog_api_motor_domain_catalog_get"
+      }
+    },
+    "/api/motor-families": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "motor_families_api_motor_families_get"
+      }
+    },
+    "/api/motorcad-native-binding/catalog": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_motorcad_native_binding_catalog_api_motorcad_native_binding_catalog_get"
+      }
+    },
+    "/api/motorcad-native-binding/semantic-authority": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_motorcad_native_semantic_authority_api_motorcad_native_binding_semantic_authority_get"
+      }
+    },
+    "/api/motorcad-native-binding/semantic-authority/{template_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_motorcad_native_semantic_authority_profile_api_motorcad_native_binding_semantic_authority__template_id__get"
+      }
+    },
+    "/api/native-closure/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_matrix_route_api_native_closure_matrix_get"
+      }
+    },
+    "/api/native-closure/plan": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_plan_api_native_closure_plan_get"
+      }
+    },
+    "/api/native-closure/profiles": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_profile_catalog_api_native_closure_profiles_get"
+      }
+    },
+    "/api/native-closure/run": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_native_closure_api_native_closure_run_post"
+      }
+    },
+    "/api/native-closure/run-suite": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_native_closure_suite_api_native_closure_run_suite_post"
+      }
+    },
+    "/api/native-closure/runs": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_runs_api_native_closure_runs_get"
+      }
+    },
+    "/api/native-closure/runs/{run_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_detail_api_native_closure_runs__run_id__get"
+      }
+    },
+    "/api/native-closure/runs/{run_id}/artifacts.zip": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_artifacts_api_native_closure_runs__run_id__artifacts_zip_get"
+      }
+    },
+    "/api/native-closure/runs/{run_id}/native-model-snapshot": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_native_model_snapshot_api_native_closure_runs__run_id__native_model_snapshot_get"
+      }
+    },
+    "/api/native-closure/runs/{run_id}/native-repair-plan": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_native_repair_plan_api_native_closure_runs__run_id__native_repair_plan_get"
+      }
+    },
+    "/api/native-closure/runs/{run_id}/report": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_report_api_native_closure_runs__run_id__report_get"
+      }
+    },
+    "/api/native-closure/status": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_status_api_native_closure_status_get"
+      }
+    },
+    "/api/native-parity/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_matrix_route_api_native_parity_matrix_get"
+      }
+    },
+    "/api/native-parity/profiles": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "native_closure_profile_catalog_api_native_parity_profiles_get"
+      }
+    },
+    "/api/native-parity/run": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_native_closure_api_native_parity_run_post"
+      }
+    },
+    "/api/native-parity/run-suite": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_native_closure_suite_api_native_parity_run_suite_post"
+      }
+    },
+    "/api/native-parity/runs": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_runs_api_native_parity_runs_get"
+      }
+    },
+    "/api/native-parity/runs/{run_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_detail_api_native_parity_runs__run_id__get"
+      }
+    },
+    "/api/native-parity/runs/{run_id}/artifacts.zip": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_artifacts_api_native_parity_runs__run_id__artifacts_zip_get"
+      }
+    },
+    "/api/native-parity/runs/{run_id}/report": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "native_closure_run_report_api_native_parity_runs__run_id__report_get"
+      }
+    },
+    "/api/native-runtime/v2/artifact-locks": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "lock_native_artifact_v2"
+      }
+    },
+    "/api/native-runtime/v2/leases/{resource_key}": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "acquire_native_lease_v2"
+      }
+    },
+    "/api/native-runtime/v2/leases/{resource_key}/heartbeat": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "heartbeat_native_lease_v2"
+      }
+    },
+    "/api/native-runtime/v2/leases/{resource_key}/release": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "release_native_lease_v2"
+      }
+    },
+    "/api/native-runtime/v2/process-observations": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "observe_native_process_v2"
+      }
+    },
+    "/api/native-runtime/v2/reconcile": {
+      "post": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "reconcile_native_processes_v2"
+      }
+    },
+    "/api/native-runtime/v2/snapshots": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_native_snapshot_v2"
+      }
+    },
+    "/api/optimization-evidence-ledgers/{ledger_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_optimization_evidence_ledger_api_optimization_evidence_ledgers__ledger_id__get"
+      }
+    },
+    "/api/optimization-evidence-ledgers/{ledger_id}/audit": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "audit_optimization_evidence_ledger_api_optimization_evidence_ledgers__ledger_id__audit_get"
+      }
+    },
+    "/api/optimization-evidence-ledgers/{ledger_id}/replay-plans": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_optimization_replay_plans_api_optimization_evidence_ledgers__ledger_id__replay_plans_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_optimization_replay_plan_api_optimization_evidence_ledgers__ledger_id__replay_plans_post"
+      }
+    },
+    "/api/optimization-evidence-ledgers/{ledger_id}/signed-anchor": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "sign_optimization_evidence_ledger_head_api_optimization_evidence_ledgers__ledger_id__signed_anchor_post"
+      }
+    },
+    "/api/optimization-evidence-ledgers/{ledger_id}/signed-anchors": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_signed_evidence_anchors_api_optimization_evidence_ledgers__ledger_id__signed_anchors_get"
+      }
+    },
+    "/api/optimization-replay-plans/{replay_plan_id}/execute": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "execute_optimization_replay_plan_api_optimization_replay_plans__replay_plan_id__execute_post"
+      }
+    },
+    "/api/optimization-replay-runs/{replay_run_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_optimization_replay_run_api_optimization_replay_runs__replay_run_id__get"
+      }
+    },
+    "/api/optimization/v2/campaigns": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_optimization_campaigns_v2"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_optimization_campaign_v2"
+      }
+    },
+    "/api/optimization/v2/campaigns/{campaign_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_optimization_campaign_v2"
+      }
+    },
+    "/api/optimization/v2/campaigns/{campaign_id}/candidates": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_optimization_candidates_v2"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_optimization_candidate_v2"
+      }
+    },
+    "/api/optimization/v2/candidates/{candidate_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_optimization_candidate_v2"
+      }
+    },
+    "/api/optimization/v2/candidates/{candidate_id}/evaluate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "evaluate_optimization_candidate_v2"
+      }
+    },
+    "/api/optimization/v2/candidates/{candidate_id}/promote": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "promote_optimization_candidate_v2"
+      }
+    },
+    "/api/optimization/v2/replay-plans": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_replay_plan_v2"
+      }
+    },
+    "/api/output-profiles": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_output_profile_api_output_profiles_post"
+      }
+    },
+    "/api/output-profiles/with-revision": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_output_profile_with_revision_api_output_profiles_with_revision_post"
+      }
+    },
+    "/api/output-profiles/{profile_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_output_profile_api_output_profiles__profile_id__get"
+      }
+    },
+    "/api/output-profiles/{profile_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_output_profile_revision_api_output_profiles__profile_id__revisions_post"
+      }
+    },
+    "/api/precheck/rules": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "precheck_rule_catalog_api_precheck_rules_get"
+      }
+    },
+    "/api/production-soak-qualification": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "production_soak_qualification_summary_api_production_soak_qualification_get"
+      }
+    },
+    "/api/production-soak-qualification-runs/import": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "import_production_soak_qualification_run_api_production_soak_qualification_runs_import_post"
+      }
+    },
+    "/api/production-soak-qualification/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "production_soak_qualification_matrix_api_production_soak_qualification_matrix_get"
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_projects_api_projects_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_project_api_projects_post"
+      }
+    },
+    "/api/projects/{project_id}": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "delete_project_api_projects__project_id__delete"
+      },
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_project_api_projects__project_id__get"
+      },
+      "patch": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_project_api_projects__project_id__patch"
+      }
+    },
+    "/api/projects/{project_id}/active-learning/proposals": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_project_active_learning_proposal_api_projects__project_id__active_learning_proposals_post"
+      }
+    },
+    "/api/projects/{project_id}/active-learning/proposals/latest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "latest_project_active_learning_proposal_api_projects__project_id__active_learning_proposals_latest_get"
+      }
+    },
+    "/api/projects/{project_id}/analysis-cases": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_analysis_cases_api_projects__project_id__analysis_cases_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_analysis_case_api_projects__project_id__analysis_cases_post"
+      }
+    },
+    "/api/projects/{project_id}/analysis-definitions": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_analysis_definitions_api_projects__project_id__analysis_definitions_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_analysis_definition_api_projects__project_id__analysis_definitions_post"
+      }
+    },
+    "/api/projects/{project_id}/analysis-definitions/from-template": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_analysis_from_template_api_projects__project_id__analysis_definitions_from_template_post"
+      }
+    },
+    "/api/projects/{project_id}/analysis-module-summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_module_summary_v1"
+      }
+    },
+    "/api/projects/{project_id}/analysis-workspace": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_workspace_api_projects__project_id__analysis_workspace_get"
+      }
+    },
+    "/api/projects/{project_id}/baseline": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_active_result_baseline_api_projects__project_id__baseline_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "set_project_result_baseline_api_projects__project_id__baseline_post"
+      }
+    },
+    "/api/projects/{project_id}/baselines": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_result_baseline_history_api_projects__project_id__baselines_get"
+      }
+    },
+    "/api/projects/{project_id}/decision-cockpit": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_engineering_decision_cockpit_api_projects__project_id__decision_cockpit_get"
+      }
+    },
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/engineering-scorecard": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "design_revision_engineering_scorecard_api_projects__project_id__design_revisions__design_revision_id__engineering_scorecard_get"
+      }
+    },
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_standard_validation_package_api_projects__project_id__design_revisions__design_revision_id__standard_validation_package_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "materialize_standard_validation_package_api_projects__project_id__design_revisions__design_revision_id__standard_validation_package_post"
+      }
+    },
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/execute": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "execute_standard_validation_package_api_projects__project_id__design_revisions__design_revision_id__standard_validation_package_execute_post"
+      }
+    },
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/jobs": {
+      "post": {
+        "status_codes": [
+          "202",
+          "422"
+        ],
+        "operation_id": "start_standard_validation_job_api_projects__project_id__design_revisions__design_revision_id__standard_validation_package_jobs_post"
+      }
+    },
+    "/api/projects/{project_id}/design-revisions/{design_revision_id}/standard-validation-package/jobs/{job_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_standard_validation_job_api_projects__project_id__design_revisions__design_revision_id__standard_validation_package_jobs__job_id__get"
+      }
+    },
+    "/api/projects/{project_id}/design-starters/{starter_id}": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_design_from_starter_api_projects__project_id__design_starters__starter_id__post"
+      }
+    },
+    "/api/projects/{project_id}/designs/from-template": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_design_from_template_api_projects__project_id__designs_from_template_post"
+      }
+    },
+    "/api/projects/{project_id}/domain-integrity": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_project_domain_integrity_api_projects__project_id__domain_integrity_get"
+      }
+    },
+    "/api/projects/{project_id}/engineer-journey": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_engineer_journey_api_projects__project_id__engineer_journey_get"
+      }
+    },
+    "/api/projects/{project_id}/engineering-workflow": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_engineering_workflow_api_projects__project_id__engineering_workflow_get"
+      }
+    },
+    "/api/projects/{project_id}/execution-plans": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_execution_plans_api_projects__project_id__execution_plans_get"
+      }
+    },
+    "/api/projects/{project_id}/manufacturing-tolerances": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_manufacturing_tolerances_api_projects__project_id__manufacturing_tolerances_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "revise_project_manufacturing_tolerances_api_projects__project_id__manufacturing_tolerances_post"
+      }
+    },
+    "/api/projects/{project_id}/manufacturing-tolerances/calibrate": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "calibrate_project_manufacturing_tolerances_api_projects__project_id__manufacturing_tolerances_calibrate_post"
+      }
+    },
+    "/api/projects/{project_id}/models": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_model_first_api_projects__project_id__models_post"
+      }
+    },
+    "/api/projects/{project_id}/motor-domain/backfill": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "backfill_project_motor_snapshots_api_projects__project_id__motor_domain_backfill_post"
+      }
+    },
+    "/api/projects/{project_id}/probabilistic-qualification": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "run_project_probabilistic_qualification_api_projects__project_id__probabilistic_qualification_post"
+      }
+    },
+    "/api/projects/{project_id}/probabilistic-qualification/latest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "latest_project_probabilistic_qualification_api_projects__project_id__probabilistic_qualification_latest_get"
+      }
+    },
+    "/api/projects/{project_id}/purge": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "purge_project_api_projects__project_id__purge_delete"
+      }
+    },
+    "/api/projects/{project_id}/qualification-campaign": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_qualification_campaign_api_projects__project_id__qualification_campaign_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "materialize_project_qualification_campaign_api_projects__project_id__qualification_campaign_post"
+      }
+    },
+    "/api/projects/{project_id}/qualification-campaign/preview": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preview_project_qualification_campaign_api_projects__project_id__qualification_campaign_preview_post"
+      }
+    },
+    "/api/projects/{project_id}/qualification-campaign/state": {
+      "patch": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_project_qualification_campaign_state_api_projects__project_id__qualification_campaign_state_patch"
+      }
+    },
+    "/api/projects/{project_id}/requirements": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_engineering_requirements_api_projects__project_id__requirements_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "revise_project_engineering_requirements_api_projects__project_id__requirements_post"
+      }
+    },
+    "/api/projects/{project_id}/requirements/metric-catalog": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_engineering_requirement_metric_catalog_api_projects__project_id__requirements_metric_catalog_get"
+      }
+    },
+    "/api/projects/{project_id}/requirements/state": {
+      "patch": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "update_project_engineering_requirements_state_api_projects__project_id__requirements_state_patch"
+      }
+    },
+    "/api/projects/{project_id}/restore": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "restore_project_api_projects__project_id__restore_post"
+      }
+    },
+    "/api/projects/{project_id}/results-workbench": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_results_workbench_api_projects__project_id__results_workbench_get"
+      }
+    },
+    "/api/projects/{project_id}/run-configurations": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_run_configurations_api_projects__project_id__run_configurations_get"
+      }
+    },
+    "/api/projects/{project_id}/simulation-assets": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_simulation_assets_api_projects__project_id__simulation_assets_get"
+      }
+    },
+    "/api/projects/{project_id}/solutions": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_project_solutions_api_projects__project_id__solutions_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solution_api_projects__project_id__solutions_post"
+      }
+    },
+    "/api/projects/{project_id}/solutions/from-template": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solution_from_template_api_projects__project_id__solutions_from_template_post"
+      }
+    },
+    "/api/projects/{project_id}/solutions/{solution_id}": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "delete_project_solution_api_projects__project_id__solutions__solution_id__delete"
+      }
+    },
+    "/api/projects/{project_id}/ui-guidance": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_ui_guidance_api_projects__project_id__ui_guidance_get"
+      }
+    },
+    "/api/projects/{project_id}/workflow-truth": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "project_workflow_truth_api_projects__project_id__workflow_truth_get"
+      }
+    },
+    "/api/qualification/v2/campaigns": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_qualification_campaign_v2"
+      }
+    },
+    "/api/qualification/v2/campaigns/{campaign_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_qualification_campaign_v2"
+      }
+    },
+    "/api/qualification/v2/campaigns/{campaign_id}/decision": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "record_qualification_decision_v2"
+      }
+    },
+    "/api/qualification/v2/campaigns/{campaign_id}/evidence": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "append_qualification_evidence_v2"
+      }
+    },
+    "/api/qualification/v2/campaigns/{campaign_id}/integrity": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "qualification_integrity_v2"
+      }
+    },
+    "/api/registry": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_registry_api_registry_get"
+      }
+    },
+    "/api/release-candidate-gate": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "release_candidate_gate_summary_api_release_candidate_gate_get"
+      }
+    },
+    "/api/release-candidate-gate/checklist": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "release_candidate_gate_checklist_api_release_candidate_gate_checklist_get"
+      }
+    },
+    "/api/release-candidate-gate/human-acceptance": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "record_release_candidate_human_acceptance_api_release_candidate_gate_human_acceptance_post"
+      }
+    },
+    "/api/reproducibility-environment-capsules/{capsule_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_reproducibility_environment_capsule_api_reproducibility_environment_capsules__capsule_id__get"
+      }
+    },
+    "/api/reproducibility-environment/current": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "current_reproducibility_environment_api_reproducibility_environment_current_get"
+      }
+    },
+    "/api/requirements/v2/revisions/{revision_id}/probabilistic-qualifications": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "run_probabilistic_qualification_v2"
+      }
+    },
+    "/api/requirements/v2/sets": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_requirement_set_v2"
+      }
+    },
+    "/api/requirements/v2/sets/{set_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_requirement_revision_v2"
+      }
+    },
+    "/api/requirements/v2/tolerances/{subject_type}/{subject_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_tolerance_revision_v2"
+      }
+    },
+    "/api/result-bundle-aggregates/query": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_aggregate_query_api_result_bundle_aggregates_query_post"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_by_id_api_result_bundles__result_bundle_id__get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/aggregate": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_aggregate_api_result_bundles__result_bundle_id__aggregate_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/comparability-fingerprint": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_comparability_fingerprint_api_result_bundles__result_bundle_id__comparability_fingerprint_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/engineering-interpretation": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_engineering_interpretation_api_result_bundles__result_bundle_id__engineering_interpretation_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/engineering-lineage": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_result_bundle_engineering_lineage_api_result_bundles__result_bundle_id__engineering_lineage_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/requirement-evaluation": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_requirement_evaluation_api_result_bundles__result_bundle_id__requirement_evaluation_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_item_api_result_bundles__result_bundle_id__results__result_id__get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}/data": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_item_data_api_result_bundles__result_bundle_id__results__result_id__data_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}/data/chunks/{chunk_index}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_item_data_chunk_api_result_bundles__result_bundle_id__results__result_id__data_chunks__chunk_index__get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}/data/manifest": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_item_data_manifest_api_result_bundles__result_bundle_id__results__result_id__data_manifest_get"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}/descriptor": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_data_descriptor_v1"
+      }
+    },
+    "/api/result-bundles/{result_bundle_id}/results/{result_id}/integrity": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_bundle_item_integrity_api_result_bundles__result_bundle_id__results__result_id__integrity_get"
+      }
+    },
+    "/api/result-calibration": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_calibration_entries_api_result_calibration_get"
+      }
+    },
+    "/api/result-calibration/probe": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "probe_result_calibration_api_result_calibration_probe_post"
+      }
+    },
+    "/api/result-calibration/recommended/{template_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_calibration_recommended_api_result_calibration_recommended__template_id__get"
+      }
+    },
+    "/api/result-data-gateway": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "result_data_gateway_status_api_result_data_gateway_get"
+      }
+    },
+    "/api/result-data-gateway/gc": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_data_gateway_gc_api_result_data_gateway_gc_post"
+      }
+    },
+    "/api/result-data-gateway/transfer-status": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "result_data_transfer_status_v1"
+      }
+    },
+    "/api/result-set-aggregates/compare": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_set_aggregate_compare_api_result_set_aggregates_compare_post"
+      }
+    },
+    "/api/result-viewer/catalog": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "result_viewer_catalog_api_result_viewer_catalog_get"
+      }
+    },
+    "/api/result-viewer/compare": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "result_viewer_compare_api_result_viewer_compare_get"
+      }
+    },
+    "/api/results/module-summary": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "results_module_summary_v1"
+      }
+    },
+    "/api/run-configurations": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_run_configuration_api_run_configurations_post"
+      }
+    },
+    "/api/run-configurations/{run_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_run_configuration_api_run_configurations__run_id__get"
+      }
+    },
+    "/api/run-configurations/{run_id}/tasks": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "replay_run_configuration_api_run_configurations__run_id__tasks_post"
+      }
+    },
+    "/api/runtime/contract": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "runtime_contract_evidence_api_runtime_contract_get"
+      }
+    },
+    "/api/runtime/contract/formal": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "import_formal_runtime_contract_api_runtime_contract_formal_post"
+      }
+    },
+    "/api/runtime/lifecycle": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "runtime_lifecycle_snapshot_api_runtime_lifecycle_get"
+      }
+    },
+    "/api/runtime/lifecycle/qualification": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "runtime_lifecycle_qualification_snapshot_api_runtime_lifecycle_qualification_get"
+      }
+    },
+    "/api/runtime/motorcad-sessions": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "motorcad_sessions_api_runtime_motorcad_sessions_get"
+      }
+    },
+    "/api/runtime/motorcad-sessions/{session_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "motorcad_session_api_runtime_motorcad_sessions__session_id__get"
+      }
+    },
+    "/api/runtime/motorcad-worker-pool": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "motorcad_worker_pool_api_runtime_motorcad_worker_pool_get"
+      }
+    },
+    "/api/runtime/motorcad-worker-pool/probe": {
+      "post": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "probe_motorcad_worker_pool_api_runtime_motorcad_worker_pool_probe_post"
+      }
+    },
+    "/api/runtime/motorcad-worker-pool/recycle": {
+      "post": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "recycle_motorcad_worker_pool_api_runtime_motorcad_worker_pool_recycle_post"
+      }
+    },
+    "/api/runtime/production-hardening/snapshot": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "production_hardening_runtime_snapshot_api_runtime_production_hardening_snapshot_get"
+      }
+    },
+    "/api/runtime/readiness": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "runtime_readiness_api_runtime_readiness_get"
+      }
+    },
+    "/api/runtime/resource-scheduler": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "runtime_resource_scheduler_api_runtime_resource_scheduler_get"
+      }
+    },
+    "/api/runtime/submission-readiness": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "motorcad_submission_readiness_api_runtime_submission_readiness_get"
+      }
+    },
+    "/api/scenarios": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_scenario_api_scenarios_post"
+      }
+    },
+    "/api/scenarios/with-revision": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_scenario_with_revision_api_scenarios_with_revision_post"
+      }
+    },
+    "/api/scenarios/{scenario_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_scenario_api_scenarios__scenario_id__get"
+      }
+    },
+    "/api/scenarios/{scenario_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_scenario_revision_api_scenarios__scenario_id__revisions_post"
+      }
+    },
+    "/api/signed-evidence-anchors/{anchor_id}/verify": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "verify_signed_evidence_anchor_api_signed_evidence_anchors__anchor_id__verify_get"
+      }
+    },
+    "/api/solutions/{solution_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_solution_api_solutions__solution_id__get"
+      }
+    },
+    "/api/solutions/{solution_id}/draft": {
+      "delete": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "delete_solution_draft_api_solutions__solution_id__draft_delete"
+      },
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_solution_draft_api_solutions__solution_id__draft_get"
+      },
+      "put": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "save_solution_draft_api_solutions__solution_id__draft_put"
+      }
+    },
+    "/api/solutions/{solution_id}/draft/commit": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "commit_solution_draft_api_solutions__solution_id__draft_commit_post"
+      }
+    },
+    "/api/solutions/{solution_id}/draft/native-check": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "run_solution_draft_native_check_api_solutions__solution_id__draft_native_check_post"
+      }
+    },
+    "/api/solutions/{solution_id}/editor-transaction": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_solution_editor_transaction_api_solutions__solution_id__editor_transaction_get"
+      }
+    },
+    "/api/solutions/{solution_id}/material-projection": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "solution_material_projection_v1"
+      }
+    },
+    "/api/solutions/{solution_id}/module-summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "solution_module_summary"
+      }
+    },
+    "/api/solutions/{solution_id}/revision-compare": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "compare_solution_revisions_api_solutions__solution_id__revision_compare_get"
+      }
+    },
+    "/api/solutions/{solution_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solution_revision_api_solutions__solution_id__revisions_post"
+      }
+    },
+    "/api/solver-profiles": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solver_profile_api_solver_profiles_post"
+      }
+    },
+    "/api/solver-profiles/with-revision": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solver_profile_with_revision_api_solver_profiles_with_revision_post"
+      }
+    },
+    "/api/solver-profiles/{profile_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_solver_profile_api_solver_profiles__profile_id__get"
+      }
+    },
+    "/api/solver-profiles/{profile_id}/revisions": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_solver_profile_revision_api_solver_profiles__profile_id__revisions_post"
+      }
+    },
+    "/api/system/api-capabilities": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "api_capabilities_api_system_api_capabilities_get"
+      }
+    },
+    "/api/system/automation-registry": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "automation_registry_status_api_system_automation_registry_get"
+      }
+    },
+    "/api/system/automation-registry/entries": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "automation_registry_entries_api_system_automation_registry_entries_get"
+      }
+    },
+    "/api/system/automation-registry/import": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "import_automation_registry_api_system_automation_registry_import_post"
+      }
+    },
+    "/api/system/bootstrap": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "bootstrap_motorcad_api_system_bootstrap_post"
+      }
+    },
+    "/api/system/canonical-unit-registry": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "canonical_unit_registry_api_api_system_canonical_unit_registry_get"
+      }
+    },
+    "/api/system/database-vocabulary": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "get_database_vocabulary_status_api_system_database_vocabulary_get"
+      }
+    },
+    "/api/system/installations": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "list_installations_api_system_installations_get"
+      }
+    },
+    "/api/system/installations/browse": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "browse_installation_api_system_installations_browse_post"
+      }
+    },
+    "/api/system/installations/select": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "select_installation_api_system_installations_select_post"
+      }
+    },
+    "/api/system/installations/selection": {
+      "delete": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "clear_installation_api_system_installations_selection_delete"
+      }
+    },
+    "/api/system/metrics": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "system_metrics_api_system_metrics_get"
+      }
+    },
+    "/api/system/module-runtime": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "module_runtime_api_system_module_runtime_get"
+      }
+    },
+    "/api/system/motor-plugins": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "motor_plugin_catalog_api_system_motor_plugins_get"
+      }
+    },
+    "/api/system/motor-plugins/topologies/{topology_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "motor_plugin_topology_contract_api_system_motor_plugins_topologies__topology_id__get"
+      }
+    },
+    "/api/system/motor-plugins/{plugin_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "motor_plugin_detail_api_system_motor_plugins__plugin_id__get"
+      }
+    },
+    "/api/system/preflight": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "preflight_api_system_preflight_get"
+      }
+    },
+    "/api/system/qualification": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "qualify_template_api_system_qualification_post"
+      }
+    },
+    "/api/system/qualification/history": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "qualification_history_api_system_qualification_history_get"
+      }
+    },
+    "/api/system/qualification/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "qualification_matrix_api_system_qualification_matrix_get"
+      }
+    },
+    "/api/system/resources": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "system_resources_api_system_resources_get"
+      }
+    },
+    "/api/system/stream": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "system_stream_api_system_stream_get"
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_tasks_api_tasks_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "create_task_api_tasks_post"
+      }
+    },
+    "/api/tasks/{task_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_api_tasks__task_id__get"
+      }
+    },
+    "/api/tasks/{task_id}/analytics": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_analytics_api_tasks__task_id__analytics_get"
+      }
+    },
+    "/api/tasks/{task_id}/cancel": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "cancel_task_api_tasks__task_id__cancel_post"
+      }
+    },
+    "/api/tasks/{task_id}/candidate-result-sets": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_candidate_result_sets_api_tasks__task_id__candidate_result_sets_get"
+      }
+    },
+    "/api/tasks/{task_id}/candidate-validations": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_candidate_validations_api_tasks__task_id__candidate_validations_get"
+      }
+    },
+    "/api/tasks/{task_id}/candidates/{candidate_id}/optimization-evidence-ledger": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "capture_optimization_evidence_ledger_api_tasks__task_id__candidates__candidate_id__optimization_evidence_ledger_post"
+      }
+    },
+    "/api/tasks/{task_id}/candidates/{candidate_id}/reproducibility-status": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "candidate_reproducibility_status_api_tasks__task_id__candidates__candidate_id__reproducibility_status_get"
+      }
+    },
+    "/api/tasks/{task_id}/candidates/{candidate_id}/requirement-evaluation": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "candidate_requirement_evaluation_api_tasks__task_id__candidates__candidate_id__requirement_evaluation_get"
+      }
+    },
+    "/api/tasks/{task_id}/cases": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_cases_api_tasks__task_id__cases_get"
+      }
+    },
+    "/api/tasks/{task_id}/commands": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "list_task_commands_v1"
+      },
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "execute_task_command_v1"
+      }
+    },
+    "/api/tasks/{task_id}/decision-timeline": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_decision_timeline_api_tasks__task_id__decision_timeline_get"
+      },
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "append_optimization_decision_timeline_api_tasks__task_id__decision_timeline_post"
+      }
+    },
+    "/api/tasks/{task_id}/engineering-lineage": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_engineering_lineage_api_tasks__task_id__engineering_lineage_get"
+      }
+    },
+    "/api/tasks/{task_id}/events": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_events_api_tasks__task_id__events_get"
+      }
+    },
+    "/api/tasks/{task_id}/execution-state": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_execution_aggregate_state_v1"
+      }
+    },
+    "/api/tasks/{task_id}/experiment-lifecycle": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_experiment_lifecycle_api_tasks__task_id__experiment_lifecycle_get"
+      }
+    },
+    "/api/tasks/{task_id}/export.csv": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "export_task_csv_api_tasks__task_id__export_csv_get"
+      }
+    },
+    "/api/tasks/{task_id}/export.json": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "export_task_json_api_tasks__task_id__export_json_get"
+      }
+    },
+    "/api/tasks/{task_id}/export.zip": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "export_task_zip_api_tasks__task_id__export_zip_get"
+      }
+    },
+    "/api/tasks/{task_id}/fea-result-summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_fea_result_summary_api_tasks__task_id__fea_result_summary_get"
+      }
+    },
+    "/api/tasks/{task_id}/logs": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_logs_api_tasks__task_id__logs_get"
+      }
+    },
+    "/api/tasks/{task_id}/monitor": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_monitor_api_tasks__task_id__monitor_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_api_tasks__task_id__optimization_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-authority-audit": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_authority_audit_api_tasks__task_id__optimization_authority_audit_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-contract": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_contract_api_tasks__task_id__optimization_contract_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-decision-snapshot": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_decision_snapshot_api_tasks__task_id__optimization_decision_snapshot_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-evidence-audit": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_evidence_audit_api_tasks__task_id__optimization_evidence_audit_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-evidence-ledgers": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_evidence_ledgers_api_tasks__task_id__optimization_evidence_ledgers_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-guidance": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_guidance_api_tasks__task_id__optimization_guidance_get"
+      }
+    },
+    "/api/tasks/{task_id}/optimization-workbench": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_optimization_workbench_api_tasks__task_id__optimization_workbench_get"
+      }
+    },
+    "/api/tasks/{task_id}/report.html": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "export_task_report_api_tasks__task_id__report_html_get"
+      }
+    },
+    "/api/tasks/{task_id}/result-comparison": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_result_comparison_api_tasks__task_id__result_comparison_get"
+      }
+    },
+    "/api/tasks/{task_id}/result-set-aggregate": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_result_set_aggregate_api_tasks__task_id__result_set_aggregate_get"
+      }
+    },
+    "/api/tasks/{task_id}/retry": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "retry_task_api_tasks__task_id__retry_post"
+      }
+    },
+    "/api/tasks/{task_id}/retry-incomplete": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "retry_incomplete_task_cases_api_tasks__task_id__retry_incomplete_post"
+      }
+    },
+    "/api/tasks/{task_id}/robustness": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_robustness_api_tasks__task_id__robustness_get"
+      }
+    },
+    "/api/tasks/{task_id}/sensitivity": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_sensitivity_api_tasks__task_id__sensitivity_get"
+      }
+    },
+    "/api/tasks/{task_id}/series-overlay": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_series_overlay_api_tasks__task_id__series_overlay_get"
+      }
+    },
+    "/api/tasks/{task_id}/stream": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_stream_api_tasks__task_id__stream_get"
+      }
+    },
+    "/api/tasks/{task_id}/summary": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_task_summary_api_tasks__task_id__summary_get"
+      }
+    },
+    "/api/tasks/{task_id}/timeline": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "task_timeline_api_tasks__task_id__timeline_get"
+      }
+    },
+    "/api/tasks/{task_id}/workflow-status": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "analysis_task_workflow_status_api_tasks__task_id__workflow_status_get"
+      }
+    },
+    "/api/templates": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "list_templates_api_templates_get"
+      }
+    },
+    "/api/templates/{template_id}": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "get_template_api_templates__template_id__get"
+      }
+    },
+    "/api/templates/{template_id}/diagnostics": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "template_diagnostics_api_templates__template_id__diagnostics_get"
+      }
+    },
+    "/api/templates/{template_id}/geometry-check": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "template_geometry_runtime_check_api_templates__template_id__geometry_check_post"
+      }
+    },
+    "/api/templates/{template_id}/geometry-precheck": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "template_geometry_precheck_api_templates__template_id__geometry_precheck_post"
+      }
+    },
+    "/api/templates/{template_id}/runtime-verify": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "runtime_verify_template_api_templates__template_id__runtime_verify_post"
+      }
+    },
+    "/api/templates/{template_id}/ui-schema": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "template_ui_schema_api_templates__template_id__ui_schema_get"
+      }
+    },
+    "/api/ui-soak-qualification": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "ui_soak_qualification_summary_api_ui_soak_qualification_get"
+      }
+    },
+    "/api/ui-soak-qualification-runs/import": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "import_ui_soak_qualification_run_api_ui_soak_qualification_runs_import_post"
+      }
+    },
+    "/api/ui-soak-qualification/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "ui_soak_qualification_matrix_api_ui_soak_qualification_matrix_get"
+      }
+    },
+    "/api/ui/lexicon": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "ui_lexicon_api_ui_lexicon_get"
+      }
+    },
+    "/api/units/convert": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "convert_engineering_unit_api_units_convert_get"
+      }
+    },
+    "/api/validate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "validate_design_api_validate_post"
+      }
+    },
+    "/api/version-manifest": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "version_manifest_api_version_manifest_get"
+      }
+    },
+    "/api/windows-golden-journey-qualification": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "windows_golden_journey_qualification_summary_api_windows_golden_journey_qualification_get"
+      }
+    },
+    "/api/windows-golden-journey-qualification-runs/import": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "import_windows_golden_journey_qualification_run_api_windows_golden_journey_qualification_runs_import_post"
+      }
+    },
+    "/api/windows-golden-journey-qualification/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "windows_golden_journey_qualification_matrix_api_windows_golden_journey_qualification_matrix_get"
+      }
+    },
+    "/api/windows-production-qualification": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "windows_production_qualification_summary_api_windows_production_qualification_get"
+      }
+    },
+    "/api/windows-production-qualification-runs/import": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "import_windows_production_qualification_run_api_windows_production_qualification_runs_import_post"
+      }
+    },
+    "/api/windows-production-qualification/matrix": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "windows_production_qualification_matrix_api_windows_production_qualification_matrix_get"
+      }
+    },
+    "/api/workflow-parity/experiment-estimate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "workflow_parity_experiment_estimate_api_workflow_parity_experiment_estimate_post"
+      }
+    },
+    "/api/workflow-parity/flow-circuit/validate": {
+      "post": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "workflow_parity_flow_circuit_api_workflow_parity_flow_circuit_validate_post"
+      }
+    },
+    "/api/workflow-parity/qualification": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "workflow_parity_qualification_api_workflow_parity_qualification_get"
+      }
+    },
+    "/api/workflow/readiness": {
+      "get": {
+        "status_codes": [
+          "200",
+          "422"
+        ],
+        "operation_id": "workflow_readiness_api_workflow_readiness_get"
+      }
+    },
+    "/api/workstation-acceptance": {
+      "get": {
+        "status_codes": [
+          "200"
+        ],
+        "operation_id": "workstation_acceptance_summary_api_workstation_acceptance_get"
+      }
+    },
+    "/api/workstation-acceptance-runs/import": {
+      "post": {
+        "status_codes": [
+          "201",
+          "422"
+        ],
+        "operation_id": "import_workstation_acceptance_run_api_workstation_acceptance_runs_import_post"
+      }
+    }
+  }
+}

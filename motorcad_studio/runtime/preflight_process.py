@@ -5,7 +5,7 @@ import queue
 import time
 import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .solver_process import terminate_process_tree
 
@@ -40,9 +40,24 @@ def _child(payload: dict[str, Any], result_queue: Any) -> None:
 class MotorCADPreflightRunner:
     """Run a deep Motor-CAD environment check outside the API server process."""
 
-    def __init__(self, timeout_s: float = 60.0, terminate_grace_s: float = 3.0):
+    def __init__(
+        self,
+        timeout_s: float = 60.0,
+        terminate_grace_s: float = 3.0,
+        log: Callable[[str, str, dict[str, Any]], None] | None = None,
+    ):
         self.timeout_s = max(5.0, float(timeout_s))
         self.terminate_grace_s = max(0.2, float(terminate_grace_s))
+        self.log = log
+
+    def _log(self, event_type: str, message: str, payload: dict[str, Any] | None = None) -> None:
+        if self.log is None:
+            return
+        try:
+            self.log(event_type, message, dict(payload or {}))
+        except Exception:
+            # Diagnostics must never destabilize the environment check itself.
+            pass
 
     def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         ctx = mp.get_context("spawn")
@@ -50,6 +65,11 @@ class MotorCADPreflightRunner:
         process = ctx.Process(target=_child, args=(payload, result_queue), daemon=False)
         process.start()
         started = time.monotonic()
+        self._log(
+            "PREFLIGHT_PROCESS_STARTED",
+            "Motor-CAD deep preflight worker started",
+            {"pid": process.pid, "timeout_s": self.timeout_s},
+        )
         try:
             while True:
                 try:
@@ -72,7 +92,12 @@ class MotorCADPreflightRunner:
                         "error": response.get("traceback"),
                     }
                 if time.monotonic() - started >= self.timeout_s:
-                    terminate_process_tree(process.pid, self.terminate_grace_s)
+                    cleanup = terminate_process_tree(process.pid, self.terminate_grace_s)
+                    self._log(
+                        "PREFLIGHT_PROCESS_TIMEOUT",
+                        "Motor-CAD deep preflight timed out and cleanup was requested",
+                        {"pid": process.pid, "elapsed_s": round(time.monotonic() - started, 3), "cleanup": cleanup},
+                    )
                     return {
                         "ok": False,
                         "deep": True,
@@ -104,9 +129,20 @@ class MotorCADPreflightRunner:
                     return {"ok": False, "deep": True, "checks": [{"id": "preflight_worker", "status": "FAIL", "message": response.get("error") or "深度检查失败"}]}
                 time.sleep(0.05)
         finally:
+            cleanup = None
             if process.is_alive():
-                terminate_process_tree(process.pid, self.terminate_grace_s)
+                cleanup = terminate_process_tree(process.pid, self.terminate_grace_s)
             process.join(timeout=1)
+            self._log(
+                "PREFLIGHT_PROCESS_FINISHED",
+                "Motor-CAD deep preflight worker lifecycle finished",
+                {
+                    "pid": process.pid,
+                    "exitcode": process.exitcode,
+                    "elapsed_s": round(time.monotonic() - started, 3),
+                    "cleanup": cleanup,
+                },
+            )
             try:
                 result_queue.close()
                 result_queue.join_thread()

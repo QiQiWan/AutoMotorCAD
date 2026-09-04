@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from .release import BUILTIN_MODULE_CONTRACTS, PRODUCT_VERSION
+
 
 class AnalysisWorkspaceService:
     """Read/write facade for the interactive Analysis editor.
@@ -14,8 +16,8 @@ class AnalysisWorkspaceService:
     """
 
     # Keep the public payload contract stable while evolving the implementation.
-    CONTRACT_VERSION = "0.89-G4"
-    IMPLEMENTATION_VERSION = "0.89-G4.5"
+    CONTRACT_VERSION = BUILTIN_MODULE_CONTRACTS["analysis.domain"]
+    IMPLEMENTATION_VERSION = PRODUCT_VERSION
 
     def __init__(self, *, platform: Any, solutions: Any):
         self.platform = platform

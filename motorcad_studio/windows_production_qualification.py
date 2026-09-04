@@ -16,7 +16,7 @@ WINDOWS_PRODUCTION_QUALIFICATION_AUTHORITY = "WindowsMotorCADProductionQualifica
 WINDOWS_PRODUCTION_QUALIFICATION_CONTRACT_VERSION = "0.88-F"
 EXPECTED_STUDIO_VERSION = __version__
 EXPECTED_MOTORCAD_VERSION = "2026R1"
-EXPECTED_PYMOTORCAD_VERSION = "0.8.8"
+EXPECTED_PYMOTORCAD_VERSION = None  # External API version is evidence, not a Studio release identity.
 
 REQUIRED_SCENARIOS: dict[str, dict[str, str]] = {
     "SPM": {"template_id": "i5_Industrial_SPM_Servo_Tooth_Wound", "profile_id": "spm", "family": "PM"},
@@ -60,8 +60,8 @@ REQUIRED_FAULT_PROTOCOLS: dict[str, dict[str, str]] = {
     },
     "PYMOTORCAD_INCOMPATIBLE": {
         "automation": "operator_safe",
-        "trigger": "Use an isolated Python environment whose PyMotorCAD version differs from the frozen 0.8.8 contract.",
-        "expected_signal": "Production qualification blocks with PYMOTORCAD_VERSION_MISMATCH before evidence can be promoted.",
+        "trigger": "Use an isolated Python environment where PyMotorCAD cannot be imported or required Motor-CAD Automation capabilities are unavailable.",
+        "expected_signal": "Production qualification blocks on missing PyMotorCAD/Motor-CAD capabilities before evidence can be promoted.",
     },
     "RPC_SESSION_DISCONNECT": {
         "automation": "operator_required",
@@ -203,7 +203,8 @@ def qualification_matrix_spec() -> dict[str, Any]:
             "platform": "Windows",
             "studio_version": EXPECTED_STUDIO_VERSION,
             "motorcad_binary_version": EXPECTED_MOTORCAD_VERSION,
-            "pymotorcad_version": EXPECTED_PYMOTORCAD_VERSION,
+            "pymotorcad_version": None,
+            "pymotorcad_policy": "capability-qualified",
             "licensed_motorcad": True,
             "mock_disabled": True,
             "deep_preflight": True,
@@ -477,8 +478,9 @@ class WindowsProductionQualificationService:
         unresolved = {"", "unresolved", "unknown", "n/a", "none"}
         if any(str(host.get(key) or "").strip().lower() in unresolved for key in host_required):
             blockers.append("WINDOWS_HOST_FINGERPRINT_INCOMPLETE")
-        if str(host.get("pymotorcad_version") or "").strip() != EXPECTED_PYMOTORCAD_VERSION:
-            blockers.append("PYMOTORCAD_VERSION_MISMATCH")
+        pymotorcad_version = str(host.get("pymotorcad_version") or "").strip().lower()
+        if pymotorcad_version in unresolved:
+            blockers.append("PYMOTORCAD_RUNTIME_NOT_PROVEN")
         if str(host.get("motorcad_normalized_version") or "").strip() != EXPECTED_MOTORCAD_VERSION:
             blockers.append("MOTORCAD_BINARY_VERSION_MISMATCH")
         if str(host.get("motorcad_binary_probe_status") or "").strip().upper() != "PASS":

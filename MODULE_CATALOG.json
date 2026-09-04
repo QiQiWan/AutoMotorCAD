@@ -1,0 +1,558 @@
+{
+  "authority": "StudioProductModuleCatalogV1",
+  "catalog_version": "7",
+  "product_version": "0.91.8",
+  "compatible": true,
+  "module_count": 48,
+  "backend_catalog_count": 41,
+  "frontend_catalog_count": 15,
+  "cross_surface_count": 8,
+  "blocking_issue_count": 0,
+  "issues": [],
+  "modules": [
+    {
+      "module_id": "analysis.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.analysis"
+      ]
+    },
+    {
+      "module_id": "analysis.domain",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.analysis_domain"
+      ]
+    },
+    {
+      "module_id": "api.http",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.bootstrap.app_factory"
+      ]
+    },
+    {
+      "module_id": "api.operations",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.api.operations"
+      ]
+    },
+    {
+      "module_id": "control-plane.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.control_plane"
+      ]
+    },
+    {
+      "module_id": "core.configuration",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.settings"
+      ]
+    },
+    {
+      "module_id": "core.release",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.release"
+      ]
+    },
+    {
+      "module_id": "data-factory.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.data_factory_control"
+      ]
+    },
+    {
+      "module_id": "engineering.context",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.engineering_context"
+      ]
+    },
+    {
+      "module_id": "engineering.experience",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.api.operations.engineering_experience"
+      ]
+    },
+    {
+      "module_id": "execution.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.execution"
+      ]
+    },
+    {
+      "module_id": "execution.runtime",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.runtime"
+      ]
+    },
+    {
+      "module_id": "field-data.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.field_data"
+      ]
+    },
+    {
+      "module_id": "frontend.action-readiness",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCSActionReadiness"
+      ]
+    },
+    {
+      "module_id": "frontend.analysis",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "frontend_legacy/analysis",
+        "MCSUnifiedAnalysis"
+      ]
+    },
+    {
+      "module_id": "frontend.binary-field-viewer",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "static/features/results/binary-field-viewer.js",
+        "MotorCADStudio"
+      ]
+    },
+    {
+      "module_id": "frontend.context",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCSEngineeringContext"
+      ]
+    },
+    {
+      "module_id": "frontend.control-plane",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "static/features/control-plane/feature.js",
+        "MotorCADStudio"
+      ]
+    },
+    {
+      "module_id": "frontend.core",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "static/core/bootstrap.js",
+        "MotorCADStudio"
+      ]
+    },
+    {
+      "module_id": "frontend.design",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "frontend_legacy/design",
+        "MCSDesignRenderer"
+      ]
+    },
+    {
+      "module_id": "frontend.fea-viewer",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCSFieldViewer"
+      ]
+    },
+    {
+      "module_id": "frontend.i18n",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCS_I18N"
+      ]
+    },
+    {
+      "module_id": "frontend.release",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCS_RELEASE"
+      ]
+    },
+    {
+      "module_id": "frontend.results",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "frontend_legacy/results",
+        "MCSResultsWorkbench"
+      ]
+    },
+    {
+      "module_id": "frontend.router",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCSRouter"
+      ]
+    },
+    {
+      "module_id": "frontend.runtime-capsule",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "static/core/legacy-runtime.js",
+        "MCSFrontendModuleRegistry"
+      ]
+    },
+    {
+      "module_id": "frontend.shell",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog",
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "frontend_legacy/workflow/global-shell-convergence.js",
+        "MCSGlobalShellConvergence"
+      ]
+    },
+    {
+      "module_id": "frontend.standard-validation",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "browser-catalog"
+      ],
+      "entrypoints": [
+        "MCSStandardValidation"
+      ]
+    },
+    {
+      "module_id": "motor.domain",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.motor_domain"
+      ]
+    },
+    {
+      "module_id": "motor.plugins",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.plugins"
+      ]
+    },
+    {
+      "module_id": "native.closure",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.native_runtime"
+      ]
+    },
+    {
+      "module_id": "native.motorcad",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.native.motorcad"
+      ]
+    },
+    {
+      "module_id": "optimization.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.optimization"
+      ]
+    },
+    {
+      "module_id": "optimization.domain",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.optimization_domain"
+      ]
+    },
+    {
+      "module_id": "platform.bootstrap",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.bootstrap"
+      ]
+    },
+    {
+      "module_id": "platform.observability",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.platform.observability"
+      ]
+    },
+    {
+      "module_id": "platform.release",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.platform.release"
+      ]
+    },
+    {
+      "module_id": "platform.semantics",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.api.operations.platform_semantics"
+      ]
+    },
+    {
+      "module_id": "platform.system",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.platform.system"
+      ]
+    },
+    {
+      "module_id": "qualification",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.release_candidate_gate"
+      ]
+    },
+    {
+      "module_id": "qualification.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.qualification_control"
+      ]
+    },
+    {
+      "module_id": "requirements.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.requirements_control"
+      ]
+    },
+    {
+      "module_id": "result.domain",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.result_domain"
+      ]
+    },
+    {
+      "module_id": "results.application",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.results"
+      ]
+    },
+    {
+      "module_id": "workspace.materials",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.materials"
+      ]
+    },
+    {
+      "module_id": "workspace.motor-design",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.motor_design"
+      ]
+    },
+    {
+      "module_id": "workspace.projects",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.projects"
+      ]
+    },
+    {
+      "module_id": "workspace.solutions",
+      "implementation_version": "0.91.8",
+      "contract_version": "1",
+      "surfaces": [
+        "backend-catalog"
+      ],
+      "entrypoints": [
+        "motorcad_studio.modules.solutions"
+      ]
+    }
+  ]
+}

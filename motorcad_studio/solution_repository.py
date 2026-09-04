@@ -266,6 +266,8 @@ class SolutionRepository:
         explicit_parameter_ids: list[str] | None = None,
         automation_parameters: dict[str, dict[str, Any]] | None = None,
         capability_snapshot: dict[str, Any] | None = None,
+        editor_transaction: dict[str, Any] | None = None,
+        native_reconciliation: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         solution_row = self.db.query_one("SELECT * FROM solutions WHERE id=?", (solution_id,))
         if not solution_row:
@@ -303,6 +305,12 @@ class SolutionRepository:
             }
         )
         revision_id = f"DRV-{uuid.uuid4().hex[:10].upper()}"
+        editor_payload = dict(editor_transaction or {})
+        if editor_payload:
+            # Bind the immutable revision identity before the INSERT so commit-key
+            # recovery survives a process stop immediately after the transaction.
+            editor_payload["committed_revision_id"] = revision_id
+        native_payload = dict(native_reconciliation or {})
         now = self.db.now()
         with self.db.transaction() as conn:
             current = conn.execute(
@@ -313,8 +321,8 @@ class SolutionRepository:
                 """INSERT INTO motor_revisions(
                        id,solution_id,revision,parameters_json,materials_json,explicit_parameter_ids_json,
                        automation_parameters_json,capability_snapshot_json,source_snapshot_json,mot_artifact_path,
-                       notes,content_hash,created_at
-                   ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       editor_transaction_json,native_reconciliation_json,notes,content_hash,created_at
+                   ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     revision_id,
                     solution_id,
@@ -326,6 +334,8 @@ class SolutionRepository:
                     self.db.dumps(capability_payload),
                     self.db.dumps(source_payload),
                     solution_row.get("source_mot_path"),
+                    self.db.dumps(editor_payload),
+                    self.db.dumps(native_payload),
                     notes,
                     content_hash,
                     now,

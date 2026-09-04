@@ -413,7 +413,12 @@ class NativeGeometryWindingReadbackAuthority:
 
     def capture_geometry(self, mc: Any, plan: MotorCADBindingPlan) -> NativeGeometryReadback:
         contract = dict(plan.metadata.get("native_readback_contract") or {})
-        row = NativeGeometryReadback(api_supported=hasattr(mc, "check_if_geometry_is_valid"))
+        is_afm = str(plan.identity.topology_id or plan.identity.family_id or "").strip().lower() == "afpm"
+        row = NativeGeometryReadback(
+            api_supported=hasattr(mc, "check_if_geometry_is_valid"),
+            validation_mode="afm_linear_cross_section" if is_afm else "generic_geometry_api",
+            validation_authority="MotorCADAFMLinearCrossSectionValidationV1" if is_afm else "MotorCADGenericGeometryValidationV1",
+        )
         for item in contract.get("parameters") or []:
             item = dict(item)
             if item.get("domain") not in {"topology", "geometry", "magnet"}:
@@ -429,44 +434,68 @@ class NativeGeometryWindingReadbackAuthority:
                 else:
                     row.mismatched_required.append(value.semantic_id)
 
-        if row.api_supported:
-            try:
-                raw = mc.check_if_geometry_is_valid(0)
-                row.raw_return = _safe_json(raw)
-                # Some PyMotorCAD versions return False instead of raising on invalid
-                # geometry. Treat an explicit boolean False as blocking evidence.
-                row.valid = False if isinstance(raw, bool) and raw is False else True
-            except Exception as exc:
-                row.valid = False
-                row.errors.append(f"{type(exc).__name__}: {exc}")
+        if is_afm:
+            row.valid = True
+            row.raw_return = {
+                "skipped": True,
+                "reason": "AFM uses Motor-CAD linear cross-section/slice geometry; generic region-overlap validation is diagnostic-only",
+            }
+            row.validation_limitations = [
+                "check_if_geometry_is_valid is not blocking for AFM standard-template precheck",
+                "get_geometry_tree is unavailable for AFM on the observed runtime",
+                "real-solve smoke qualification remains required for production evidence",
+            ]
+            geometry_tree = None
+            spatial = {
+                "schema_version": 1,
+                "authority": "NativeSpatialGeometryAuthorityV1",
+                "status": "UNAVAILABLE",
+                "source_api": None,
+                "region_count": 0,
+                "regions": [],
+                "warnings": ["AFM geometry tree capture skipped: use Linear/Axial Cross-Section native views and FEA result geometry."],
+                "errors": [],
+            }
+            row.spatial_geometry = spatial
+        else:
+            if row.api_supported:
+                try:
+                    raw = mc.check_if_geometry_is_valid(0)
+                    row.raw_return = _safe_json(raw)
+                    # Some PyMotorCAD versions return False instead of raising on invalid
+                    # geometry. Treat an explicit boolean False as blocking evidence.
+                    row.valid = False if isinstance(raw, bool) and raw is False else True
+                except Exception as exc:
+                    row.valid = False
+                    row.errors.append(f"{type(exc).__name__}: {exc}")
 
-        geometry_tree = None
-        if hasattr(mc, "get_geometry_tree"):
-            try:
-                geometry_tree = mc.get_geometry_tree()
-                normalized = _safe_json(geometry_tree)
-                row.geometry_tree_supported = True
-                row.geometry_tree_digest = _stable_hash(normalized)
-                row.region_names = _collect_region_names(normalized)
-                if hasattr(mc, "get_region"):
-                    for name in row.region_names[:120]:
-                        try:
-                            region = mc.get_region(name)
-                            material = getattr(region, "material", None)
-                            if material is not None:
-                                row.region_materials[name] = str(material)
-                        except Exception:
-                            continue
-            except Exception as exc:
-                row.errors.append(f"geometry_tree: {type(exc).__name__}: {exc}")
+            geometry_tree = None
+            if hasattr(mc, "get_geometry_tree"):
+                try:
+                    geometry_tree = mc.get_geometry_tree()
+                    normalized = _safe_json(geometry_tree)
+                    row.geometry_tree_supported = True
+                    row.geometry_tree_digest = _stable_hash(normalized)
+                    row.region_names = _collect_region_names(normalized)
+                    if hasattr(mc, "get_region"):
+                        for name in row.region_names[:120]:
+                            try:
+                                region = mc.get_region(name)
+                                material = getattr(region, "material", None)
+                                if material is not None:
+                                    row.region_materials[name] = str(material)
+                            except Exception:
+                                continue
+                except Exception as exc:
+                    row.errors.append(f"geometry_tree: {type(exc).__name__}: {exc}")
 
-        spatial = capture_native_spatial_geometry(
-            mc, geometry_tree=geometry_tree,
-            design_snapshot_hash=plan.design_snapshot_hash,
-            binding_plan_hash=plan.content_hash(),
-            model_source_fingerprint=contract.get("model_source_fingerprint"),
-        )
-        row.spatial_geometry = spatial
+            spatial = capture_native_spatial_geometry(
+                mc, geometry_tree=geometry_tree,
+                design_snapshot_hash=plan.design_snapshot_hash,
+                binding_plan_hash=plan.content_hash(),
+                model_source_fingerprint=contract.get("model_source_fingerprint"),
+            )
+            row.spatial_geometry = spatial
         if spatial.get("region_count"):
             row.region_names = list(dict.fromkeys([*row.region_names, *[str(item.get("name")) for item in spatial.get("regions") or [] if item.get("name")]]))[:320]
             for item in spatial.get("regions") or []:

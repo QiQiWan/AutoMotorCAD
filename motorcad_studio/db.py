@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 
 class Database:
-    SCHEMA_VERSION = 45
+    SCHEMA_VERSION = 56
 
     def __init__(self, path: Path):
         self.path = path
@@ -25,7 +25,7 @@ class Database:
         self.initialize()
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self, *, commit: bool = True) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.path, timeout=30, check_same_thread=False)
         with self._lifecycle_lock:
             self._active_connections += 1
@@ -38,11 +38,14 @@ class Database:
             # decrements the lifecycle counter.
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute("PRAGMA busy_timeout=5000")
+            conn.execute("PRAGMA synchronous=NORMAL")
             before_changes = conn.total_changes
             yield conn
-            conn.commit()
-            if conn.total_changes > before_changes:
-                self._change_generation += 1
+            if commit:
+                conn.commit()
+                if conn.total_changes > before_changes:
+                    self._change_generation += 1
         finally:
             try:
                 conn.close()
@@ -210,7 +213,7 @@ class Database:
         """
         canonical_names = ("solutions", "motor_revisions", "solution_drafts")
         legacy_names = ("designs", "design_revisions", "design_drafts")
-        with self._lock, self.connect() as conn:
+        with self.connect(commit=False) as conn:
             schema_row = conn.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()
             objects = {
                 str(row[0]): str(row[1])
@@ -240,14 +243,366 @@ class Database:
     @contextmanager
     def read_snapshot(self) -> Iterator[sqlite3.Connection]:
         """Hold one consistent SQLite read snapshot across a multi-query resolver."""
-        with self._lock, self.connect() as conn:
+        # WAL gives this connection a stable read snapshot while permitting unrelated
+        # readers and writers to progress. A process-wide Python lock here turned one
+        # slow filesystem/commit operation into head-of-line blocking for every route.
+        with self.connect(commit=False) as conn:
             conn.execute("BEGIN")
-            yield conn
+            try:
+                yield conn
+            finally:
+                conn.rollback()
+
+    @classmethod
+    def _install_v091_control_plane_schema(cls, conn: sqlite3.Connection) -> None:
+        """Install command, optimization, qualification, native and requirement contracts.
+
+        These tables are deliberately separate from historical optimization tables. They
+        provide deterministic idempotency, optimistic concurrency, immutable evidence and
+        fencing-token safety while preserving existing project databases in place.
+        """
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS command_ledger_v2 (
+                command_id TEXT PRIMARY KEY,
+                scope TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL,
+                request_hash TEXT NOT NULL,
+                status TEXT NOT NULL,
+                request_json TEXT NOT NULL,
+                response_json TEXT NOT NULL DEFAULT '{}',
+                error_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                completed_at TEXT,
+                UNIQUE(scope,idempotency_key)
+            );
+            CREATE INDEX IF NOT EXISTS idx_command_ledger_v2_status
+                ON command_ledger_v2(status,updated_at);
+
+            CREATE TABLE IF NOT EXISTS outbox_events_v2 (
+                id TEXT PRIMARY KEY,
+                event_type TEXT NOT NULL,
+                aggregate_type TEXT NOT NULL,
+                aggregate_id TEXT NOT NULL,
+                aggregate_version INTEGER,
+                payload_json TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'PENDING',
+                attempts INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                published_at TEXT,
+                last_error TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_outbox_events_v2_pending
+                ON outbox_events_v2(status,created_at);
+
+            CREATE TABLE IF NOT EXISTS optimization_campaigns_v2 (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'DRAFT',
+                objectives_json TEXT NOT NULL DEFAULT '[]',
+                constraints_json TEXT NOT NULL DEFAULT '[]',
+                metadata_json TEXT NOT NULL DEFAULT '{}',
+                content_hash TEXT NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_optimization_campaigns_v2_project
+                ON optimization_campaigns_v2(project_id,updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS optimization_candidates_v2 (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                parameters_json TEXT NOT NULL,
+                parameters_hash TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'PROPOSED',
+                evaluation_json TEXT NOT NULL DEFAULT '{}',
+                result_bundle_id TEXT,
+                result_content_hash TEXT,
+                qualification_decision_id TEXT,
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(campaign_id,parameters_hash),
+                FOREIGN KEY(campaign_id) REFERENCES optimization_campaigns_v2(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_optimization_candidates_v2_campaign
+                ON optimization_candidates_v2(campaign_id,status,updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS optimization_promotions_v2 (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                candidate_id TEXT NOT NULL UNIQUE,
+                source_version INTEGER NOT NULL,
+                evidence_json TEXT NOT NULL,
+                evidence_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(campaign_id) REFERENCES optimization_campaigns_v2(id),
+                FOREIGN KEY(candidate_id) REFERENCES optimization_candidates_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS replay_plans_v2 (
+                id TEXT PRIMARY KEY,
+                subject_type TEXT NOT NULL,
+                subject_id TEXT NOT NULL,
+                input_hash TEXT NOT NULL,
+                environment_hash TEXT NOT NULL,
+                contract_versions_json TEXT NOT NULL,
+                steps_json TEXT NOT NULL,
+                plan_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS datasets_v2 (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                current_version_id TEXT,
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_datasets_v2_project
+                ON datasets_v2(project_id,updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS dataset_versions_v2 (
+                id TEXT PRIMARY KEY,
+                dataset_id TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                manifest_json TEXT NOT NULL,
+                artifact_refs_json TEXT NOT NULL DEFAULT '[]',
+                content_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(dataset_id,revision),
+                UNIQUE(dataset_id,content_hash),
+                FOREIGN KEY(dataset_id) REFERENCES datasets_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS dataset_build_jobs_v2 (
+                id TEXT PRIMARY KEY,
+                dataset_version_id TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'QUEUED',
+                progress REAL NOT NULL DEFAULT 0,
+                worker_ref TEXT,
+                evidence_json TEXT NOT NULL DEFAULT '{}',
+                error_json TEXT NOT NULL DEFAULT '{}',
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                finished_at TEXT,
+                FOREIGN KEY(dataset_version_id) REFERENCES dataset_versions_v2(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_dataset_build_jobs_v2_version
+                ON dataset_build_jobs_v2(dataset_version_id,updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS dataset_quality_reports_v2 (
+                id TEXT PRIMARY KEY,
+                dataset_version_id TEXT NOT NULL,
+                build_job_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                metrics_json TEXT NOT NULL DEFAULT '{}',
+                report_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(dataset_version_id) REFERENCES dataset_versions_v2(id),
+                FOREIGN KEY(build_job_id) REFERENCES dataset_build_jobs_v2(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_dataset_quality_reports_v2_version
+                ON dataset_quality_reports_v2(dataset_version_id,created_at DESC);
+
+            CREATE TABLE IF NOT EXISTS dataset_publications_v2 (
+                id TEXT PRIMARY KEY,
+                dataset_id TEXT NOT NULL,
+                dataset_version_id TEXT NOT NULL UNIQUE,
+                quality_report_id TEXT NOT NULL,
+                publication_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(dataset_id) REFERENCES datasets_v2(id),
+                FOREIGN KEY(dataset_version_id) REFERENCES dataset_versions_v2(id),
+                FOREIGN KEY(quality_report_id) REFERENCES dataset_quality_reports_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS qualification_campaigns_v2 (
+                id TEXT PRIMARY KEY,
+                subject_type TEXT NOT NULL,
+                subject_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                required_evidence_kinds_json TEXT NOT NULL DEFAULT '[]',
+                status TEXT NOT NULL DEFAULT 'OPEN',
+                head_hash TEXT NOT NULL DEFAULT '',
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_qualification_campaigns_v2_subject
+                ON qualification_campaigns_v2(subject_type,subject_id,updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS qualification_evidence_v2 (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                sequence INTEGER NOT NULL,
+                kind TEXT NOT NULL,
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                artifact_hashes_json TEXT NOT NULL DEFAULT '[]',
+                previous_hash TEXT NOT NULL,
+                envelope_hash TEXT NOT NULL UNIQUE,
+                actor TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(campaign_id,sequence),
+                FOREIGN KEY(campaign_id) REFERENCES qualification_campaigns_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS qualification_decisions_v2 (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL UNIQUE,
+                status TEXT NOT NULL,
+                reason TEXT NOT NULL DEFAULT '',
+                evidence_head_hash TEXT NOT NULL,
+                decision_hash TEXT NOT NULL UNIQUE,
+                actor TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(campaign_id) REFERENCES qualification_campaigns_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS native_runtime_leases_v2 (
+                resource_key TEXT PRIMARY KEY,
+                lease_id TEXT NOT NULL UNIQUE,
+                owner_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'ACTIVE',
+                metadata_json TEXT NOT NULL DEFAULT '{}',
+                acquired_at TEXT NOT NULL,
+                heartbeat_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                released_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS native_artifact_locks_v2 (
+                path_hash TEXT PRIMARY KEY,
+                canonical_path TEXT NOT NULL,
+                lease_id TEXT NOT NULL,
+                owner_id TEXT NOT NULL,
+                fencing_token INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'ACTIVE',
+                acquired_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                released_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS native_process_observations_v2 (
+                id TEXT PRIMARY KEY,
+                pid INTEGER NOT NULL,
+                parent_pid INTEGER,
+                executable_path TEXT NOT NULL,
+                resource_key TEXT,
+                lease_id TEXT,
+                owner_id TEXT,
+                process_state TEXT NOT NULL DEFAULT 'OBSERVED',
+                observed_at TEXT NOT NULL,
+                metadata_json TEXT NOT NULL DEFAULT '{}'
+            );
+            CREATE INDEX IF NOT EXISTS idx_native_process_observations_v2_pid
+                ON native_process_observations_v2(pid,observed_at DESC);
+
+            CREATE TABLE IF NOT EXISTS native_snapshots_v2 (
+                id TEXT PRIMARY KEY,
+                subject_type TEXT NOT NULL,
+                subject_id TEXT NOT NULL,
+                artifact_path TEXT,
+                artifact_hash TEXT NOT NULL,
+                readback_json TEXT NOT NULL,
+                readback_hash TEXT NOT NULL,
+                environment_hash TEXT NOT NULL,
+                snapshot_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS requirement_sets_v2 (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                name TEXT NOT NULL,
+                current_revision_id TEXT,
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS requirement_revisions_v2 (
+                id TEXT PRIMARY KEY,
+                requirement_set_id TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                parent_revision_id TEXT,
+                parent_hash TEXT NOT NULL DEFAULT '',
+                requirements_json TEXT NOT NULL,
+                revision_hash TEXT NOT NULL UNIQUE,
+                actor TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(requirement_set_id,revision),
+                FOREIGN KEY(requirement_set_id) REFERENCES requirement_sets_v2(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS tolerance_revisions_v2 (
+                id TEXT PRIMARY KEY,
+                subject_type TEXT NOT NULL,
+                subject_id TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                parent_revision_id TEXT,
+                parent_hash TEXT NOT NULL DEFAULT '',
+                tolerances_json TEXT NOT NULL,
+                correlations_json TEXT NOT NULL DEFAULT '[]',
+                revision_hash TEXT NOT NULL UNIQUE,
+                actor TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(subject_type,subject_id,revision)
+            );
+
+            CREATE TABLE IF NOT EXISTS probabilistic_qualifications_v2 (
+                id TEXT PRIMARY KEY,
+                requirement_revision_id TEXT NOT NULL,
+                tolerance_revision_id TEXT,
+                sample_count INTEGER NOT NULL,
+                result_json TEXT NOT NULL,
+                result_hash TEXT NOT NULL UNIQUE,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(requirement_revision_id) REFERENCES requirement_revisions_v2(id)
+            );
+            """
+        )
+        immutable_tables = (
+            "optimization_promotions_v2",
+            "replay_plans_v2",
+            "dataset_versions_v2",
+            "dataset_quality_reports_v2",
+            "dataset_publications_v2",
+            "qualification_evidence_v2",
+            "qualification_decisions_v2",
+            "native_snapshots_v2",
+            "requirement_revisions_v2",
+            "tolerance_revisions_v2",
+            "probabilistic_qualifications_v2",
+        )
+        for table in immutable_tables:
+            for action in ("UPDATE", "DELETE"):
+                trigger = f"immutable_{table}_{action.lower()}"
+                conn.execute(f"DROP TRIGGER IF EXISTS {trigger}")
+                conn.execute(
+                    f"CREATE TRIGGER {trigger} BEFORE {action} ON {table} "
+                    "BEGIN SELECT RAISE(ABORT,'IMMUTABLE_RECORD'); END"
+                )
+        conn.execute(
+            "INSERT OR REPLACE INTO schema_meta(key,value) VALUES('control_plane_schema_version','3')"
+        )
 
     def initialize(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as conn:
             conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
             conn.execute("CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             self._migrate_solution_vocabulary(conn)
             conn.executescript(
@@ -371,6 +726,37 @@ class Database:
                     FOREIGN KEY(solution_id) REFERENCES solutions(id),
                     FOREIGN KEY(base_motor_revision_id) REFERENCES motor_revisions(id)
                 );
+                CREATE TABLE IF NOT EXISTS design_transactions (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    solution_id TEXT NOT NULL,
+                    base_revision_id TEXT NOT NULL,
+                    base_revision_hash TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'OPEN',
+                    parameter_patch_json TEXT NOT NULL DEFAULT '{}',
+                    material_patch_json TEXT NOT NULL DEFAULT '{}',
+                    explicit_parameter_ids_json TEXT NOT NULL DEFAULT '[]',
+                    notes TEXT NOT NULL DEFAULT '',
+                    validation_json TEXT NOT NULL DEFAULT '{}',
+                    intent_hash TEXT NOT NULL DEFAULT '',
+                    commit_key TEXT NOT NULL,
+                    committed_revision_id TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    committed_at TEXT,
+                    aborted_at TEXT,
+                    FOREIGN KEY(project_id) REFERENCES projects(id),
+                    FOREIGN KEY(solution_id) REFERENCES solutions(id),
+                    FOREIGN KEY(base_revision_id) REFERENCES motor_revisions(id),
+                    FOREIGN KEY(committed_revision_id) REFERENCES motor_revisions(id)
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_design_transactions_commit_key
+                    ON design_transactions(commit_key);
+                CREATE INDEX IF NOT EXISTS idx_design_transactions_solution_status
+                    ON design_transactions(solution_id,status,updated_at);
+                CREATE INDEX IF NOT EXISTS idx_design_transactions_project
+                    ON design_transactions(project_id,updated_at);
                 CREATE TABLE IF NOT EXISTS analysis_definitions (
                     id TEXT PRIMARY KEY,
                     project_id TEXT NOT NULL,
@@ -395,6 +781,44 @@ class Database:
                     UNIQUE(analysis_definition_id,revision),
                     FOREIGN KEY(analysis_definition_id) REFERENCES analysis_definitions(id)
                 );
+                CREATE TABLE IF NOT EXISTS analysis_workflow_checks (
+                    id TEXT PRIMARY KEY,
+                    analysis_definition_id TEXT NOT NULL,
+                    analysis_revision_id TEXT NOT NULL,
+                    analysis_revision_hash TEXT NOT NULL,
+                    design_revision_id TEXT NOT NULL,
+                    design_revision_hash TEXT NOT NULL,
+                    check_kind TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    content_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(analysis_definition_id) REFERENCES analysis_definitions(id),
+                    FOREIGN KEY(analysis_revision_id) REFERENCES analysis_definition_revisions(id),
+                    FOREIGN KEY(design_revision_id) REFERENCES motor_revisions(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_analysis_workflow_checks_latest
+                    ON analysis_workflow_checks(analysis_definition_id,check_kind,created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_analysis_workflow_checks_revisions
+                    ON analysis_workflow_checks(analysis_revision_id,design_revision_id,created_at DESC);
+                CREATE TABLE IF NOT EXISTS execution_command_ledger (
+                    command_id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL,
+                    command_kind TEXT NOT NULL,
+                    request_hash TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    request_json TEXT NOT NULL DEFAULT '{}',
+                    result_json TEXT NOT NULL DEFAULT '{}',
+                    error_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    completed_at TEXT,
+                    FOREIGN KEY(task_id) REFERENCES tasks(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_execution_command_ledger_task
+                    ON execution_command_ledger(task_id,created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_execution_command_ledger_status
+                    ON execution_command_ledger(status,updated_at);
                 CREATE TABLE IF NOT EXISTS scenarios (
                     id TEXT PRIMARY KEY,
                     project_id TEXT NOT NULL,
@@ -1291,6 +1715,7 @@ class Database:
                    )
             """)
             self._install_legacy_solution_views(conn)
+            self._install_v091_control_plane_schema(conn)
             conn.execute(
                 "INSERT OR REPLACE INTO schema_meta(key,value) VALUES('schema_version',?)",
                 (str(self.SCHEMA_VERSION),),
@@ -1329,7 +1754,9 @@ class Database:
     def query_one(self, sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:
         for attempt in range(2):
             try:
-                with self._lock, self.connect() as conn:
+                # SQLite WAL supports concurrent readers. Avoid the process-wide
+                # write lock and an unnecessary commit for pure SELECT requests.
+                with self.connect(commit=False) as conn:
                     row = conn.execute(sql, params).fetchone()
                     return dict(row) if row else None
             except sqlite3.OperationalError as exc:
@@ -1345,7 +1772,7 @@ class Database:
     def query_all(self, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
         for attempt in range(2):
             try:
-                with self._lock, self.connect() as conn:
+                with self.connect(commit=False) as conn:
                     return [dict(row) for row in conn.execute(sql, params).fetchall()]
             except sqlite3.OperationalError as exc:
                 if attempt == 0 and "no such table" in str(exc).lower():

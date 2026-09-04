@@ -278,6 +278,10 @@ class NativeGeometryReadback(BaseModel):
     api_supported: bool = False
     valid: bool | None = None
     raw_return: Any = None
+    validation_mode: str = "generic_geometry_api"
+    validation_authority: str | None = None
+    validation_limitations: list[str] = Field(default_factory=list)
+    generic_api_diagnostic: dict[str, Any] = Field(default_factory=dict)
     parameter_values: dict[str, NativeReadbackValue] = Field(default_factory=dict)
     required_semantics: list[str] = Field(default_factory=list)
     matched_required: list[str] = Field(default_factory=list)

@@ -11,6 +11,71 @@ from typing import Any
 import yaml
 
 
+_AUTOMATION_NAME_ALIASES = {
+    # Legacy V0.91.6/V0.91.7 browser i18n could translate fragments inside raw
+    # Motor-CAD identifiers rendered in the advanced Solver JSON editor.  Keep a
+    # bounded compatibility bridge for already-persisted revisions.  New UI code
+    # marks raw-identifier surfaces as i18n-skip, so these aliases are migration
+    # protection rather than an ongoing translation mechanism.
+    "当前Definition": "CurrentDefinition",
+    "Torque计算": "TorqueCalculation",
+    "BackEMF计算": "BackEMFCalculation",
+    "CoggingTorque计算": "CoggingTorqueCalculation",
+}
+_AUTOMATION_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_\[\]()./+%:-]*$")
+
+
+def _known_static_automation_names() -> set[str]:
+    """Load the shipped solver-control identifiers used for conservative repair.
+
+    Repairs are accepted only when the reconstructed token is present in the
+    maintained Motor-CAD control catalog.  This prevents arbitrary localized text
+    from being silently converted into an Automation Parameter Name.
+    """
+    try:
+        path = Path(__file__).resolve().parent / "config" / "solver_controls.yaml"
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        return {
+            str(row.get("automation_name") or "").strip()
+            for rows in (payload.get("contexts") or {}).values()
+            for row in (rows or [])
+            if str(row.get("automation_name") or "").strip()
+        }
+    except Exception:
+        return set()
+
+
+_STATIC_AUTOMATION_NAMES = _known_static_automation_names()
+
+
+def canonical_automation_name(value: Any) -> str:
+    """Return the exact Motor-CAD Automation Parameter Name used at RPC time.
+
+    A legacy mixed-language key is repaired only when it maps unambiguously to a
+    shipped Motor-CAD identifier. Unknown/non-ASCII names still fail validation.
+    """
+    raw = str(value or "").strip()
+    alias = _AUTOMATION_NAME_ALIASES.get(raw)
+    if alias:
+        return alias
+    candidates: list[str] = []
+    if raw.startswith("当前"):
+        candidates.append("Current" + raw[len("当前"):])
+    if raw.endswith("计算"):
+        stem = raw[:-len("计算")]
+        candidates.extend((stem + "Calculation", stem + "Calc"))
+    for candidate in candidates:
+        if candidate in _STATIC_AUTOMATION_NAMES:
+            return candidate
+    return raw
+
+
+def valid_automation_name(value: Any) -> bool:
+    """Reject localized/corrupt raw identifiers before a Motor-CAD worker starts."""
+    name = canonical_automation_name(value)
+    return bool(name and name.isascii() and _AUTOMATION_NAME_PATTERN.fullmatch(name))
+
+
 _HEADER_ALIASES = {
     "automation_name": {"automation name", "automation_name", "parameter", "parameter name", "name", "variable", "variable name"},
     "value": {"value", "current value", "current_value", "default value"},
@@ -128,11 +193,16 @@ class AutomationParameterParser:
             for index, canonical in header_map.items():
                 if index < len(raw_row):
                     item[canonical] = raw_row[index].strip()
-            name = str(item.get("automation_name", "")).strip()
+            raw_name = str(item.get("automation_name", "")).strip()
+            name = canonical_automation_name(raw_name)
             if not name or name.lower().startswith("automation parameter"):
                 continue
             raw_value = str(item.get("value", ""))
             item["automation_name"] = name
+            if raw_name != name:
+                item["raw_automation_name"] = raw_name
+                item["name_normalized"] = True
+            item["valid_automation_name"] = valid_automation_name(name)
             item["value_type"] = _infer_value_type(raw_value) if raw_value else "unknown"
             item["current_value"] = _coerce_value(raw_value) if raw_value else None
             item["unit"] = str(item.get("unit", "")).strip()
@@ -152,7 +222,8 @@ class AutomationParameterParser:
             parts = re.split(r"\s{2,}", stripped)
             if len(parts) < 2:
                 continue
-            name = parts[0].strip()
+            raw_name = parts[0].strip()
+            name = canonical_automation_name(raw_name)
             if " " in name and not re.match(r"^[A-Za-z0-9_\[\]()./+%-]+$", name):
                 continue
             value = parts[1].strip() if len(parts) > 1 else ""
@@ -160,6 +231,9 @@ class AutomationParameterParser:
             description = " ".join(parts[3:]).strip() if len(parts) > 3 else ""
             output.append({
                 "automation_name": name,
+                "raw_automation_name": raw_name if raw_name != name else None,
+                "name_normalized": raw_name != name,
+                "valid_automation_name": valid_automation_name(name),
                 "current_value": _coerce_value(value) if value else None,
                 "value_type": _infer_value_type(value) if value else "unknown",
                 "unit": unit,
@@ -201,6 +275,13 @@ class AutomationRegistryStore:
         entries = AutomationParameterParser.parse(text)
         if not entries:
             raise ValueError("未从文本中解析到Automation Parameter Names条目")
+        invalid = [str(row.get("automation_name") or "") for row in entries if not valid_automation_name(row.get("automation_name"))]
+        if invalid:
+            raise ValueError(
+                "Automation Parameter Names包含非Motor-CAD原生标识符: "
+                + ", ".join(invalid[:12])
+                + "。请从目标Motor-CAD版本重新导出，不要翻译参数名。"
+            )
         path = self._path(key)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
